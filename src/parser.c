@@ -74,21 +74,48 @@ static void primary(struct parser *p) {
 
         if (shget(p->symbols, text) != IDENT) {
             fprintf(stderr, "Referencing variable before assignment: %s\n", text);
-           abort();
+           //abort();
         }
 
         fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
     } else {
         fprintf(stderr, "Unexpected token at %*.s\n", p->current_token.size, p->current_token.text);
-       abort();
+        abort();
     }
 }
 
 static void expression(struct parser *p);
 
-//<factor> ::= "(" <exp> ")" | <unary_op> <factor> | primary
+//<function-call> ::= id "(" [ <exp> { "," <exp> } ] ")"
+static void function_call(struct parser *p) {
+
+    printf("FUNCTION_CALL\n");
+
+    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    match(p, IDENT);
+
+    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    match(p, LPAREN);
+
+    expression(p);
+
+    while(check_token(p, COMMA)) {
+        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        next_token(p);
+        expression(p);
+    }
+
+    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    match(p, RPAREN);
+}
+
+//<factor> ::= <function-call> | "(" <exp> ")" | <unary_op> <factor> | primary
 static void factor(struct parser *p) {
+
+    if(check_token(p, IDENT) && check_peek(p, LPAREN)) {
+        function_call(p);
+    }
 
     if(check_token(p, LPAREN)) {
         fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
@@ -255,16 +282,17 @@ static void statement(struct parser *p) {
 
     //"LET" ident "=" expression
     //"INPUT" ident "=" expression
+    //"ODE" ident "=" expression
     //ident "=" expression
     //TODO: simplify
-    else if (check_token(p, IDENT) || check_token(p, LET) || check_token(p, INPUT)) {
+    else if (check_token(p, ODE) || check_token(p, IDENT) || check_token(p, LET) || check_token(p, INPUT)) {
 
         printf("STATEMENT-LET OR INPUT\n");
 
         char *text;
         token_type kind;
 
-        if (p->current_token.kind == LET || p->current_token.kind == INPUT) {
+        if (p->current_token.kind == LET || p->current_token.kind == INPUT || p->current_token.kind == ODE) {
             next_token(p);
 
             text = strndup(p->current_token.text, p->current_token.size);
@@ -274,20 +302,21 @@ static void statement(struct parser *p) {
                 shput(p->symbols, text, IDENT);
             }
 
+            fprintf(p->c_file, "float %.*s = ", p->current_token.size, p->current_token.text);
+
             match(p, IDENT);
-            fprintf(p->c_file, "float %.*s = ;\n", p->current_token.size, p->current_token.text);
         } else {
             text = strndup(p->current_token.text, p->current_token.size);
             kind = shget(p->symbols, text);
 
-
             if (kind == -1) {
                 fprintf(stderr, "Referencing variable before assignment: %s\n", text);
-                abort();
+                //abort();
             }
 
+            fprintf(p->c_file, "%.*s = ", p->current_token.size, p->current_token.text);
+
             match(p, IDENT);
-            fprintf(p->c_file, "%.*s = ;\n", p->current_token.size, p->current_token.text);
 
             next_token(p);
         }
@@ -308,11 +337,41 @@ static void statement(struct parser *p) {
     nl(p);
 }
 
+static void generate_main_python(FILE *c_file, int num_odes) {
+    fprintf(c_file, "if __name__ == \"__main__\":\n");
+
+    fprintf(c_file, "    x0 = []\n");
+    fprintf(c_file, "    ts = range(int(argv[1]))\n");
+
+    fprintf(c_file, "    set_initial_conditions(x0)\n");
+
+    fprintf(c_file, "    result = odeint(ode, x0, ts)\n");
+
+    fprintf(c_file, "    out = open(\"out.txt\", \"w\")\n");
+
+    fprintf(c_file, "    for i in range(len(ts)):\n");
+    fprintf(c_file, "        out.write(str(ts[i]) + \", \")\n");
+    fprintf(c_file, "        for j in range(%d):\n", num_odes);
+    fprintf(c_file, "            if j < 1:\n");
+    fprintf(c_file, "                out.write(str(result[i, j]) + \", \")\n");
+    fprintf(c_file, "            else:\n");
+    fprintf(c_file, "                out.write(str(result[i, j]))\n");
+
+    fprintf(c_file, "        out.write(\"\\n\")\n");
+
+    fprintf(c_file, "    out.close()\n");
+
+    fprintf(c_file, "    try:\n");
+    fprintf(c_file, "        import pylab\n");
+    fprintf(c_file, "        pylab.figure(1)\n");
+    fprintf(c_file, "        pylab.plot(ts, result[:,0])\n");
+    fprintf(c_file, "        pylab.show()\n");
+    fprintf(c_file, "    except ImportError:\n");
+    fprintf(c_file, "        pass\n");
+}
+
 // program ::= {statement}
 void program(struct parser *p) {
-
-    fprintf(p->c_file, "#include <stdio.h>\n");
-    fprintf(p->c_file, "int main(void) {\n");
 
     while (check_token(p, NEWLINE))
         next_token(p);
@@ -322,8 +381,8 @@ void program(struct parser *p) {
         statement(p);
     }
 
-    fprintf(p->c_file, "return 0;\n");
-    fprintf(p->c_file, "}\n");
+    //TODO: get the number of defined odes and generate the main function
+    generate_main_python(p->c_file, 10);
 
 }
 

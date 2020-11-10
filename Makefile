@@ -1,6 +1,7 @@
 
 all:
-	gcc -g lexer.c enum_to_string.c parser.c ode_compiler.c -o compiler
+	@if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	gcc -g src/lexer.c src/enum_to_string.c src/parser.c src/ode_compiler.c -o bin/compiler
 
 clean:
-	rm compiler
+	rm -fr bin/

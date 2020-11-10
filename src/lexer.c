@@ -67,6 +67,9 @@ struct token get_token(struct lexer *state) {
 		case ')':
 			token = TOKEN(value, RPAREN);
 			break;
+        case ',':
+            token = TOKEN(value, COMMA);
+            break;
         case '\n':
             token = TOKEN(value, NEWLINE);
             break;
@@ -158,7 +161,7 @@ struct token get_token(struct lexer *state) {
 			else if (isalpha(state->current_char)) {
 				int first_position = state->current_position;
 
-				while ( isalnum(peek(state)) ) {
+				while ( isalnum(peek(state)) || peek(state) == '\'' ) {
 					next_char(state);
 				}
 

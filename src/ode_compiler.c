@@ -1,13 +1,10 @@
 #include "parser.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
 
 static const char *read_entire_file_with_mmap(const char *filename, size_t *size) {
 
