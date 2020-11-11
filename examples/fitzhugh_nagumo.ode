@@ -1,8 +1,13 @@
+FN teste(a,b) BEGINFN
+     LET d = 10
+     RETURN d
+ENDFN
+
+
 LET I = 0.5
 LET a = 0.7
 LET b = 0.8
 LET tau = 12.5
 
-ODE v' = v - pow(1,2) - w + I
-ODE w' = (v - a + w - b * w) / tau
-
+ODE v' = v - pow(v,3) - w + I
+ODE w' = (v + a - b*w) / tau

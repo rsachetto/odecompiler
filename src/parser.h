@@ -14,8 +14,11 @@ struct parser {
 	struct lexer *lexer;
     struct token current_token;
     struct token peek_token;
-	struct symbol *symbols;
+	struct symbol *let_identifiers;
+	struct symbol *input_identifiers;
+	struct symbol *ode_identifiers;
     FILE * c_file;
+	char **identifiers_to_check;
 };
 
 void init_parser(struct parser *p, struct lexer *l, FILE *f);

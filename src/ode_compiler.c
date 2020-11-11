@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static const char *read_entire_file_with_mmap(const char *filename, size_t *size) {
+static char *read_entire_file_with_mmap(const char *filename, size_t *size) {
 
     char *f;
 
@@ -28,15 +28,18 @@ static const char *read_entire_file_with_mmap(const char *filename, size_t *size
 
     *size = s.st_size;
 
-    size_t to_page_size = *size;
+    size_t to_page_size = *size + 1;
 
     int pagesize = getpagesize();
     to_page_size += pagesize - (to_page_size % pagesize);
 
-    f = (char *)mmap(0, to_page_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    f = (char *)mmap(0, to_page_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 
     if(f == NULL)
         return NULL;
+
+    f[*size-1] = '\n'; //Add \n to ensure success in parsing
+    f[*size] = '\0'; //Add \n to ensure success in parsing
 
     close(fd);
 
