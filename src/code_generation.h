@@ -1,7 +1,42 @@
 #ifndef __CODE_GENERATION_H
 #define __CODE_GENERATION_H 
 
-inline static void generate_main_python(FILE *c_file, int num_odes) {
+inline static void generate_main_python(struct parser *p) {
+
+
+    FILE *c_file = p->c_file;
+
+	int num_odes = shlen(p->ode_identifiers);
+
+	fprintf(c_file, "from scipy.integrate import odeint\n"),
+	fprintf(c_file, "from math import floor\n");
+	fprintf(c_file, "from math import tanh\n");
+	fprintf(c_file, "from math import log\n");
+	fprintf(c_file, "from math import exp\n");
+	fprintf(c_file, "from sys import argv\n");
+
+	fprintf(c_file, "def fabs(a):\n");
+   	fprintf(c_file, "    return abs(a)\n\n");
+
+
+	fprintf(c_file, "def set_initial_conditions(x0):\n");
+
+
+	for(int i = 0; i < num_odes; i++) {
+		double value = shget(p->ode_intial_values,  p->ode_identifiers[i].key);
+		fprintf(c_file, "    x0.append(%lf)\n", value);
+	}
+
+    fprintf(c_file, "\ndef model(sv, time):\n");
+
+	for(int i = 0; i < num_odes; i++) {
+		fprintf(c_file, "    %s = sv[%d]\n", p->ode_identifiers[i].key, i);
+	}
+
+	fprintf(c_file, "    rDY = [0 for i in range(%d)]\n", num_odes);
+	fprintf(c_file, "%s", p->ode_code);
+	fprintf(c_file, "    return rDY\n\n");
+
     fprintf(c_file, "if __name__ == \"__main__\":\n");
 
     fprintf(c_file, "    x0 = []\n");
@@ -9,7 +44,7 @@ inline static void generate_main_python(FILE *c_file, int num_odes) {
 
     fprintf(c_file, "    set_initial_conditions(x0)\n");
 
-    fprintf(c_file, "    result = odeint(ode, x0, ts)\n");
+    fprintf(c_file, "    result = odeint(model, x0, ts)\n");
 
     fprintf(c_file, "    out = open(\"out.txt\", \"w\")\n");
 

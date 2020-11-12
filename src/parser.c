@@ -88,7 +88,7 @@ static void primary(struct parser *p) {
     //printf("PRIMARY (%.*s)\n", p->current_token.size, p->current_token.text);
 
     if (check_token(p, NUMBER)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
     } else if (check_token(p, IDENT)) {
         //Ensure the variable already exists.
@@ -100,7 +100,7 @@ static void primary(struct parser *p) {
             //abort();
         }
 
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
     } else {
         fprintf(stderr, "Unexpected token at %*.s\n", p->current_token.size, p->current_token.text);
@@ -115,21 +115,21 @@ static void function_call(struct parser *p) {
 
     //printf("FUNCTION_CALL\n");
 
-    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     match(p, IDENT);
 
-    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     match(p, LPAREN);
 
     expression(p);
 
     while(check_token(p, COMMA)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         expression(p);
     }
 
-    fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+    p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     match(p, RPAREN);
 }
 
@@ -141,7 +141,7 @@ static void factor(struct parser *p) {
     }
 
     if(check_token(p, LPAREN)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
 
         next_token(p);
 
@@ -152,22 +152,20 @@ static void factor(struct parser *p) {
            abort();
         }
 
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
 
         next_token(p);
 
     }
     //TODO: add more unary operators
     else if(check_token(p, MINUS)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         factor(p);
     }
     else {
         primary(p);
     }
-
-
 }
 
 //<term> ::= <factor> { ("*" | "/") <factor> }
@@ -177,7 +175,7 @@ static void term(struct parser *p) {
     factor(p);
     //Can have 0 or more *// and expressions.
     while (check_token(p, ASTERISK) || check_token(p, SLASH)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         factor(p);
     }
@@ -193,7 +191,7 @@ static void expression(struct parser *p) {
 
     //Can have 0 or more +/- and expressions.
     while (check_token(p, PLUS) || check_token(p, MINUS)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         term(p);
     }
@@ -206,7 +204,7 @@ static void comparison(struct parser *p) {
     expression(p);
     // Must be at least one comparison operator and another expression.
     if (is_comparison_operator(p)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         expression(p);
     } else {
@@ -214,7 +212,7 @@ static void comparison(struct parser *p) {
     }
 
     while (is_comparison_operator(p)) {
-        fprintf(p->c_file, "%.*s", p->current_token.size, p->current_token.text);
+        p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         next_token(p);
         expression(p);
     }
@@ -275,12 +273,12 @@ static void statement(struct parser *p) {
 		next_token(p);
 
 		if (check_token(p, STRING)) {
-			fprintf(p->c_file, "printf(\"%.*s\");\n", p->current_token.size, p->current_token.text);
+            p->ode_code = sdscatprintf(p->ode_code, "printf(\"%.*s\");\n", p->current_token.size, p->current_token.text);
 			next_token(p);
 		} else {
-			fprintf(p->c_file, "printf(\"%%.2f\\n\", (float)(");
+            p->ode_code = sdscat(p->ode_code, "printf(\"%%.2f\\n\", (float)(");
 			expression(p);
-			fprintf(p->c_file, "));\n");
+            p->ode_code = sdscat(p->ode_code, "));\n");
 		}
 	}
 	// "IF" comparison "THEN" {statement} { "ELSE" {statement} } "ENDIF"
@@ -289,14 +287,14 @@ static void statement(struct parser *p) {
 
 		next_token(p);
 
-		fprintf(p->c_file, "if(");
+        p->ode_code = sdscat(p->ode_code, "if(");
 
 		comparison(p);
 
 		match(p, THEN);
 		nl(p);
 
-		fprintf(p->c_file, "){\n");
+        p->ode_code = sdscat(p->ode_code, "){\n");
 
 		// Zero or more statements in the body.
 		while (!check_token(p, ENDIF)) {
@@ -304,7 +302,7 @@ static void statement(struct parser *p) {
 		}
 
 		match(p, ENDIF);
-		fprintf(p->c_file, "}\n");
+        p->ode_code = sdscat(p->ode_code, "}\n");
 
 	}
 	//"ELIF" comparison "THEN" //TODO: match this with the last opened if. Maybe use a stack here.
@@ -313,17 +311,17 @@ static void statement(struct parser *p) {
 
 		next_token(p);
 
-		fprintf(p->c_file, "} else if(");
+        p->ode_code = sdscat(p->ode_code, "} else if(");
 
 		comparison(p);
 
 		match(p, THEN);
-		fprintf(p->c_file, "){\n");
+        p->ode_code = sdscat(p->ode_code, "){\n");
 	}
 	else if (check_token(p, ELSE)) {
 		// printf("STATEMENT-ELSE\n");
 		next_token(p);
-		fprintf(p->c_file, " } else {\n");
+        p->ode_code = sdscat(p->ode_code, " } else {\n");
 	}
 
 	// "WHILE" comparison "REPEAT" {statement} "ENDWHILE"
@@ -331,14 +329,14 @@ static void statement(struct parser *p) {
 		// printf("STATEMENT-WHILE\n");
 
 		next_token(p);
-		fprintf(p->c_file, "while(");
+        p->ode_code = sdscat(p->ode_code, "while(");
 
 		comparison(p);
 
 		match(p, REPEAT);
 
 		nl(p);
-		fprintf(p->c_file, "){\n");
+        p->ode_code = sdscat(p->ode_code, "){\n");
 
 		// Zero or more statements in the body.
 		while (!check_token(p, ENDWHILE)) {
@@ -346,7 +344,7 @@ static void statement(struct parser *p) {
 		}
 
 		match(p, ENDWHILE);
-		fprintf(p->c_file, "}\n");
+        p->ode_code = sdscat(p->ode_code, "}\n");
 	}
 
 	//FN indentifier "(" {"."} ")" BEGINFN {statement} ENDFN
@@ -396,18 +394,25 @@ static void statement(struct parser *p) {
     //"INPUT" ident "=" expression
     //"ODE" ident "=" expression
     //ident "=" expression
-    else if (check_token(p, ODE) || check_token(p, IDENT) || check_token(p, LET) || check_token(p, INPUT)) {
+    else if (check_token(p, IDENT) ||  check_token(p, ODE) || check_token(p, LET) || check_token(p, INPUT)) {
 
-       // printf("STATEMENT-LET OR INPUT\n");
-		if (p->current_token.kind == LET || p->current_token.kind == INPUT || p->current_token.kind == ODE) {
 
+		if (p->current_token.kind != IDENT) {
             token_type last_kind = p->current_token.kind;
 
             next_token(p);
 
             declare_identifier(p, last_kind);
 
-			fprintf(p->c_file, "float %.*s = ", p->current_token.size, p->current_token.text);
+            if(last_kind == ODE) {
+				static int ode_counter = 0;
+                //p->ode_code = sdscatprintf(p->ode_code, "    %.*s = sv[%d]\n", p->current_token.size-1, p->current_token.text, ode_counter);
+                p->ode_code = sdscatprintf(p->ode_code, "    rDY[%d] = ", ode_counter);
+                ode_counter++;
+            }
+            else {
+                p->ode_code = sdscatprintf(p->ode_code, "    %.*s = ", p->current_token.size, p->current_token.text);
+            }
 
 			match(p, IDENT);
 
@@ -419,7 +424,7 @@ static void statement(struct parser *p) {
                 abort();
             }
 
-            fprintf(p->c_file, "%.*s = ", p->current_token.size, p->current_token.text);
+            p->ode_code = sdscatprintf(p->ode_code, "    %.*s = ", p->current_token.size, p->current_token.text);
 
             match(p, IDENT);
 
@@ -431,8 +436,30 @@ static void statement(struct parser *p) {
 
         match(p, EQ);
         expression(p);
-        fprintf(p->c_file, ";\n");
+        p->ode_code = sdscat(p->ode_code, ";\n");
     }
+	//INITIAL ident "=" NUMBER
+	else if (check_token(p, INITIAL))  {
+		next_token(p);
+		
+    	char *var = strndup(p->current_token.text, p->current_token.size);
+	
+		match(p, IDENT);
+		
+		match(p, EQ);
+		
+    	char *val = strndup(p->current_token.text, p->current_token.size);
+		
+		match(p, NUMBER);
+
+		double num_val = strtod(val, NULL);
+
+		shput(p->ode_intial_values, var, num_val);
+
+		free(var);
+		free(val);
+
+	}
     // This is not a valid statement. Error!
     else {
         fprintf(stderr, "Invalid statement at %*s (%s)\n", p->current_token.size, p->current_token.text,
@@ -463,7 +490,7 @@ void program(struct parser *p) {
 		}
 	}
 
-    generate_main_python(p->c_file, shlen(p->ode_identifiers));
+    generate_main_python(p);
 
 }
 
@@ -483,7 +510,13 @@ void init_parser(struct parser *p, struct lexer *l, FILE *f) {
 	sh_new_arena(p->ode_identifiers);
     shdefault(p->ode_identifiers, -1);
 
+    p->ode_intial_values = NULL;
+	sh_new_arena(p->ode_intial_values);
+    shdefault(p->ode_intial_values, 0);
+
     p->identifiers_to_check = NULL;
+
+    p->ode_code = sdsempty();
 
     next_token(p);
     next_token(p);//Call this twice to initialize current and peek;
