@@ -1,0 +1,42 @@
+#Parameters
+LET Cm = 1.0
+LET E_R = -7.500000000000000e+01
+LET g_Na = 1.200000000000000e+02
+LET g_K = 3.600000000000000e+01
+LET g_L = 3.000000000000000e-01
+
+LET i_Stim = 0.0
+
+IF  10.0 <= time <= 1.050000000000000e+01 THEN
+    i_Stim = 20.0
+ELSE
+    i_Stim = 0.0
+ENDIF
+
+#Helper variables
+LET E_Na = (E_R+1.150000000000000e+02)
+LET alpha_m = (((-1.000000000000000e-01)*(V+5.000000000000000e+01))/(exp(((-(V+5.000000000000000e+01))/10.0))-1.0))
+LET beta_m = (4.0*exp(((-(V+7.500000000000000e+01))/1.800000000000000e+01)))
+LET alpha_h = (7.000000000000001e-02*exp(((-(V+7.500000000000000e+01))/20.0)))
+LET beta_h = (1.0/(exp(((-(V+4.500000000000000e+01))/10.0))+1.0))
+LET E_K = (E_R-1.200000000000000e+01)
+LET alpha_n = (((-1.000000000000000e-02)*(V+6.500000000000000e+01))/(exp(((-(V+6.500000000000000e+01))/10.0))-1.0))
+LET beta_n = (1.250000000000000e-01*exp(((V+7.500000000000000e+01)/80.0)))
+LET E_L = (E_R+1.061300000000000e+01)
+LET i_Na = (g_Na*pow(m,3.0)*h*(V-E_Na))
+LET i_K = (g_K*pow(n,4.0)*(V-E_K))
+LET i_L = (g_L*(V-E_L))
+
+#ODEs
+ODE V' = ((-((-i_Stim)+i_Na+i_K+i_L))/Cm)
+ODE m' = ((alpha_m*(1.0-m))-(beta_m*m))
+ODE h' = ((alpha_h*(1.0-h))-(beta_h*h))
+ODE n' = ((alpha_n*(1.0-n))-(beta_n*n))
+
+#Inital Conditons
+INITIAL V = -7.500000e+01
+INITIAL m = 5.000000e-02
+INITIAL h = 6.000000e-01
+INITIAL n = 3.250000e-01
+
+

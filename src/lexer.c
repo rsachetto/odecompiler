@@ -170,20 +170,35 @@ struct token get_token(struct lexer *state) {
 
 					if (!isdigit(peek(state))) {
 						fprintf(stderr, "Illegal character in number.");
-						exit(0);
+						abort();
 					}
-					while (isdigit(peek(state))) {
-						next_char(state);
+
+					while (isdigit(peek(state)) || peek(state) == 'e' ) {
+
+                        if(peek(state) == 'e') {
+                            next_char(state);
+                            if(peek(state) != '+' && peek(state) != '-') {
+                                fprintf(stderr, "Illegal character %c in number.", peek(state));
+                                abort();
+                            }
+
+                            while (isdigit(peek(state))) {
+                                next_char(state);
+                            }
+                        }
+                        else {
+                            next_char(state);
+                        }
 					}
 				}
 				
             	token = TOKEN_WITH_TEXT(value, NUMBER, state->current_position + 1 - first_position);
 				last_kind = NUMBER;
 			}
-			else if (isalpha(state->current_char)) {
+			else if (isalpha(state->current_char) || state->current_char == '_') {
 				int first_position = state->current_position;
 
-				while ( isalnum(peek(state))) {
+				while ( isalnum(peek(state)) || peek(state) == '_' ) {
 					next_char(state);
 				}
 
@@ -191,7 +206,7 @@ struct token get_token(struct lexer *state) {
 				if(last_kind == ODE) {
 					if(peek(state) == '\'') {
 						next_char(state);
-                        if(isalnum(peek(state))) {
+                        if(isalnum(peek(state)) || state->current_char == '_' ) {
                             fprintf(stderr, "' is only allowed in the end with an ODE identifier  .\n");
                             abort();
                         }

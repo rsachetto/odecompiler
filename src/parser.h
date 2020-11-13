@@ -14,7 +14,7 @@ struct symbol {
 
 struct ode_intial_value {
 	char *key;
-	double value;
+	char *value;
 };
 
 struct parser {
@@ -25,6 +25,9 @@ struct parser {
 	struct symbol *input_identifiers;
 	struct symbol *ode_identifiers;
 	struct ode_intial_value *ode_intial_values;
+    sds parsed_expression;
+    bool emit_ode_code;
+    bool allow_identifiers;
     FILE * c_file;
 	char **identifiers_to_check;
     sds ode_code;

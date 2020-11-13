@@ -23,8 +23,11 @@ inline static void generate_main_python(struct parser *p) {
 
 
 	for(int i = 0; i < num_odes; i++) {
-		double value = shget(p->ode_intial_values,  p->ode_identifiers[i].key);
-		fprintf(c_file, "    x0.append(%lf)\n", value);
+		char *value = shget(p->ode_intial_values,  p->ode_identifiers[i].key);
+        if(value)
+		    fprintf(c_file, "    x0.append(%s)\n", value);
+        else
+            fprintf(c_file, "    x0.append(0.0)\n");
 	}
 
     fprintf(c_file, "\ndef model(sv, time):\n");
