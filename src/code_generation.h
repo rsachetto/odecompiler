@@ -13,7 +13,7 @@ inline static void generate_main_python(struct parser *p) {
 	fprintf(c_file, "from math import tanh\n");
 	fprintf(c_file, "from math import log\n");
 	fprintf(c_file, "from math import exp\n");
-	fprintf(c_file, "from sys import argv\n");
+	fprintf(c_file, "from sys import argv\n\n");
 
 	fprintf(c_file, "def fabs(a):\n");
    	fprintf(c_file, "    return abs(a)\n\n");

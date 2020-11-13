@@ -40,11 +40,9 @@ static bool is_comparison_operator(struct parser *p) {
            check_token(p, EQEQ) || check_token(p, NOTEQ);
 }
 
-static bool identifier_was_declared(struct parser *p, char *name, bool only_ode) {
+static bool identifier_was_declared(struct parser *p, char *name) {
 
 	token_type kind = shget(p->ode_identifiers, name);
-
-	if(only_ode) return kind != -1;
 
 	if (kind == -1) {
 		kind = shget(p->input_identifiers, name);
@@ -101,11 +99,8 @@ static void primary(struct parser *p) {
         //Ensure the variable already exists.
         char *text = strndup(p->current_token.text, p->current_token.size);
 
-        if (!identifier_was_declared(p, text, false)) {
+        if (!identifier_was_declared(p, text)) {
 			arrput(p->identifiers_to_check, text);
-            fprintf(stderr, "Referencing variable before assignment: %s\n", text);
-            //TODO: add all for late checking
-            //abort();
         }
 
         if(p->emit_ode_code)
@@ -492,7 +487,7 @@ static void statement(struct parser *p) {
 		} else {
             char *text = strndup(p->current_token.text, p->current_token.size);
 
-            if (!identifier_was_declared(p, text, false)) {
+            if (!identifier_was_declared(p, text)) {
                 fprintf(stderr, "Referencing variable before assignment: %s\n", text);
                 abort();
             }
@@ -538,6 +533,7 @@ static void statement(struct parser *p) {
                 get_stringtoken_type(p->current_token.kind));
        abort();
     }
+
     // Newline.
     nl(p);
 }
@@ -556,9 +552,9 @@ void program(struct parser *p) {
 	int check_len = arrlen(p->identifiers_to_check);
 
 	for(int i = 0; i < check_len; i++) {
-		if(!identifier_was_declared(p, p->identifiers_to_check[i], true)) {			
+		if(!identifier_was_declared(p, p->identifiers_to_check[i])) {
 			 fprintf(stderr, "Referencing variable %s before assignment. This is only allowed for ODE variables.\n", p->identifiers_to_check[i]);
-            // abort();
+             abort();
 		}
 	}
 
@@ -598,6 +594,5 @@ void init_parser(struct parser *p, struct lexer *l, FILE *f) {
     p->parsed_expression = sdsempty();
 
     next_token(p);
-    next_token(p);//Call this twice to initialize current and peek;
-}
-
+    next_token(p); //Call this twice to initialize current and peek;
+} 
