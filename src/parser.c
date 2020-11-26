@@ -30,7 +30,7 @@ static bool check_peek(struct parser *p, token_type kind) {
 static void match(struct parser *p, token_type kind) {
     if (!check_token(p, kind)) {
         fprintf(stderr, "Expected %s, got %s\n", get_stringtoken_type(kind), get_stringtoken_type(p->current_token.kind));
-       	abort();
+        abort();
     }
     next_token(p);
 }
@@ -42,19 +42,17 @@ static bool is_comparison_operator(struct parser *p) {
 
 static bool identifier_was_declared(struct parser *p, char *name) {
 
-	token_type kind = shget(p->ode_identifiers, name);
+    token_type kind = shget(p->ode_identifiers, name);
 
-	if (kind == -1) {
-		kind = shget(p->input_identifiers, name);
+    if (kind == -1) {
+        kind = shget(p->input_identifiers, name);
 
-		if (kind == -1) {
-			kind = shget(p->let_identifiers, name);
-		}
+        if (kind == -1) {
+            kind = shget(p->let_identifiers, name);
+        }
+    }
 
-	}
-
-	return kind != -1;
-
+    return kind != -1;
 }
 
 // Production rules.
@@ -72,42 +70,46 @@ static void nl(struct parser *p) {
 }
 
 //<unary_op> ::= "!" | "~" | "-"
-static void unary_op(struct  parser *p) {
+static void unary_op(struct parser *p) {
     //TODO: add more unary tokens
     if (check_token(p, MINUS)) {
         next_token(p);
-    }
-    else {
+    } else {
         fprintf(stderr, "Unexpected token at %*.s\n", p->current_token.size, p->current_token.text);
-        //abort();
+        abort();
     }
-
 }
 
 //primary ::= number | ident
 static void primary(struct parser *p) {
-    //printf("PRIMARY (%.*s)\n", p->current_token.size, p->current_token.text);
 
     if (check_token(p, NUMBER)) {
-        if(p->emit_ode_code)
+
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
 
         next_token(p);
+
     } else if (check_token(p, IDENT)) {
+
         //Ensure the variable already exists.
         char *text = strndup(p->current_token.text, p->current_token.size);
 
         if (!identifier_was_declared(p, text)) {
-			arrput(p->identifiers_to_check, text);
+            arrput(p->identifiers_to_check, text);
         }
 
-        if(p->emit_ode_code)
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
+
         next_token(p);
+
     } else {
         fprintf(stderr, "Unexpected token at %*.s\n", p->current_token.size, p->current_token.text);
         abort();
@@ -119,16 +121,14 @@ static void expression(struct parser *p);
 //<function-call> ::= id "(" [ <exp> { "," <exp> } ] ")"
 static void function_call(struct parser *p) {
 
-    //printf("FUNCTION_CALL\n");
-
-    if(p->emit_ode_code)
+    if (p->emit_ode_code)
         p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     else
         p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
 
     match(p, IDENT);
 
-    if(p->emit_ode_code)
+    if (p->emit_ode_code)
         p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     else
         p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
@@ -137,8 +137,8 @@ static void function_call(struct parser *p) {
 
     expression(p);
 
-    while(check_token(p, COMMA)) {
-        if(p->emit_ode_code)
+    while (check_token(p, COMMA)) {
+        if (p->emit_ode_code)
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
         else
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
@@ -147,7 +147,7 @@ static void function_call(struct parser *p) {
         expression(p);
     }
 
-    if(p->emit_ode_code)
+    if (p->emit_ode_code)
         p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
     else
         p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
@@ -158,15 +158,14 @@ static void function_call(struct parser *p) {
 //<factor> ::= <function-call> | "(" <exp> ")" | <unary_op> <factor> | primary
 static void factor(struct parser *p) {
 
-    if(check_token(p, IDENT) && check_peek(p, LPAREN)) {
+    if (check_token(p, IDENT) && check_peek(p, LPAREN)) {
         function_call(p);
     }
 
-    else if(check_token(p, LPAREN)) {
-        if(p->emit_ode_code) {
+    else if (check_token(p, LPAREN)) {
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        }
-        else {
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
         }
 
@@ -174,50 +173,45 @@ static void factor(struct parser *p) {
 
         expression(p);
 
-        if(!check_token(p, RPAREN)) {
+        if (!check_token(p, RPAREN)) {
             fprintf(stderr, "Unexpected token at %*.s. Expecting )\n", p->current_token.size, p->current_token.text);
             abort();
         }
-        if(p->emit_ode_code) {
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        }
-        else {
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
         }
 
         next_token(p);
 
-    }
-    //TODO: add more unary operators
-    else if(check_token(p, MINUS)) {
-
-        if(p->emit_ode_code) {
+    } else if (check_token(p, MINUS)) {
+        //TODO: add more unary operators
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        }
-        else {
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
         }
-
 
         next_token(p);
         factor(p);
-    }
-    else {
+    } else {
         primary(p);
     }
 }
 
 //<term> ::= <factor> { ("*" | "/") <factor> }
 static void term(struct parser *p) {
-    //printf("TERM\n");
 
     factor(p);
-    //Can have 0 or more *// and expressions.
+
     while (check_token(p, ASTERISK) || check_token(p, SLASH)) {
-        if(p->emit_ode_code)
+
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
 
         next_token(p);
         factor(p);
@@ -232,10 +226,11 @@ static void expression(struct parser *p) {
 
     //Can have 0 or more +/- and expressions.
     while (check_token(p, PLUS) || check_token(p, MINUS)) {
-        if(p->emit_ode_code)
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
 
         next_token(p);
         term(p);
@@ -244,15 +239,15 @@ static void expression(struct parser *p) {
 
 // comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
 static void comparison(struct parser *p) {
-    //printf("COMPARISSON\n");
 
     expression(p);
     // Must be at least one comparison operator and another expression.
     if (is_comparison_operator(p)) {
-        if(p->emit_ode_code)
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
 
         next_token(p);
         expression(p);
@@ -261,10 +256,12 @@ static void comparison(struct parser *p) {
     }
 
     while (is_comparison_operator(p)) {
-        if(p->emit_ode_code)
+
+        if (p->emit_ode_code) {
             p->ode_code = sdscatprintf(p->ode_code, "%.*s", p->current_token.size, p->current_token.text);
-        else
+        } else {
             p->parsed_expression = sdscatprintf(p->parsed_expression, "%.*s", p->current_token.size, p->current_token.text);
+        }
 
         next_token(p);
         expression(p);
@@ -276,215 +273,210 @@ static void declare_identifier(struct parser *p, token_type last_kind) {
     char *text;
     token_type kind;
 
-    if(last_kind == ODE) {
-        text = strndup(p->current_token.text, p->current_token.size-1);
+    if (last_kind == ODE) {
+        text = strndup(p->current_token.text, p->current_token.size - 1);
         kind = shget(p->ode_identifiers, text);
 
         if (kind == -1) {
             shput(p->ode_identifiers, text, IDENT);
-        }
-        else {
+        } else {
             fprintf(stderr, "Identifier %s already declared!\n", text);
             abort();
         }
 
-    }
-    else if(last_kind == LET) {
+    } else if (last_kind == LET) {
         text = strndup(p->current_token.text, p->current_token.size);
         kind = shget(p->let_identifiers, text);
 
         if (kind == -1) {
             shput(p->let_identifiers, text, IDENT);
-        }
-        else {
+        } else {
             fprintf(stderr, "Identifier %s already declared!\n", text);
             abort();
         }
-    }
-    else {
+    } else {
         text = strndup(p->current_token.text, p->current_token.size);
         kind = shget(p->input_identifiers, text);
 
         if (kind == -1) {
             shput(p->input_identifiers, text, IDENT);
-        }
-        else {
+        } else {
             fprintf(stderr, "Identifier %s already declared!\n", text);
             abort();
         }
-
     }
-
 }
 
 static void statement(struct parser *p) {
-	// Check the first token to see what kind of statement this is.
+    // Check the first token to see what kind of statement this is.
 
-	//"PRINT" (expression | string)
-	if (check_token(p, PRINT)) {
-		//  printf("STATEMENT-PRINT\n");
-		next_token(p);
+    //"PRINT" (expression | string)
+    if (check_token(p, PRINT)) {
 
-		if (check_token(p, STRING)) {
+        next_token(p);
+
+        if (check_token(p, STRING)) {
             p->ode_code = sdscatprintf(p->ode_code, "print(\"%.*s\")\n", p->current_token.size, p->current_token.text);
 
-			next_token(p);
-		} else {
-                p->ode_code = sdscat(p->ode_code, "print(\"%%.2f\\n\", (float)(");
-    			expression(p);
-                p->ode_code = sdscat(p->ode_code, "))\n");
-		}
-	}
-	// "IF" comparison "THEN" {statement} { "ELSE" {statement} } "ENDIF"
-	else if (check_token(p, IF)) {
-		// printf("STATEMENT-IF\n");
+            next_token(p);
+        } else {
+            p->ode_code = sdscat(p->ode_code, "print(\"%%.2f\\n\", (float)(");
+            expression(p);
+            p->ode_code = sdscat(p->ode_code, "))\n");
+        }
+    }
+    // "IF" comparison "THEN" {statement} { "ELSE" {statement} } "ENDIF"
+    else if (check_token(p, IF)) {
 
-		next_token(p);
+        next_token(p);
 
-        for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+        for (int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
         p->ode_code = sdscat(p->ode_code, "if ");
         current_ident_level++;
 
-		comparison(p);
+        comparison(p);
 
-		match(p, THEN);
-		nl(p);
+        match(p, THEN);
+        nl(p);
 
         p->ode_code = sdscat(p->ode_code, ":\n");
 
-		// Zero or more statements in the body.
-		while (!check_token(p, ENDIF)) {
-			statement(p);
-		}
+        // Zero or more statements in the body.
+        while (!check_token(p, ENDIF)) {
+            statement(p);
+        }
 
-		match(p, ENDIF);
+        match(p, ENDIF);
         p->ode_code = sdscat(p->ode_code, "\n");
         current_ident_level--;
 
-	}
-	//"ELIF" comparison "THEN" //TODO: match this with the last opened if. Maybe use a stack here.
-	else if (check_token(p, ELIF)) {
-		//    printf("STATEMENT-ELIF\n");
+    }
+    //"ELIF" comparison "THEN"
+    //TODO: match this with the last opened if. Maybe use a stack here.
+    else if (check_token(p, ELIF)) {
 
-		next_token(p);
+        next_token(p);
 
         current_ident_level--;
-        for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+
+        for (int i = 0; i < current_ident_level; i++) {
+            p->ode_code = sdscat(p->ode_code, _4SPACES);
+        }
+
         p->ode_code = sdscat(p->ode_code, "elif ");
 
-		comparison(p);
+        comparison(p);
 
-		match(p, THEN);
+        match(p, THEN);
+
         p->ode_code = sdscat(p->ode_code, ":\n");
+
         current_ident_level++;
-	}
-	else if (check_token(p, ELSE)) {
-		// printf("STATEMENT-ELSE\n");
-		next_token(p);
+
+    } else if (check_token(p, ELSE)) {
+
+        next_token(p);
 
         current_ident_level--;
-        for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+        for (int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
         p->ode_code = sdscat(p->ode_code, "else:\n");
         current_ident_level++;
-	}
+    }
+    // "WHILE" comparison "REPEAT" {statement} "ENDWHILE"
+    else if (check_token(p, WHILE)) {
 
-	// "WHILE" comparison "REPEAT" {statement} "ENDWHILE"
-	else if (check_token(p, WHILE)) {
-		// printf("STATEMENT-WHILE\n");
+        next_token(p);
 
-		next_token(p);
-
-        for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+        for (int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
         p->ode_code = sdscat(p->ode_code, "while ");
 
         current_ident_level++;
 
-		comparison(p);
+        comparison(p);
 
-		match(p, REPEAT);
+        match(p, REPEAT);
 
-		nl(p);
+        nl(p);
         p->ode_code = sdscat(p->ode_code, ":\n");
 
-		// Zero or more statements in the body.
-		while (!check_token(p, ENDWHILE)) {
-			statement(p);
-		}
+        // Zero or more statements in the body.
+        while (!check_token(p, ENDWHILE)) {
+            statement(p);
+        }
 
-		match(p, ENDWHILE);
+        match(p, ENDWHILE);
         p->ode_code = sdscat(p->ode_code, "\n");
         current_ident_level--;
-	}
+    }
 
-	//FN indentifier "(" {"."} ")" BEGINFN {statement} ENDFN
-	else if (check_token(p, FN)) {
+    //FN indentifier "(" {"."} ")" BEGINFN {statement} ENDFN
+    else if (check_token(p, FN)) {
 
-		next_token(p);
+        next_token(p);
 
-		match(p, IDENT);
-		match(p, LPAREN);
+        match(p, IDENT);
+        match(p, LPAREN);
 
         //TODO: add this identifier to the function scope
         match(p, IDENT);
 
-		while(check_token(p, COMMA)) {
-			next_token(p);
+        while (check_token(p, COMMA)) {
+            next_token(p);
             //TODO: add this identifier to the function scope
             match(p, IDENT);
-		}
+        }
 
-		match(p, RPAREN);
+        match(p, RPAREN);
 
-		match(p, BEGINFN);
+        match(p, BEGINFN);
 
-		nl(p);
+        nl(p);
 
-		// Zero or more statements in the body.
-		while (!check_token(p, ENDFN)) {
+        // Zero or more statements in the body.
+        while (!check_token(p, ENDFN)) {
 
-			if(check_token(p, FN)) {
-				fprintf(stderr, "Function declaration inside functions is not allowed!\n");
-				abort();
-			}
+            if (check_token(p, FN)) {
+                fprintf(stderr, "Function declaration inside functions is not allowed!\n");
+                abort();
+            }
 
-			statement(p);
-		}
+            statement(p);
+        }
 
         match(p, ENDFN);
 
-	}
+    }
 
-	else if (check_token(p, RETURN)) {
-		next_token(p);
-		expression(p);
-	}
+    else if (check_token(p, RETURN)) {
+        next_token(p);
+        expression(p);
+    }
 
     //"LET" ident "=" expression
     //"INPUT" ident "=" expression
     //"ODE" ident "=" expression
     //ident "=" expression
-    else if (check_token(p, IDENT) ||  check_token(p, ODE) || check_token(p, LET) || check_token(p, INPUT)) {
+    else if (check_token(p, IDENT) || check_token(p, ODE) || check_token(p, LET) || check_token(p, INPUT)) {
 
-		if (p->current_token.kind != IDENT) {
+        if (p->current_token.kind != IDENT) {
             token_type last_kind = p->current_token.kind;
 
             next_token(p);
 
             declare_identifier(p, last_kind);
 
-            if(last_kind == ODE) {
-				static int ode_counter = 0;
+            if (last_kind == ODE) {
+                static int ode_counter = 0;
                 p->ode_code = sdscatprintf(p->ode_code, "    rDY[%d] = ", ode_counter);
                 ode_counter++;
-            }
-            else {
-                for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+            } else {
+                for (int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
                 p->ode_code = sdscatprintf(p->ode_code, "%.*s = ", p->current_token.size, p->current_token.text);
             }
 
-			match(p, IDENT);
+            match(p, IDENT);
 
-		} else {
+        } else {
             char *text = strndup(p->current_token.text, p->current_token.size);
 
             if (!identifier_was_declared(p, text)) {
@@ -492,7 +484,7 @@ static void statement(struct parser *p) {
                 abort();
             }
 
-            for(int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
+            for (int i = 0; i < current_ident_level; i++) p->ode_code = sdscat(p->ode_code, _4SPACES);
             p->ode_code = sdscatprintf(p->ode_code, "%.*s = ", p->current_token.size, p->current_token.text);
             free(text);
 
@@ -504,7 +496,7 @@ static void statement(struct parser *p) {
         p->ode_code = sdscat(p->ode_code, "\n");
     }
     //"LET" ident "=" expression_without_identifiers
-	else if (check_token(p, INITIAL))  {
+    else if (check_token(p, INITIAL)) {
 
         next_token(p);
 
@@ -519,19 +511,19 @@ static void statement(struct parser *p) {
 
         expression(p);
 
-		shput(p->ode_intial_values, var, strdup(p->parsed_expression));
+        shput(p->ode_intial_values, var, strdup(p->parsed_expression));
 
         sdsfree(p->parsed_expression);
         p->parsed_expression = sdsempty();
 
-		free(var);
+        free(var);
 
-	}
+    }
     // This is not a valid statement. Error!
     else {
         fprintf(stderr, "Invalid statement at %*s (%s)\n", p->current_token.size, p->current_token.text,
                 get_stringtoken_type(p->current_token.kind));
-       abort();
+        abort();
     }
 
     // Newline.
@@ -547,42 +539,42 @@ void program(struct parser *p) {
     // Parse all the statements in the program.
     while (!check_token(p, TEOF)) {
         statement(p);
-    }	
+    }
 
-	int check_len = arrlen(p->identifiers_to_check);
+    int check_len = arrlen(p->identifiers_to_check);
 
-	for(int i = 0; i < check_len; i++) {
-		if(!identifier_was_declared(p, p->identifiers_to_check[i])) {
-			 fprintf(stderr, "Referencing variable %s before assignment. This is only allowed for ODE variables.\n", p->identifiers_to_check[i]);
-             abort();
-		}
-	}
+    for (int i = 0; i < check_len; i++) {
+        if (!identifier_was_declared(p, p->identifiers_to_check[i])) {
+            fprintf(stderr, "Referencing variable %s before assignment. This is only allowed for ODE variables.\n", p->identifiers_to_check[i]);
+            abort();
+        }
+    }
 
     generate_main_python(p);
-
 }
 
 void init_parser(struct parser *p, struct lexer *l, FILE *f) {
+
     p->lexer = l;
     p->c_file = f;
-    
+
     p->let_identifiers = NULL;
-	sh_new_arena(p->let_identifiers);
+    sh_new_arena(p->let_identifiers);
     shdefault(p->let_identifiers, -1);
 
     //variable time is always defined
     shput(p->let_identifiers, "time", IDENT);
 
     p->input_identifiers = NULL;
-	sh_new_arena(p->input_identifiers);
+    sh_new_arena(p->input_identifiers);
     shdefault(p->input_identifiers, -1);
 
     p->ode_identifiers = NULL;
-	sh_new_arena(p->ode_identifiers);
+    sh_new_arena(p->ode_identifiers);
     shdefault(p->ode_identifiers, -1);
 
     p->ode_intial_values = NULL;
-	sh_new_arena(p->ode_intial_values);
+    sh_new_arena(p->ode_intial_values);
     shdefault(p->ode_intial_values, 0);
 
     p->identifiers_to_check = NULL;
@@ -594,5 +586,5 @@ void init_parser(struct parser *p, struct lexer *l, FILE *f) {
     p->parsed_expression = sdsempty();
 
     next_token(p);
-    next_token(p); //Call this twice to initialize current and peek;
-} 
+    next_token(p);//Call this twice to initialize current and peek;
+}

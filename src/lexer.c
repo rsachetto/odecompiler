@@ -11,6 +11,13 @@
 
 token_type last_kind = -1;
 
+void init_lexer(struct lexer *l, const char *source) {
+	l->current_char = '\0';
+    l->current_position = -1;
+    l->source = source;
+    next_char(l);
+}
+
 void next_char(struct lexer *state) {
     state->current_position++;
     state->current_char = state->source[state->current_position];

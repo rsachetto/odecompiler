@@ -17,6 +17,13 @@ struct ode_intial_value {
 	char *value;
 };
 
+struct ast {
+	char *token;
+	struct ast *left;
+	struct ast *right;
+};
+
+
 struct parser {
 	struct lexer *lexer;
     struct token current_token;

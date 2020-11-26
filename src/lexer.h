@@ -25,6 +25,7 @@ struct token {
     }
 
 
+void init_lexer(struct lexer *, const char *source);
 void next_char(struct lexer *);
 char peek(struct lexer *);
 void skip_whitespace(struct lexer *);
