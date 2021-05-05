@@ -73,3 +73,4 @@ fabric.properties
 bin/
 build/
 .ccls-cache
+*_compiled_model
