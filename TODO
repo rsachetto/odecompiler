@@ -1,0 +1,10 @@
+TODO: add imported functions to their own namespace: common.stim
+TODO: add a python src code generator and a monoalg3d generator
+TODO: add error handling in the generated model solver
+TODO: Make a small command interactive utility to solve ODEs
+TODO: put CVODE in 3rd_part/ folder and ship it with the program
+TODO: add the file in the parser and use it to report errors
+TODO: create a way to define the scope of the variables
+TODO: we do not know the value of function types
+TODO: handle global variable scope
+TODO: consider \r maybe on skip comment function (lexer.c)

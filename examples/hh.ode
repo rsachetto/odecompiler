@@ -1,0 +1,34 @@
+import "common.ode"
+
+Cm = 1.0
+E_R = -75.0
+g_Na = 120.0
+g_K = 36.0
+g_L = 0.3
+
+E_Na = calc_E_Na(E_R)
+alpha_m = ((-0.1)*(V + 50.0))/(exp(((-(V + 50.0))/10.0)) - 1.0)
+beta_m = 4.0*exp(((-(V + 75.0))/18.0))
+alpha_h = 0.07*exp(((-(V + 75.0))/20.0))
+beta_h = 1.0/(exp(((-(V + 45.0))/10.0)) + 1.0)
+E_K = E_R - 12.0
+alpha_n = ((-0.01)*(V + 65.0))/(exp(((-(V + 65.0))/10.0)) - 1.0)
+beta_n = 0.125*exp(((V + 75.0)/80.0))
+E_L = E_R + 10.613
+i_Na = g_Na*pow(m,3.0)*h*(V - E_Na)
+i_K = g_K*pow(n, 4.0)*(V - E_K)
+i_L = g_L*(V - E_L)
+
+E_Na = 1
+
+initial V = -7.500000e+01
+initial m = 5.000000e-02
+initial h = 6.000000e-01
+initial n = 3.250000e-01
+
+
+#ODEs
+ode V' = ((-((-stim(time))+i_Na+i_K+i_L))/Cm)
+ode m' = ((alpha_m*(1.0-m))-(beta_m*m))
+ode h' = ((alpha_h*(1.0-h))-(beta_h*h))
+ode n' = ((alpha_n*(1.0-n))-(beta_n*n))

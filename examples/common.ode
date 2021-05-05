@@ -1,0 +1,13 @@
+fn stim(t) {
+
+	if(t > 10 and t < 10.5) {
+		return 20;
+	}
+
+	return 0;
+
+}
+
+fn calc_E_Na(E_R) {
+	return E_R + 115.0
+}
