@@ -72,3 +72,4 @@ fabric.properties
 
 bin/
 build/
+.ccls-cache
