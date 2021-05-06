@@ -74,3 +74,5 @@ bin/
 build/
 .ccls-cache
 *_compiled_model
+examples/*.c
+examples/*auto_compiled_model_out*

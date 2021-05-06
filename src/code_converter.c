@@ -574,7 +574,7 @@ void convert_to_c(program p, FILE *file) {
 			"    return (0);\n"
 			"}\n");
 
-	fprintf(file, "void solve_ode(N_Vector y, float final_t) {\n"
+	fprintf(file, "void solve_ode(N_Vector y, float final_t, char *file_name) {\n"
 			"\n"
 			"    void *cvode_mem = NULL;\n"
 			"    int flag;\n"
@@ -615,7 +615,7 @@ void convert_to_c(program p, FILE *file) {
 			"    int retval;\n"
 			"    realtype t;\n"
 			"\n"
-			"\tFILE *f = fopen(\"out.txt\", \"w\");\n"
+			"\tFILE *f = fopen(file_name, \"w\");\n"
 			"\n"
 			"\twhile(tout < final_t) {\n"
 			"\n"
@@ -647,7 +647,7 @@ void convert_to_c(program p, FILE *file) {
 			"\n"
 			"\tset_initial_conditions(x0);\n"
 			"\n"
-			"\tsolve_ode(x0, strtod(argv[1], NULL));\n"
+			"\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
 			"\n"
 			"\n"
 			"\treturn (0);\n"
