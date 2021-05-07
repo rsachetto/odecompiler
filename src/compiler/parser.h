@@ -39,6 +39,6 @@ enum operator_precedence peek_precedence(parser *p);
 enum operator_precedence cur_precedence(parser *p);
 ast * parse_statement(parser *p);
 void print_program(program p);
-void check_parser_errors(parser *p);
+bool check_parser_errors(parser *p, bool exit_on_error);
 
 #endif /* __PARSER_H */

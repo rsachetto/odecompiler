@@ -21,12 +21,12 @@ void print_program(program p) {
 
 }
 
-void check_parser_errors(parser *p) {
+bool check_parser_errors(parser *p, bool exit_on_error) {
 
 	int err_len = arrlen(p->errors);
 
 	if (!err_len) {
-		return;
+		return false;
 	}
 
 	fprintf(stderr, "parser has %d errors\n", err_len);
@@ -35,7 +35,12 @@ void check_parser_errors(parser *p) {
 		fprintf(stderr, "%s", p->errors[i]);
 	}
 
-	exit(1);
+    if(exit_on_error) {
+        exit(1);
+    }
+    else {
+        return true;
+    }
 }
 
 parser * new_parser(lexer *l) {
@@ -515,7 +520,7 @@ ast * parse_statement(parser *p) {
         return parse_assignment_statement(p, ast_global_stmt, false);
     }
 
-	if(cur_token_is(p, RETURN)) {
+	if(cur_token_is(p, RETURN_STMT)) {
 		return parse_return_statement(p);
 	}
 

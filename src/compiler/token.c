@@ -30,7 +30,7 @@ token_type lookup_ident(char *ident) {
 	if (STRING_EQUALS(ident, "else"))
 		return ELSE;
 	if (STRING_EQUALS(ident, "return"))
-		return RETURN;
+		return RETURN_STMT;
 	if (STRING_EQUALS(ident, "while"))
 		return WHILE;
 	if (STRING_EQUALS(ident, "initial"))

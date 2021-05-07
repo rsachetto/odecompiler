@@ -1,6 +1,5 @@
-
+#include "file_utils/file_utils.h"
 #include "code_converter.h"
-#include "compiler/helpers.h"
 #include "stb/stb_ds.h"
 
 #define NO_SPACES  ""
@@ -272,6 +271,27 @@ void write_odes_old_values(program p, FILE *file) {
 
 }
 
+sds out_file_header(program p) {
+
+
+    sds ret = sdsempty();
+
+	int n_stmt = arrlen(p);
+
+	ret = sdscatprintf(ret, "\"#t");
+
+    ast *a ;
+	for(int i = 0; i < n_stmt; i++) {
+		a = p[i];
+	    ret = sdscatprintf(ret, ", %.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+	}
+
+    ret = sdscat(ret, "\\n\"");
+
+    return ret;
+}
+
+
 void write_variables(program p, FILE *file, declared_variable_hash *declared_variables) {
 
 	int n_stmt = arrlen(p);
@@ -371,7 +391,7 @@ void process_imports(ast **imports, ast ***functions) {
         parser *p = new_parser(l);
         program program = parse_program(p);
 
-        check_parser_errors(p);
+        check_parser_errors(p, true);
 
         int n_stmt = arrlen(program);
         for(int s = 0; s < n_stmt; s++) {
@@ -499,6 +519,12 @@ void convert_to_c(program p, FILE *file) {
         }
 	}
 
+    if(arrlen(odes) == 0) {
+        fprintf(stderr, "Error - no odes defined\n");
+    }
+
+    sds out_header = out_file_header(odes);
+
     process_imports(imports, &functions);
 
 	fprintf(file,"#include <cvode/cvode.h>\n"
@@ -610,35 +636,35 @@ void convert_to_c(program p, FILE *file) {
 			"    if(check_flag((void *)&flag, \"CVodeSetLinearSolver\", 1))\n"
 			"        return;\n"
 			"\n"
-			"\trealtype dt=0.01;\n"
+			"    realtype dt=0.01;\n"
 			"    realtype tout = dt;\n"
 			"    int retval;\n"
 			"    realtype t;\n"
 			"\n"
-			"\tFILE *f = fopen(file_name, \"w\");\n"
+			"    FILE *f = fopen(file_name, \"w\");\n"
+			"    fprintf(f, %s);\n"
+			"    while(tout < final_t) {\n"
 			"\n"
-			"\twhile(tout < final_t) {\n"
+			"        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
 			"\n"
-			"\t\tretval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
+			"        if(retval == CV_SUCCESS) {"
+			"            fprintf(f, \"%%lf \", t);\n"
+			"            for(int i = 0; i < NEQ; i++) {\n"
+			"                fprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
+			"            }\n"
 			"\n"
-			"\t\tif(retval == CV_SUCCESS) {\t\t\t\n"
-			"\t        fprintf(f, \"%%lf \", t);\n"
-			"\t\t\tfor(int i = 0; i < NEQ; i++) {\n"
-			"\t        \tfprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
-			"\t\t\t} \n"
-			"\t        \n"
-			"\t\t\tfprintf(f, \"\\n\");\n"
+			"            fprintf(f, \"\\n\");\n"
 			"\n"
-			"\t\t\ttout+=dt;\n"
-			"\t\t}\n"
+			"            tout+=dt;\n"
+			"        }\n"
 			"\n"
-			"\t}\n"
+			"    }\n"
 			"\n"
 			"    // Free the linear solver memory\n"
 			"    SUNLinSolFree(LS);\n"
 			"    SUNMatDestroy(A);\n"
 			"    CVodeFree(&cvode_mem);\n"
-			"}\n", "solve_model");
+			"}\n", "solve_model", out_header);
 
 
 	fprintf(file, "\nint main(int argc, char **argv) {\n"

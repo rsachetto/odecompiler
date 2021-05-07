@@ -20,8 +20,8 @@ SDS=src/string/sds.c src/string/sds.h
 FILE_UTILS=src/file_utils/file_utils.c src/file_utils/file_utils.h
 C_CONVERTER=src/code_converter.c src/code_converter.h
 
-ode_shell: src/ode_shell.c file_utils.o sds.o
-	gcc -g src/ode_shell.c build/file_utils.o build/sds.o -o bin/ode_shell -lreadline
+ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
+	gcc -g src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/ode_shell -lreadline
 
 ode_compiler: src/ode_compiler.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
 	gcc -g src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec

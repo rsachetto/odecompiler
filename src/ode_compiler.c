@@ -2,8 +2,6 @@
 #include <stdlib.h>
 
 #include "compiler/parser.h"
-#include "compiler/helpers.h"
-
 #include "code_converter.h"
 
 #include "file_utils/file_utils.h"
@@ -31,7 +29,7 @@ int main(int argc, char **argv) {
 	parser *p = new_parser(l);
 	program program = parse_program(p);
 
-	check_parser_errors(p);	
+	check_parser_errors(p, true);
 	
 	FILE *outfile = fopen(argv[2], "w");
 	convert_to_c(program, outfile);	

@@ -1,0 +1,11 @@
+
+alpha = 1
+beta  = 1
+delta = 1
+gamma = 1
+
+initial x = 2
+initial y = 2
+
+ode x' = x*(alpha - beta*y)
+ode y' = y*(delta*x- gamma)
