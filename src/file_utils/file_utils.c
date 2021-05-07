@@ -17,6 +17,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 int get_step_from_filename(char *filename) {
     char *ia = filename;
@@ -496,11 +498,20 @@ void create_dir(char *out_dir) {
     free(new_dir);
 }
 
-
 char *get_executable_dir() {
         char buf[PATH_MAX];
         readlink("/proc/self/exe", buf, PATH_MAX);
         char *dir = get_dir_from_path(buf);
         return dir;
+}
+
+const char *get_home_dir() {
+    const char *homedir;
+
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+
+    return homedir;
 }
 

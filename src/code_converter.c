@@ -252,27 +252,34 @@ static sds ast_to_c(ast *a, declared_variable_hash declared_variables_in_scope) 
 
 }
 
-void write_initial_conditions(program p, FILE *file, declared_variable_hash declared_variables_in_scope) {
+void write_initial_conditions(program p, FILE *file, declared_variable_hash declared_variables_in_scope, solver_type solver) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
 		ast *a = p[i];
-		fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+        if(solver == CVODE_SOLVER) {
+            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+        }
+        else if(solver == EULER_ADPT_SOLVER) {
+            fprintf(file, "    x0[%d] = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+        }
 	}
 }
 
-void write_odes_old_values(program p, FILE *file) {
+void write_odes_old_values(program p, FILE *file, solver_type solver) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
-		ast *a = p[i];
-		fprintf(file, "    const real %.*s =  NV_Ith_S(sv, %d);\n", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value, i);
-	}
-
+        ast *a = p[i];
+        if (solver == CVODE_SOLVER) {
+            fprintf(file, "    const real %.*s =  NV_Ith_S(sv, %d);\n", (int) strlen(a->assignement_stmt.name->identifier.value) - 1, a->assignement_stmt.name->identifier.value, i);
+        } else if (solver == EULER_ADPT_SOLVER) {
+            fprintf(file, "    const real %.*s =  sv[%d];\n", (int) strlen(a->assignement_stmt.name->identifier.value) - 1, a->assignement_stmt.name->identifier.value, i);
+        }
+    }
 }
 
 sds out_file_header(program p) {
-
 
     sds ret = sdsempty();
 
@@ -323,12 +330,17 @@ void write_variables(program p, FILE *file, declared_variable_hash *declared_var
 
 }
 
-void write_odes(program p, FILE *file, declared_variable_hash declared_variables_in_scope) {
+void write_odes(program p, FILE *file, declared_variable_hash declared_variables_in_scope, solver_type solver) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
 		ast *a = p[i];
-		fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n",  i, ast_to_c(a->assignement_stmt.value,  declared_variables_in_scope));
+        if(solver == CVODE_SOLVER) {
+            fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope));
+        }
+        else if(solver == EULER_ADPT_SOLVER) {
+            fprintf(file, "    rDY[%d] = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope));
+        }
 
 	}
 
@@ -490,15 +502,342 @@ declared_variable_hash create_scope(ast **odes, ast **functions) {
 	return declared_variables;
 }
 
+void write_cvode_solver(FILE *file, program initial, program globals, program odes, program functions, program variables, sds out_header) {
+    fprintf(file,"#include <cvode/cvode.h>\n"
+                 "#include <math.h>\n"
+                 "#include <nvector/nvector_serial.h>\n"
+                 "#include <stdbool.h>\n"
+                 "#include <stdio.h>\n"
+                 "#include <stdlib.h>\n"
+                 "#include <sundials/sundials_dense.h>\n"
+                 "#include <sundials/sundials_types.h>\n"
+                 "#include <sunlinsol/sunlinsol_dense.h> \n"
+                 "#include <sunmatrix/sunmatrix_dense.h>"
+                 " \n\n");
 
-void convert_to_c(program p, FILE *file) {
+    fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
+    fprintf(file, "typedef realtype real;\n");
 
-	ast **odes = NULL;
-   	ast	**variables = NULL;
-	ast **functions = NULL;
-	ast **initial = NULL;
-    ast **globals = NULL;
-    ast **imports = NULL;
+
+    declared_variable_hash declared_variables = create_scope(odes, functions);
+
+    write_variables(globals, file, &declared_variables);
+    fprintf(file, "\n");
+
+    write_functions(functions, file, declared_variables);
+
+    fprintf(file, "void set_initial_conditions(N_Vector x0) { \n\n");
+    write_initial_conditions(initial, file, declared_variables, CVODE_SOLVER);
+    fprintf(file, "\n}\n\n");
+
+    // RHS CPU
+    fprintf(file, "static int solve_model(realtype time, N_Vector sv, N_Vector rDY, void *f_data) {\n\n");
+
+    fprintf(file, "    //State variables\n");
+    write_odes_old_values(odes, file, CVODE_SOLVER);
+    fprintf(file, "\n");
+
+    fprintf(file, "    //Parameters\n");
+
+    indentation_level++;
+    write_variables(variables, file, &declared_variables);
+    indentation_level--;
+
+    write_odes(odes, file, declared_variables, CVODE_SOLVER);
+
+    fprintf(file, "\n\treturn 0;  \n\n}\n\n");
+
+    fprintf(file, "static int check_flag(void *flagvalue, const char *funcname, int opt) {\n"
+                  "\n"
+                  "    int *errflag;\n"
+                  "\n"
+                  "    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */\n"
+                  "    if(opt == 0 && flagvalue == NULL) {\n"
+                  "\n"
+                  "        fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
+                  "        return (1);\n"
+                  "    }\n"
+                  "\n"
+                  "    /* Check if flag < 0 */\n"
+                  "    else if(opt == 1) {\n"
+                  "        errflag = (int *)flagvalue;\n"
+                  "        if(*errflag < 0) {\n"
+                  "            fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed with flag = %%d\\n\\n\", funcname, *errflag);\n"
+                  "            return (1);\n"
+                  "        }\n"
+                  "    }\n"
+                  "\n"
+                  "    /* Check if function returned NULL pointer - no memory allocated */\n"
+                  "    else if(opt == 2 && flagvalue == NULL) {\n"
+                  "        fprintf(stderr, \"\\nMEMORY_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
+                  "        return (1);\n"
+                  "    }\n"
+                  "\n"
+                  "    return (0);\n"
+                  "}\n");
+
+    fprintf(file, "void solve_ode(N_Vector y, float final_t, char *file_name) {\n"
+                  "\n"
+                  "    void *cvode_mem = NULL;\n"
+                  "    int flag;\n"
+                  "\n"
+                  "    // Set up solver\n"
+                  "    cvode_mem = CVodeCreate(CV_BDF);\n"
+                  "\n"
+                  "    if(cvode_mem == 0) {\n"
+                  "        fprintf(stderr, \"Error in CVodeMalloc: could not allocate\\n\");\n"
+                  "        return;\n"
+                  "    }\n"
+                  "\n"
+                  "    flag = CVodeInit(cvode_mem, %s, 0, y);\n"
+                  "    if(check_flag(&flag, \"CVodeInit\", 1))\n"
+                  "        return;\n"
+                  "\n"
+                  "    flag = CVodeSStolerances(cvode_mem, 1.49012e-6, 1.49012e-6);\n"
+                  "    if(check_flag(&flag, \"CVodeSStolerances\", 1))\n"
+                  "        return;\n"
+                  "\n"
+                  "    // Create dense SUNMatrix for use in linear solver\n"
+                  "    SUNMatrix A = SUNDenseMatrix(NEQ, NEQ);\n"
+                  "    if(check_flag((void *)A, \"SUNDenseMatrix\", 0))\n"
+                  "        return;\n"
+                  "\n"
+                  "    // Create dense linear solver for use by CVode\n"
+                  "    SUNLinearSolver LS = SUNLinSol_Dense(y, A);\n"
+                  "    if(check_flag((void *)LS, \"SUNLinSol_Dense\", 0))\n"
+                  "        return;\n"
+                  "\n"
+                  "    // Attach the linear solver and matrix to CVode by calling CVodeSetLinearSolver\n"
+                  "    flag = CVodeSetLinearSolver(cvode_mem, LS, A);\n"
+                  "    if(check_flag((void *)&flag, \"CVodeSetLinearSolver\", 1))\n"
+                  "        return;\n"
+                  "\n"
+                  "    realtype dt=0.01;\n"
+                  "    realtype tout = dt;\n"
+                  "    int retval;\n"
+                  "    realtype t;\n"
+                  "\n"
+                  "    FILE *f = fopen(file_name, \"w\");\n"
+                  "    fprintf(f, %s);\n"
+                  "    while(tout < final_t) {\n"
+                  "\n"
+                  "        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
+                  "\n"
+                  "        if(retval == CV_SUCCESS) {"
+                  "            fprintf(f, \"%%lf \", t);\n"
+                  "            for(int i = 0; i < NEQ; i++) {\n"
+                  "                fprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
+                  "            }\n"
+                  "\n"
+                  "            fprintf(f, \"\\n\");\n"
+                  "\n"
+                  "            tout+=dt;\n"
+                  "        }\n"
+                  "\n"
+                  "    }\n"
+                  "\n"
+                  "    // Free the linear solver memory\n"
+                  "    SUNLinSolFree(LS);\n"
+                  "    SUNMatDestroy(A);\n"
+                  "    CVodeFree(&cvode_mem);\n"
+                  "}\n", "solve_model", out_header);
+
+
+    fprintf(file, "\nint main(int argc, char **argv) {\n"
+                  "\n"
+                  "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
+                  "\n"
+                  "\tset_initial_conditions(x0);\n"
+                  "\n"
+                  "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
+                  "\n"
+                  "\n"
+                  "\treturn (0);\n"
+                  "}");
+}
+
+void write_adpt_euler_solver(FILE *file, program initial, program globals, program odes, program functions, program variables, sds out_header) {
+    fprintf(file,"#include <math.h>\n"
+                 "#include <stdbool.h>\n"
+                 "#include <stdio.h>\n"
+                 "#include <stdlib.h>\n"
+                 " \n\n");
+
+    fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
+    fprintf(file, "typedef double real;\n");
+
+    declared_variable_hash declared_variables = create_scope(odes, functions);
+
+    write_variables(globals, file, &declared_variables);
+    fprintf(file, "\n");
+
+    write_functions(functions, file, declared_variables);
+
+    fprintf(file, "void set_initial_conditions(real * x0) { \n\n");
+    write_initial_conditions(initial, file, declared_variables, EULER_ADPT_SOLVER);
+    fprintf(file, "\n}\n\n");
+
+    // RHS CPU
+    fprintf(file, "static int solve_model(real time, real *sv, real *rDY) {\n\n");
+
+    fprintf(file, "    //State variables\n");
+    write_odes_old_values(odes, file, EULER_ADPT_SOLVER);
+    fprintf(file, "\n");
+
+    fprintf(file, "    //Parameters\n");
+
+    indentation_level++;
+    write_variables(variables, file, &declared_variables);
+    indentation_level--;
+
+    write_odes(odes, file, declared_variables, EULER_ADPT_SOLVER);
+
+    fprintf(file, "\n\treturn 0;  \n\n}\n\n");
+
+    fprintf(file, "void solve_ode(real *sv, float final_time, char *file_name) {\n"
+                          "\n"
+                          "    real rDY[NEQ];\n"
+                          "\n"
+                          "    real reltol = 1e-5;\n"
+                          "    real abstol = 1e-5;\n"
+                          "    real _tolerances_[NEQ];\n"
+                          "    real _aux_tol = 0.0;\n"
+                          "    //initializes the variables\n"
+                          "    real dt = 0.000001;\n"
+                          "    real time_new = 0.0;\n"
+                          "    real previous_dt = dt;\n"
+                          "\n"
+                          "    real edos_old_aux_[NEQ];\n"
+                          "    real edos_new_euler_[NEQ];\n"
+                          "    real *_k1__ = (real*) malloc(sizeof(real)*NEQ);\n"
+                          "    real *_k2__ = (real*) malloc(sizeof(real)*NEQ);\n"
+                          "    real *_k_aux__;\n"
+                          "\n"
+                          "    const real _beta_safety_ = 0.8;\n"
+                          "\n"
+                          "    const real __tiny_ = pow(abstol, 2.0f);\n"
+                          "\n"
+                          "    if(time_new + dt > final_time) {\n"
+                          "       dt = final_time - time_new;\n"
+                          "    }\n"
+                          "\n"
+                          "    solve_model(time_new, sv, rDY);\n"
+                          "    time_new += dt;\n"
+                          "\n"
+                          "    for(int i = 0; i < NEQ; i++){\n"
+                          "        _k1__[i] = rDY[i];\n"
+                          "    }\n"
+                          "\n"
+                          "    FILE *f = fopen(file_name, \"w\");\n"
+                          "    fprintf(f, %s);\n"
+                          "    while(1) {\n"
+                          "\n"
+                          "        for(int i = 0; i < NEQ; i++) {\n"
+                          "            //stores the old variables in a vector\n"
+                          "            edos_old_aux_[i] = sv[i];\n"
+                          "            //computes euler method\n"
+                          "            edos_new_euler_[i] = _k1__[i] * dt + edos_old_aux_[i];\n"
+                          "            //steps ahead to compute the rk2 method\n"
+                          "            sv[i] = edos_new_euler_[i];\n"
+                          "        }\n"
+                          "\n"
+                          "        time_new += dt;\n"
+                          "        solve_model(time_new, sv, rDY);\n"
+                          "        time_new -= dt;//step back\n"
+                          "\n"
+                          "        double greatestError = 0.0, auxError = 0.0;\n"
+                          "        for(int i = 0; i < NEQ; i++) {\n"
+                          "            // stores the new evaluation\n"
+                          "            _k2__[i] = rDY[i];\n"
+                          "            _aux_tol = fabs(edos_new_euler_[i]) * reltol;\n"
+                          "            _tolerances_[i] = (abstol > _aux_tol) ? abstol : _aux_tol;\n"
+                          "\n"
+                          "            // finds the greatest error between  the steps\n"
+                          "            auxError = fabs(((dt / 2.0) * (_k1__[i] - _k2__[i])) / _tolerances_[i]);\n"
+                          "\n"
+                          "            greatestError = (auxError > greatestError) ? auxError : greatestError;\n"
+                          "        }\n"
+                          "        ///adapt the time step\n"
+                          "        greatestError += __tiny_;\n"
+                          "        previous_dt = dt;\n"
+                          "        ///adapt the time step\n"
+                          "        dt = _beta_safety_ * dt * sqrt(1.0f/greatestError);\n"
+                          "\n"
+                          "        if (time_new + dt > final_time) {\n"
+                          "            dt = final_time - time_new;\n"
+                          "        }\n"
+                          "\n"
+                          "        //it doesn't accept the solution\n"
+                          "        if ((greatestError >= 1.0f) && dt > 0.00000001) {\n"
+                          "            //restore the old values to do it again\n"
+                          "            for(int i = 0;  i < NEQ; i++) {\n"
+                          "                sv[i] = edos_old_aux_[i];\n"
+                          "            }\n"
+                          "            //throw the results away and compute again\n"
+                          "        } else{//it accepts the solutions\n"
+                          "\n"
+                          "            if (time_new + dt > final_time) {\n"
+                          "                dt = final_time - time_new;\n"
+                          "            }\n"
+                          "\n"
+                          "            _k_aux__ = _k2__;\n"
+                          "            _k2__\t= _k1__;\n"
+                          "            _k1__\t= _k_aux__;\n"
+                          "\n"
+                          "            //it steps the method ahead, with euler solution\n"
+                          "            for(int i = 0; i < NEQ; i++){\n"
+                          "                sv[i] = edos_new_euler_[i];\n"
+                          "            }\n"
+
+                          "            fprintf(f, \"%%lf \", time_new);\n"
+                          "            for(int i = 0; i < NEQ; i++) {\n"
+                          "                fprintf(f, \"%%lf \", sv[i]);\n"
+                          "            }\n"
+                          "\n"
+                          "            fprintf(f, \"\\n\");\n"
+
+                          "\n"
+                          "            if(time_new + previous_dt >= final_time) {\n"
+                          "                if(final_time == time_new) {\n"
+                          "                    break;\n"
+                          "                } else if(time_new < final_time) {\n"
+                          "                    dt = previous_dt = final_time - time_new;\n"
+                          "                    time_new += previous_dt;\n"
+                          "                    break;\n"
+                          "                }\n"
+                          "            } else {\n"
+                          "                time_new += previous_dt;\n"
+                          "            }\n"
+                          "\n"
+                          "        }\n"
+                          "    }\n"
+                          "\n"
+                          "    free(_k1__);\n"
+                          "    free(_k2__);\n"
+                          "}",  out_header);
+
+
+    fprintf(file, "\nint main(int argc, char **argv) {\n"
+                  "\n"
+                  "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
+                  "\n"
+                  "\tset_initial_conditions(x0);\n"
+                  "\n"
+                  "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
+                  "\n"
+                  "\n"
+                  "\treturn (0);\n"
+                  "}");
+}
+
+void convert_to_c(program p, FILE *file, solver_type solver) {
+
+	program odes = NULL;
+   	program variables = NULL;
+	program functions = NULL;
+	program initial = NULL;
+    program globals = NULL;
+    program imports = NULL;
 
 	int n_stmt = arrlen(p);
 
@@ -527,155 +866,15 @@ void convert_to_c(program p, FILE *file) {
 
     process_imports(imports, &functions);
 
-	fprintf(file,"#include <cvode/cvode.h>\n"
-			"#include <math.h>\n"
-			"#include <nvector/nvector_serial.h>\n"
-			"#include <stdbool.h>\n"
-			"#include <stdio.h>\n"
-			"#include <stdlib.h>\n"
-			"#include <sundials/sundials_dense.h>\n"
-			"#include <sundials/sundials_types.h>\n"
-			"#include <sunlinsol/sunlinsol_dense.h> \n"
-			"#include <sunmatrix/sunmatrix_dense.h>"
-			" \n\n");
+    switch (solver) {
+        case CVODE_SOLVER:
+            write_cvode_solver(file, initial, globals, odes, functions, variables, out_header);
+            break;
+        case EULER_ADPT_SOLVER:
+            write_adpt_euler_solver(file, initial, globals, odes, functions, variables, out_header);
+            break;
+        default:
+            fprintf(stderr, "Error: invalid solver type!\n");
+    }
 
-	fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
-	fprintf(file, "typedef realtype real;\n");
-
-
-	declared_variable_hash declared_variables = create_scope(odes, functions);
-
-    write_variables(globals, file, &declared_variables);
-    fprintf(file, "\n");
-
-	write_functions(functions, file, declared_variables);
-
-	fprintf(file, "void set_initial_conditions(N_Vector x0) { \n\n");
-	write_initial_conditions(initial, file, declared_variables);
-	fprintf(file, "\n}\n\n");
-
-	// RHS CPU
-	fprintf(file, "static int solve_model(realtype time, N_Vector sv, N_Vector rDY, void *f_data) {\n\n");
-
-	fprintf(file, "    //State variables\n");
-	write_odes_old_values(odes, file);
-	fprintf(file, "\n");
-
-	fprintf(file, "    //Parameters\n");
-
-    indentation_level++;
-    write_variables(variables, file, &declared_variables);
-    indentation_level--;
-
-    write_odes(odes, file, declared_variables);
-
-	fprintf(file, "\n\treturn 0;  \n\n}\n\n");
-
-	fprintf(file, "static int check_flag(void *flagvalue, const char *funcname, int opt) {\n"
-			"\n"
-			"    int *errflag;\n"
-			"\n"
-			"    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */\n"
-			"    if(opt == 0 && flagvalue == NULL) {\n"
-			"\n"
-			"        fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
-			"        return (1);\n"
-			"    }\n"
-			"\n"
-			"    /* Check if flag < 0 */\n"
-			"    else if(opt == 1) {\n"
-			"        errflag = (int *)flagvalue;\n"
-			"        if(*errflag < 0) {\n"
-			"            fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed with flag = %%d\\n\\n\", funcname, *errflag);\n"
-			"            return (1);\n"
-			"        }\n"
-			"    }\n"
-			"\n"
-			"    /* Check if function returned NULL pointer - no memory allocated */\n"
-			"    else if(opt == 2 && flagvalue == NULL) {\n"
-			"        fprintf(stderr, \"\\nMEMORY_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
-			"        return (1);\n"
-			"    }\n"
-			"\n"
-			"    return (0);\n"
-			"}\n");
-
-	fprintf(file, "void solve_ode(N_Vector y, float final_t, char *file_name) {\n"
-			"\n"
-			"    void *cvode_mem = NULL;\n"
-			"    int flag;\n"
-			"\n"
-			"    // Set up solver\n"
-			"    cvode_mem = CVodeCreate(CV_BDF);\n"
-			"\n"
-			"    if(cvode_mem == 0) {\n"
-			"        fprintf(stderr, \"Error in CVodeMalloc: could not allocate\\n\");\n"
-			"        return;\n"
-			"    }\n"
-			"\n"
-			"    flag = CVodeInit(cvode_mem, %s, 0, y);\n"
-			"    if(check_flag(&flag, \"CVodeInit\", 1))\n"
-			"        return;\n"
-			"\n"
-			"    flag = CVodeSStolerances(cvode_mem, 1.49012e-6, 1.49012e-6);\n"
-			"    if(check_flag(&flag, \"CVodeSStolerances\", 1))\n"
-			"        return;\n"
-			"\n"
-			"    // Create dense SUNMatrix for use in linear solver\n"
-			"    SUNMatrix A = SUNDenseMatrix(NEQ, NEQ);\n"
-			"    if(check_flag((void *)A, \"SUNDenseMatrix\", 0))\n"
-			"        return;\n"
-			"\n"
-			"    // Create dense linear solver for use by CVode\n"
-			"    SUNLinearSolver LS = SUNLinSol_Dense(y, A);\n"
-			"    if(check_flag((void *)LS, \"SUNLinSol_Dense\", 0))\n"
-			"        return;\n"
-			"\n"
-			"    // Attach the linear solver and matrix to CVode by calling CVodeSetLinearSolver\n"
-			"    flag = CVodeSetLinearSolver(cvode_mem, LS, A);\n"
-			"    if(check_flag((void *)&flag, \"CVodeSetLinearSolver\", 1))\n"
-			"        return;\n"
-			"\n"
-			"    realtype dt=0.01;\n"
-			"    realtype tout = dt;\n"
-			"    int retval;\n"
-			"    realtype t;\n"
-			"\n"
-			"    FILE *f = fopen(file_name, \"w\");\n"
-			"    fprintf(f, %s);\n"
-			"    while(tout < final_t) {\n"
-			"\n"
-			"        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
-			"\n"
-			"        if(retval == CV_SUCCESS) {"
-			"            fprintf(f, \"%%lf \", t);\n"
-			"            for(int i = 0; i < NEQ; i++) {\n"
-			"                fprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
-			"            }\n"
-			"\n"
-			"            fprintf(f, \"\\n\");\n"
-			"\n"
-			"            tout+=dt;\n"
-			"        }\n"
-			"\n"
-			"    }\n"
-			"\n"
-			"    // Free the linear solver memory\n"
-			"    SUNLinSolFree(LS);\n"
-			"    SUNMatDestroy(A);\n"
-			"    CVodeFree(&cvode_mem);\n"
-			"}\n", "solve_model", out_header);
-
-
-	fprintf(file, "\nint main(int argc, char **argv) {\n"
-			"\n"
-			"\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
-			"\n"
-			"\tset_initial_conditions(x0);\n"
-			"\n"
-			"\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
-			"\n"
-			"\n"
-			"\treturn (0);\n"
-			"}");
 }

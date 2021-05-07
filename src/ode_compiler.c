@@ -32,7 +32,8 @@ int main(int argc, char **argv) {
 	check_parser_errors(p, true);
 	
 	FILE *outfile = fopen(argv[2], "w");
-	convert_to_c(program, outfile);	
+    //TODO: command line switch to choose the solver
+	convert_to_c(program, outfile, CVODE_SOLVER);
 	fclose(outfile);
 
 }

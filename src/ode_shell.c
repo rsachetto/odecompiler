@@ -63,7 +63,7 @@ struct shell_variables {
 #define CMD_PLOT_SET_X "plotsetx"
 #define CMD_PLOT_SET_Y "plotsety"
 
-#define HISTORY_FILE "~/.ode_history"
+#define HISTORY_FILE ".ode_history"
 
 #define CHECK_ARGS(command, expected, received)                                  \
     do {                                                                         \
@@ -314,12 +314,9 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         model_config->xindex = 1;
         model_config->yindex = 2;
 
-
-
         FILE *outfile = fopen(compiled_file, "w");
-        convert_to_c(model_config->program, outfile);
+        convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
         fclose(outfile);
-
 
         model_config->xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
         model_config->ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
@@ -544,7 +541,6 @@ void setup_ctrl_c_handler() {
 
 int main(int argc, char **argv) {
 
-
     rl_attempted_completion_function = command_completion;
 
     struct shell_variables shell_state = {0};
@@ -555,7 +551,10 @@ int main(int argc, char **argv) {
     shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
 
-    read_history(HISTORY_FILE);
+    sds history_path = sdsnew(get_home_dir());
+    history_path = sdscatfmt(history_path, "/%s", HISTORY_FILE);
+
+    read_history(history_path);
 
     setup_ctrl_c_handler();
 
@@ -570,13 +569,16 @@ int main(int argc, char **argv) {
             add_history(line);
             command = sdsnew(line);
             command = sdstrim(command, "\n ");
+            if(STR_EQUALS(command, CMD_EXIT)) {
+                break;
+            }
             parse_and_execute_command(command, &shell_state);
             sdsfree(command);
         }
     }
 
     printf("\n");
-    write_history(HISTORY_FILE);
+    write_history(history_path);
     exit(0);
 
 }

@@ -44,6 +44,7 @@ int remove_directory(const char *path);
 char *get_dir_from_path(const char *path);
 char *get_file_from_path(const char *path);
 char *get_executable_dir();
+const char *get_home_dir();
 
 FILE *open_file_or_exit(char *filename, char *mode);
 
