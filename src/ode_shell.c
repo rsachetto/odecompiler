@@ -1,6 +1,4 @@
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
 #include <linux/limits.h>
 #include <math.h>
 #include <readline/history.h>
@@ -49,19 +47,24 @@ struct shell_variables {
     char *last_loaded_model;
     FILE *gnuplot_handle;
 };
+void run_commands_from_file(char *file_name, struct shell_variables *shell_state);
 
 #define STR_EQUALS(s1, s2) (strcmp((s1), (s2)) == 0)
 #define PROMPT "ode_shell> "
 
-#define CMD_EXIT "quit"
-#define CMD_LOAD "load"
-#define CMD_RUN  "run"
-#define CMD_PLOT "plot"
-#define CMD_REPLOT "replot"
-#define CMD_LIST "list"
-#define CMD_VARS "vars"
+#define CMD_EXIT        "quit"
+#define CMD_LOAD        "load"
+#define CMD_RUN         "run"
+#define CMD_PLOT        "plot"
+#define CMD_REPLOT      "replot"
+#define CMD_LIST        "list"
+#define CMD_VARS        "vars"
 #define CMD_PLOT_SET_X "plotsetx"
 #define CMD_PLOT_SET_Y "plotsety"
+#define CMD_CD          "cd"
+#define CMD_LS          "ls"
+#define CMD_PWD         "pwd"
+#define CMD_LOAD_CMDS   "load_cmds"
 
 #define HISTORY_FILE ".ode_history"
 
@@ -81,7 +84,7 @@ void  ctrl_c_handler(int sig) {
 
 char *command_generator(const char *text, int state) {
 
-    static char *commands[] = {CMD_EXIT, CMD_LOAD, CMD_RUN, CMD_PLOT, CMD_REPLOT, CMD_LIST, CMD_VARS, CMD_PLOT_SET_X, CMD_PLOT_SET_Y};
+    static char *commands[] = {CMD_EXIT, CMD_LOAD, CMD_RUN, CMD_PLOT, CMD_REPLOT, CMD_LIST, CMD_VARS, CMD_PLOT_SET_X, CMD_PLOT_SET_Y, CMD_CD, CMD_LS, CMD_PWD, CMD_LOAD_CMDS};
 
     static string_array matches = NULL;
     static size_t match_index = 0;
@@ -95,8 +98,8 @@ char *command_generator(const char *text, int state) {
         sds textstr = sdsnew(text);
         for (int i = 0; i < len; i++) {
             char *word = commands[i];
-            int wlen = strlen(word);
-            int tlen = strlen(textstr);
+            size_t wlen = strlen(word);
+            size_t tlen = strlen(textstr);
 
             if (wlen >= sdslen(textstr) &&  strncmp(word, textstr, tlen) == 0) {
                 arrput(matches, word);
@@ -124,7 +127,7 @@ void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
 
   fputs("\n", handle);
   fflush(handle);
-  return;
+
 }
 
 bool check_command_number_argument(const char* command, int expected_args, int num_args) {
@@ -132,7 +135,6 @@ bool check_command_number_argument(const char* command, int expected_args, int n
         printf("Error: command %s accept %d argument(s). %d argument(s) given!\n", command, expected_args, num_args);
         return false;
     }
-
     return true;
 }
 
@@ -172,7 +174,7 @@ double string_to_double(char *string) {
 long string_to_long(char *string, bool *error) {
 
     char *endptr = NULL;
-    double result = 0;
+    long result;
     *error = false;
 
     /* reset errno to 0 before call */
@@ -186,9 +188,7 @@ long string_to_long(char *string, bool *error) {
     }
 
     return result;
-
 }
-
 
 bool generate_program(char *file_name, struct model_config *model) {
 
@@ -263,16 +263,13 @@ struct model_config *load_model_config(struct shell_variables *shell_state, sds 
 }
 
 char * get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
-
     int len = shlen(var_indexes);
 
     for(int i = 0; i < len; i++) {
         if(var_indexes[i].value == index)
             return var_indexes[i].key;
     }
-
     return NULL;
-
 }
 
 void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
@@ -288,33 +285,31 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     if(STR_EQUALS(tokens[0], CMD_EXIT)) {
         CHECK_ARGS(command, 0, num_args);
-        exit(0);
     }
     else if(STR_EQUALS(command, CMD_LOAD)) {
-
-        //TODO: generate all files in a tmp folder
 
         CHECK_ARGS(command, 1, num_args);
 
         char *model_name = get_filename_without_ext(tokens[1]);
 
         sds compiled_file = sdsnew(model_name);
-        compiled_file = sdscat(compiled_file, ".c");
+        compiled_file = sdscat(compiled_file, "_XXXXXX.c");
 
-        //TODO: check this with models in different folders
         struct model_config *model_config = calloc(1, sizeof(struct model_config));
 
         bool error = generate_program(tokens[1], model_config);
 
         if(error) return;
 
-        sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model", model_name);
+        sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_name);
         model_config->model_command = compiled_model_name;
 
         model_config->xindex = 1;
         model_config->yindex = 2;
 
-        FILE *outfile = fopen(compiled_file, "w");
+        int fd = mkstemps(compiled_file, 2);
+
+        FILE *outfile = fdopen(fd, "w");
         convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
         fclose(outfile);
 
@@ -324,12 +319,13 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         shput(shell_state->loaded_models, model_name, model_config);
         shell_state->last_loaded_model = strdup(model_name);
 
-        //TODO: we need to ship cvode with the compiler
-        sds compiler_command = sdsnew("gcc -I /home/sachetto/sundials/instdir/include ");
-        compiler_command = sdscatfmt(compiler_command, "%s -o %s -lm -L/home/sachetto/sundials/instdir/lib -lsundials_cvode", compiled_file, compiled_model_name);
+        sds compiler_command = sdsnew("gcc");
+        compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, compiled_model_name);
 
         FILE *fp = popen(compiler_command, "r");
         error = check_and_print_execution_errors(fp);
+
+        unlink(compiled_file);
 
         //Clean
         pclose(fp);
@@ -399,7 +395,6 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
             return;
         }
 
-        //TODO: do we need to pclose this?
         if(shell_state->gnuplot_handle == NULL) {
             if(STR_EQUALS(command, CMD_REPLOT)) {
                 printf ("Error executing command %s. no previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
@@ -476,7 +471,7 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         }
 
         bool index_as_str;
-        int index = string_to_long(index_str, &index_as_str);
+        int index = (int)string_to_long(index_str, &index_as_str);
 
         if(index_as_str) {
             //string was passed, try to get the index from the var_indexes on model_config
@@ -490,7 +485,7 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
         char *var_name = NULL;
 
-        if(index_as_str) {
+        if(!index_as_str) {
 
             var_name = get_var_name_from_index(model_config->var_indexes, index);
 
@@ -519,10 +514,46 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
                 model_config->ylabel = strdup(var_name);
             }
         }
-
         return;
+    }
+    else if(STR_EQUALS(command, CMD_CD)) {
+        CHECK_ARGS(command, 1, num_args);
+        char *path = tokens[1];
 
+        int ret = chdir(path);
+        if(ret == -1) {
+            printf("Error changing working directory to %s\n", path);
+        }
+        else {
+           print_current_dir();
+        }
+    }
+    else if(STR_EQUALS(command, CMD_PWD)) {
+        CHECK_ARGS(command, 0, num_args);
+        print_current_dir();
+    }
+    else if(STR_EQUALS(command, CMD_LOAD_CMDS)) {
+        CHECK_ARGS(command, 1, num_args);
+        char *file_name = tokens[1];
+        run_commands_from_file(file_name, shell_state);
+    }
+    else if(STR_EQUALS(command, CMD_LS)) {
 
+        if(num_args != 0 && num_args != 1) {
+            printf("Error: command %s accept 0 or 1 argument(s). %d argument(s) given!\n", command, num_args);
+            return;
+        }
+
+        char *path_name;
+
+        if(num_args == 0) {
+            path_name = ".";
+        }
+        else {
+            path_name = tokens[1];
+        }
+
+        print_path_contents(path_name);
     }
     else {
         printf("Invalid command: %s\n", command);
@@ -539,17 +570,49 @@ void setup_ctrl_c_handler() {
     sigaction(SIGINT, &s, NULL);
 }
 
+void run_commands_from_file(char *file_name, struct shell_variables *shell_state) {
+    if (!file_exists(file_name)) {
+        printf("File %s does not exist!\n", file_name);
+    } else {
+        FILE *f = fopen(file_name, "r");
+
+        if (!f) {
+            printf("Error opening file %s for reading!\n", file_name);
+        } else {
+            char *line = NULL;
+            size_t len = 0;
+            sds command;
+
+            while ((getline(&line, &len, f)) != -1) {
+                command = sdsnew(line);
+                command = sdstrim(command, "\n ");
+                add_history(command);
+                parse_and_execute_command(command, shell_state);
+                printf("%s%s\n", PROMPT, command);
+                sdsfree(command);
+            }
+
+            fclose(f);
+            if (line)
+                free(line);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
+
+    print_current_dir();
 
     rl_attempted_completion_function = command_completion;
 
     struct shell_variables shell_state = {0};
 
-    sds command;
-    char *line;
-
     shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
+
+    if(argc == 2) {
+        run_commands_from_file(argv[1], &shell_state);
+    }
 
     sds history_path = sdsnew(get_home_dir());
     history_path = sdscatfmt(history_path, "/%s", HISTORY_FILE);
@@ -558,22 +621,35 @@ int main(int argc, char **argv) {
 
     setup_ctrl_c_handler();
 
+    sds command;
+    char *line;
+
     //if CTRL+C is pressed, we print a new line
     if (sigsetjmp(env, 1) == 42) {
         printf("\n");
     }
 
-    //TODO: allow the user to pass a command input file
     while ((line = readline(PROMPT)) != 0) {
         if(*line) {
-            add_history(line);
             command = sdsnew(line);
             command = sdstrim(command, "\n ");
+            add_history(command);
             if(STR_EQUALS(command, CMD_EXIT)) {
                 break;
             }
             parse_and_execute_command(command, &shell_state);
             sdsfree(command);
+        }
+    }
+
+    int n_models = shlen(shell_state.loaded_models);
+    for(int i = 0; i < n_models; i++) {
+        struct model_config *config = shell_state.loaded_models[i].value;
+        if(config->output_file) {
+            unlink(config->output_file);
+        }
+        if(config->model_command) {
+            unlink(config->model_command);
         }
     }
 

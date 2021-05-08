@@ -10,8 +10,13 @@ typedef struct assignement_statement_t {
     struct ast_t *value;
 } assignement_statement;
 
+typedef struct grouped_assignement_statement_t {
+    struct ast_t **names;
+    struct ast_t *call_expr;
+} grouped_assignement_statement;
+
 typedef struct return_statement_t {
-    struct ast_t *return_value;
+    struct ast_t **return_values;
 } return_statement;
 
 typedef struct import_statement_t {
@@ -60,6 +65,7 @@ typedef struct function_statement_t {
     struct ast_t *name;
     struct ast_t **parameters;
     struct ast_t **body;
+    bool has_grouped_return;
 } function_statement;
 
 typedef struct call_expression_t {
@@ -70,6 +76,7 @@ typedef struct call_expression_t {
 typedef enum ast_tag_t {
     ast_identifier,
     ast_assignment_stmt,
+    ast_grouped_assignment_stmt,
 	ast_function_statement,
     ast_ode_stmt,
     ast_initial_stmt,
@@ -107,6 +114,7 @@ typedef struct ast_t {
         function_statement function_stmt;
         call_expression call_expr;
         import_statement import_stmt;
+        grouped_assignement_statement grouped_assignement_stmt;
 
         struct ast_t *expr_stmt;
     };
@@ -117,6 +125,7 @@ typedef ast **program;
 
 char *token_literal(ast *ast);
 ast *make_assignement_stmt(token t, ast_tag tag);
+ast *make_grouped_assignement_stmt(token t);
 ast *make_identifier(token t, char *name);
 ast *make_return_stmt(token t);
 ast *make_while_stmt(token t);

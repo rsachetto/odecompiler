@@ -14,45 +14,93 @@
 int indentation_level = 0;
 char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
 
-static sds ast_to_c(ast *a, declared_variable_hash declared_variables_in_scope);
+static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope);
 
-static sds expression_stmt_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds expression_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
 	if (a->expr_stmt != NULL) {
-		return ast_to_c(a->expr_stmt, declared_variables_in_scope);
+		return ast_to_c(a->expr_stmt, declared_variables_in_scope, global_scope);
 	}
 	return sdsempty();
 }
 
-static sds return_stmt_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds return_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
 	sds buf = sdsempty();
 
 	buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
 
-	if(a->return_stmt.return_value != NULL) {
-		buf = sdscat(buf, ast_to_c(a->return_stmt.return_value, declared_variables_in_scope));
-	}
+    if(a->return_stmt.return_values != NULL) {
+        int n = arrlen(a->return_stmt.return_values);
+        buf = sdscat(buf, ast_to_c(a->return_stmt.return_values[0], declared_variables_in_scope, global_scope));
+
+        for(int i = 1; i < n; i++) {
+            buf = sdscatfmt(buf, ", %s", ast_to_c(a->return_stmt.return_values[i], declared_variables_in_scope, global_scope));
+        }
+    }
 
 	buf = sdscat(buf, ";");
 	return buf;
 }
 
-static sds assignement_stmt_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
 	sds buf = sdsempty();
+    char *var_type;
 
-	buf = sdscatfmt(buf, "%s ", token_literal(a));
-	buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
-	buf = sdscat(buf, " = ");
+    if (a->tag == ast_assignment_stmt) {
 
+        if (a->assignement_stmt.value->tag == ast_boolean_literal || a->assignement_stmt.value->tag == ast_if_expr) {
+            var_type = "bool";
+        } else if (a->assignement_stmt.value->tag == ast_string_literal) {
+            var_type = "char *";
+        } else {
+            var_type = "real";
+        }
 
-	if(a->assignement_stmt.value != NULL) {
-		buf = sdscat(buf, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope));
-	}
+        int global = shget(global_scope, a->assignement_stmt.name->identifier.value);
 
-	return buf;
+        if(global) {
+            buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
+        }
 
+        else {
+            int declared = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
+
+            if (!declared) {
+                buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
+                shput(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value, 1);
+            } else {
+                buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
+            }
+        }
+    }
+    else if (a->tag == ast_grouped_assignment_stmt) {
+        //TODO: check if the variables are declared
+        ast **variables = a->grouped_assignement_stmt.names;
+        int len = arrlen(variables);
+
+        buf = sdscatfmt(buf, "%s[", indent_spaces[indentation_level]);
+
+        int n = arrlen(variables);
+
+        declared_variable_hash declared_variables_in_parameters_list = NULL;
+        shdefault(declared_variables_in_parameters_list, 0);
+        sh_new_arena(declared_variables_in_parameters_list);
+
+        if(n) {
+            shput(declared_variables_in_parameters_list, variables[0]->identifier.value, 1);
+            buf = sdscatfmt(buf, "%s", ast_to_c(variables[0], &declared_variables_in_parameters_list, global_scope));
+            for(int j = 1; j < n; j++) {
+                shput(declared_variables_in_parameters_list, variables[j]->identifier.value, 1);
+                buf = sdscatfmt(buf, ", %s", ast_to_c(variables[j], &declared_variables_in_parameters_list, global_scope));
+            }
+        }
+
+        buf = sdscatfmt(buf, "] = ");
+        buf = sdscatfmt(buf, "%s;\n", ast_to_c(a->grouped_assignement_stmt.call_expr, declared_variables_in_scope, global_scope));
+    }
+    return buf;
 }
 
 static char* number_literal_to_c(ast *a) {
@@ -61,8 +109,8 @@ static char* number_literal_to_c(ast *a) {
 	return strdup(buf);
 }
 
-static sds identifier_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
-    int declared = shget(declared_variables_in_scope, a->identifier.value);
+static sds identifier_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
+    int declared = shget(*declared_variables_in_scope, a->identifier.value) || shget(global_scope, a->identifier.value);
 
     if(!declared) {
         fprintf(stderr, "Error on line %d of file %s. Identifier %s not declared, assign a value to it before using!\n", a->token.line_number, a->token.file_name, a->identifier.value);
@@ -85,26 +133,26 @@ static sds string_literal_to_c(ast *a) {
     return buf;
 }
 
-static sds prefix_expr_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds prefix_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
 	sds buf = sdsempty();
 
 	buf = sdscat(buf, "(");
     buf = sdscatfmt(buf, "%s", a->prefix_expr.op);
 
-	buf = sdscatfmt(buf, "%s", ast_to_c(a->prefix_expr.right, declared_variables_in_scope));
+	buf = sdscatfmt(buf, "%s", ast_to_c(a->prefix_expr.right, declared_variables_in_scope, global_scope));
 	buf = sdscat(buf, ")");
 
 	return buf;
 
 }
 
-static sds infix_expr_to_c(ast *a,  declared_variable_hash declared_variables_in_scope) {
+static sds infix_expr_to_c(ast *a,  declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
 	sds buf = sdsempty();
 
 	buf = sdscat(buf, "(");
-	buf = sdscatfmt(buf, "%s", ast_to_c(a->infix_expr.left,  declared_variables_in_scope));
+	buf = sdscatfmt(buf, "%s", ast_to_c(a->infix_expr.left,  declared_variables_in_scope, global_scope));
 
     if(strcmp(a->infix_expr.op, "and") == 0) {
         buf = sdscat(buf, "&&");
@@ -114,24 +162,24 @@ static sds infix_expr_to_c(ast *a,  declared_variable_hash declared_variables_in
         buf = sdscatfmt(buf, "%s", a->infix_expr.op);
     }
 
-	buf = sdscatfmt(buf, "%s", ast_to_c(a->infix_expr.right, declared_variables_in_scope));
+	buf = sdscatfmt(buf, "%s", ast_to_c(a->infix_expr.right, declared_variables_in_scope, global_scope));
 	buf = sdscat(buf, ")");
 
 	return buf;
 
 }
 
-static sds if_expr_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds if_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     sds buf = sdsempty();
 
     buf = sdscatfmt(buf, "%sif", indent_spaces[indentation_level]);
-    buf = sdscatfmt(buf, "%s {\n", ast_to_c(a->if_expr.condition, declared_variables_in_scope));
+    buf = sdscatfmt(buf, "%s {\n", ast_to_c(a->if_expr.condition, declared_variables_in_scope, global_scope));
 
     indentation_level++;
     int n = arrlen(a->if_expr.consequence);
     for(int i = 0; i < n; i++) {
-        buf = sdscatfmt(buf, "%s\n", ast_to_c(a->if_expr.consequence[i], declared_variables_in_scope));
+        buf = sdscatfmt(buf, "%s\n", ast_to_c(a->if_expr.consequence[i], declared_variables_in_scope, global_scope));
     }
     indentation_level--;
 
@@ -143,7 +191,7 @@ static sds if_expr_to_c(ast *a, declared_variable_hash declared_variables_in_sco
         buf = sdscat(buf, " else {\n");
         indentation_level++;
         for(int i = 0; i < n; i++) {
-            buf = sdscatfmt(buf, "%s\n",  ast_to_c(a->if_expr.alternative[i], declared_variables_in_scope));
+            buf = sdscatfmt(buf, "%s\n",  ast_to_c(a->if_expr.alternative[i], declared_variables_in_scope, global_scope));
 
         }
         indentation_level--;
@@ -156,18 +204,18 @@ static sds if_expr_to_c(ast *a, declared_variable_hash declared_variables_in_sco
 
 }
 
-static sds while_stmt_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds while_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     sds buf = sdsempty();
 
     buf = sdscat(buf, "while");
-    buf = sdscatfmt(buf, "%s ", ast_to_c(a->while_stmt.condition, declared_variables_in_scope));
+    buf = sdscatfmt(buf, "%s ", ast_to_c(a->while_stmt.condition, declared_variables_in_scope, global_scope));
 
     buf = sdscat(buf, "{");
 
     int n = arrlen(a->while_stmt.body);
     for(int i = 0; i < n; i++) {
-        buf = sdscatfmt(buf, "%s\n", ast_to_c(a->while_stmt.body[i],  declared_variables_in_scope));
+        buf = sdscatfmt(buf, "%s\n", ast_to_c(a->while_stmt.body[i],  declared_variables_in_scope, global_scope));
     }
 
     buf = sdscat(buf, "}");
@@ -175,20 +223,20 @@ static sds while_stmt_to_c(ast *a, declared_variable_hash declared_variables_in_
 
 }
 
-static sds call_expr_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds call_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, ast_to_c(a->call_expr.function, declared_variables_in_scope));
+    buf = sdscat(buf, ast_to_c(a->call_expr.function, declared_variables_in_scope, global_scope));
     buf = sdscat(buf, "(");
 
     int n = arrlen(a->call_expr.arguments);
 
     if(n) {
-        buf = sdscat(buf, ast_to_c(a->call_expr.arguments[0], declared_variables_in_scope));
+        buf = sdscat(buf, ast_to_c(a->call_expr.arguments[0], declared_variables_in_scope, global_scope));
 
         for(int i = 1; i < n; i++) {
-            buf = sdscatfmt(buf, ", %s", ast_to_c(a->call_expr.arguments[i], declared_variables_in_scope));
+            buf = sdscatfmt(buf, ", %s", ast_to_c(a->call_expr.arguments[i], declared_variables_in_scope, global_scope));
         }
     }
 
@@ -197,18 +245,18 @@ static sds call_expr_to_c(ast *a, declared_variable_hash declared_variables_in_s
     return buf;
 }
 
-static sds ast_to_c(ast *a, declared_variable_hash declared_variables_in_scope) {
+static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
-	if(a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
-		return assignement_stmt_to_c(a, declared_variables_in_scope);
+    if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt) {
+		return assignement_stmt_to_c(a, declared_variables_in_scope, global_scope);
 	}
 
 	if(a->tag == ast_return_stmt) {
-		return return_stmt_to_c(a, declared_variables_in_scope);
+		return return_stmt_to_c(a, declared_variables_in_scope, global_scope);
 	}
 
 	if(a->tag == ast_expression_stmt) {
-		return expression_stmt_to_c(a, declared_variables_in_scope);
+		return expression_stmt_to_c(a, declared_variables_in_scope, global_scope);
 	}
 
 	if(a->tag == ast_number_literal) {
@@ -223,45 +271,45 @@ static sds ast_to_c(ast *a, declared_variable_hash declared_variables_in_scope) 
     }
 
     if(a->tag == ast_identifier) {
-        return identifier_to_c(a, declared_variables_in_scope);
+        return identifier_to_c(a, declared_variables_in_scope, global_scope);
     }
 
 	if(a->tag == ast_prefix_expression) {
-		return prefix_expr_to_c(a, declared_variables_in_scope);
+		return prefix_expr_to_c(a, declared_variables_in_scope, global_scope);
 	}
 
 	if(a->tag == ast_infix_expression) {
-		return infix_expr_to_c(a,  declared_variables_in_scope);
+		return infix_expr_to_c(a,  declared_variables_in_scope, global_scope);
 	}
 
     if(a->tag == ast_if_expr) {
-        return if_expr_to_c(a, declared_variables_in_scope);
+        return if_expr_to_c(a, declared_variables_in_scope, global_scope);
     }
 
     if(a->tag == ast_while_stmt) {
-        return while_stmt_to_c(a, declared_variables_in_scope);
+        return while_stmt_to_c(a, declared_variables_in_scope, global_scope);
     }
 
     if(a->tag == ast_call_expression) {
-        return call_expr_to_c(a, declared_variables_in_scope);
+        return call_expr_to_c(a, declared_variables_in_scope, global_scope);
     }
 
-    printf("[WARN] - to_c not implemented to operator %d\n", a->token.type);
+    printf("[WARN] - to_c not implemented to operator %d\n", a->tag);
 
 	return NULL;
 
 }
 
-void write_initial_conditions(program p, FILE *file, declared_variable_hash declared_variables_in_scope, solver_type solver) {
+void write_initial_conditions(program p, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope, solver_type solver) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
 		ast *a = p[i];
         if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
         }
         else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    x0[%d] = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    x0[%d] = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
         }
 	}
 }
@@ -298,55 +346,32 @@ sds out_file_header(program p) {
     return ret;
 }
 
+void write_variables(program p, FILE *file, declared_variable_hash *declared_variables, declared_variable_hash global_scope) {
 
-void write_variables(program p, FILE *file, declared_variable_hash *declared_variables) {
-
-	int n_stmt = arrlen(p);
-	for(int i = 0; i < n_stmt; i++) {
-		char *var_type;
-		ast *a = p[i];
-
-		if(a->assignement_stmt.value->tag == ast_boolean_literal || a->assignement_stmt.value->tag == ast_if_expr ) {
-			var_type = "bool";
-		}
-		else if (a->assignement_stmt.value->tag == ast_string_literal) {
-			var_type = "char *";
-		}
-		else {
-			var_type = "real";
-		}
-
-        int declared = shget(*declared_variables, a->assignement_stmt.name->identifier.value);
-
-        if(!declared) {
-		    fprintf(file, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, a->assignement_stmt.name->identifier.value,  ast_to_c(a->assignement_stmt.value, *declared_variables));
-            shput(*declared_variables, a->assignement_stmt.name->identifier.value, 1);
-        }
-        else {
-            fprintf(file, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value,  ast_to_c(a->assignement_stmt.value, *declared_variables));
-        }
-
-	}
-
+    int n_stmt = arrlen(p);
+    for(int i = 0; i < n_stmt; i++) {
+        ast *a = p[i];
+        fprintf(file, "%s", ast_to_c(a, declared_variables, global_scope));
+    }
 }
 
-void write_odes(program p, FILE *file, declared_variable_hash declared_variables_in_scope, solver_type solver) {
+void write_odes(program p, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope, solver_type solver) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
 		ast *a = p[i];
         if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope));
+            fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
         }
         else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    rDY[%d] = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope));
+            fprintf(file, "    rDY[%d] = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
         }
 
 	}
 
 }
 
-void write_functions(program p, FILE *file, declared_variable_hash global_variables) {
+void write_functions(program p, FILE *file, declared_variable_hash global_scope) {
 
 	int n_stmt = arrlen(p);
 	for(int i = 0; i < n_stmt; i++) {
@@ -364,10 +389,10 @@ void write_functions(program p, FILE *file, declared_variable_hash global_variab
 
 		if(n) {
             shput(declared_variables_in_parameters_list, a->function_stmt.parameters[0]->identifier.value, 1);
-			fprintf(file, "real %s", ast_to_c(a->function_stmt.parameters[0], declared_variables_in_parameters_list));
+			fprintf(file, "real %s", ast_to_c(a->function_stmt.parameters[0], &declared_variables_in_parameters_list, global_scope));
 			for(int j = 1; j < n; j++) {
-                shput(declared_variables_in_parameters_list, a->function_stmt.parameters[0]->identifier.value, 1);
-				fprintf(file, ", real %s", ast_to_c(a->function_stmt.parameters[j], declared_variables_in_parameters_list));
+                shput(declared_variables_in_parameters_list, a->function_stmt.parameters[j]->identifier.value, 1);
+				fprintf(file, ", real %s", ast_to_c(a->function_stmt.parameters[j], &declared_variables_in_parameters_list, global_scope));
 			}
 		}
 
@@ -376,11 +401,10 @@ void write_functions(program p, FILE *file, declared_variable_hash global_variab
         n = arrlen(a->function_stmt.body);
 		indentation_level++;
 		for(int j = 0; j < n; j++) {
-			fprintf(file, "%s\n", ast_to_c(a->function_stmt.body[j],  declared_variables_in_parameters_list));
+			fprintf(file, "%s\n", ast_to_c(a->function_stmt.body[j],  &declared_variables_in_parameters_list, global_scope));
 		}
         indentation_level--;
 		fprintf(file, "}\n\n");
-
 	}
 }
 
@@ -421,8 +445,32 @@ void process_imports(ast **imports, ast ***functions) {
     }
 }
 
-declared_variable_hash create_scope(ast **odes, ast **functions) {
+declared_variable_hash create_variables_scope(ast **odes, ast **variables) {
 	declared_variable_hash declared_variables = NULL;
+    shdefault(declared_variables, 0);
+    sh_new_arena(declared_variables);
+
+	//Adding ODES to scope.
+	for(int i = 0; i < arrlen(odes); i++) {
+        //removing ' in the end of the ode identifier
+		char *tmp = strndup(odes[i]->assignement_stmt.name->identifier.value, (int)strlen(odes[i]->assignement_stmt.name->identifier.value)-1);
+		shput(declared_variables, tmp, 1);
+	}
+
+    //Adding VARS to scope.
+	for(int i = 0; i < arrlen(variables); i++) {
+        ast *a = variables[i];
+        if(a->tag == ast_assignment_stmt) {
+		    shput(declared_variables, a->assignement_stmt.name->identifier.value, 0);
+        }
+	}
+
+	return declared_variables;
+}
+
+declared_variable_hash create_functions_and_global_scope(ast **functions, ast **globals) {
+
+    declared_variable_hash declared_variables = NULL;
     shdefault(declared_variables, 0);
     sh_new_arena(declared_variables);
 
@@ -488,18 +536,17 @@ declared_variable_hash create_scope(ast **odes, ast **functions) {
 	shput(declared_variables, "tgamma", 1);
 	shput(declared_variables, "trunc", 1);
 
-	//Adding ODES to scope.
-	for(int i = 0; i < arrlen(odes); i++) {
-		char *tmp = strndup(odes[i]->assignement_stmt.name->identifier.value, (int)strlen(odes[i]->assignement_stmt.name->identifier.value)-1);
-		shput(declared_variables, tmp, 1);
-	}
-
 	//Ading function identifiers to scope.
 	for(int i = 0; i < arrlen(functions); i++) {
 		shput(declared_variables, functions[i]->function_stmt.name->identifier.value, 1);
 	}
 
+	for(int i = 0; i < arrlen(globals); i++) {
+		shput(declared_variables, globals[i]->assignement_stmt.name->identifier.value, 1);
+	}
+
 	return declared_variables;
+
 }
 
 void write_cvode_solver(FILE *file, program initial, program globals, program odes, program functions, program variables, sds out_header) {
@@ -518,16 +565,16 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef realtype real;\n");
 
+    declared_variable_hash variables_and_odes_scope = create_variables_scope(odes, variables);
+    declared_variable_hash global_scope = create_functions_and_global_scope(functions, globals);
 
-    declared_variable_hash declared_variables = create_scope(odes, functions);
-
-    write_variables(globals, file, &declared_variables);
+    write_variables(globals, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\n");
 
-    write_functions(functions, file, declared_variables);
+    write_functions(functions, file, global_scope);
 
     fprintf(file, "void set_initial_conditions(N_Vector x0) { \n\n");
-    write_initial_conditions(initial, file, declared_variables, CVODE_SOLVER);
+    write_initial_conditions(initial, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -540,10 +587,10 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "    //Parameters\n");
 
     indentation_level++;
-    write_variables(variables, file, &declared_variables);
+    write_variables(variables, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
 
-    write_odes(odes, file, declared_variables, CVODE_SOLVER);
+    write_odes(odes, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
 
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
@@ -666,15 +713,16 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef double real;\n");
 
-    declared_variable_hash declared_variables = create_scope(odes, functions);
+    declared_variable_hash variables_and_odes_scope = create_variables_scope(odes, variables);
+    declared_variable_hash global_scope = create_functions_and_global_scope(functions, globals);
 
-    write_variables(globals, file, &declared_variables);
+    write_variables(globals, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\n");
 
-    write_functions(functions, file, declared_variables);
+    write_functions(functions, file, global_scope);
 
     fprintf(file, "void set_initial_conditions(real * x0) { \n\n");
-    write_initial_conditions(initial, file, declared_variables, EULER_ADPT_SOLVER);
+    write_initial_conditions(initial, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -687,10 +735,10 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "    //Parameters\n");
 
     indentation_level++;
-    write_variables(variables, file, &declared_variables);
+    write_variables(variables, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
 
-    write_odes(odes, file, declared_variables, EULER_ADPT_SOLVER);
+    write_odes(odes, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
 
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
@@ -834,6 +882,7 @@ void convert_to_c(program p, FILE *file, solver_type solver) {
 
 	program odes = NULL;
    	program variables = NULL;
+   	program grouped_assignments = NULL;
 	program functions = NULL;
 	program initial = NULL;
     program globals = NULL;
@@ -845,7 +894,9 @@ void convert_to_c(program p, FILE *file, solver_type solver) {
         ast *a = p[i];
 		if(a->tag == ast_assignment_stmt) {
 			arrput(variables, a);
-		} else if(a->tag == ast_function_statement) {
+		} else if(a->tag == ast_grouped_assignment_stmt) {
+            arrput(variables, a);
+        } else if(a->tag == ast_function_statement) {
 			arrput(functions, a);
 		} else if(a->tag == ast_ode_stmt) {
 			arrput(odes, a);

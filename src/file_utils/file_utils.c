@@ -7,7 +7,6 @@
 #define STB_DS_IMPLEMENTATION
 #include "../stb/stb_ds.h"
 
-#include "../string/sds.h"
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -17,21 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <pwd.h>
-
-int get_step_from_filename(char *filename) {
-    char *ia = filename;
-
-    int int_a = 0;
-
-    for(; *ia; ia++) {
-        if(isdigit(*ia))
-            int_a = int_a * 10 + *ia - '0';
-    }
-
-    return int_a;
-}
 
 FILE *open_file_or_exit(char *filename, char *mode) {
 
@@ -274,7 +259,6 @@ static int cstring_cmp(const void *a, const void *b) {
     comparison function */
 }
 
-// TODO: maybe return the full path of the file?
 // We only return the file names here, not the full path!!
 string_array list_files_from_dir(const char *dir, const char *prefix, const char *extension, string_array ignore_extensions, bool sort) {
 
@@ -500,7 +484,12 @@ void create_dir(char *out_dir) {
 
 char *get_executable_dir() {
         char buf[PATH_MAX];
-        readlink("/proc/self/exe", buf, PATH_MAX);
+        size_t s = readlink("/proc/self/exe", buf, PATH_MAX);
+
+        if(s == -1) {
+            return NULL;
+        }
+
         char *dir = get_dir_from_path(buf);
         return dir;
 }
@@ -515,3 +504,26 @@ const char *get_home_dir() {
     return homedir;
 }
 
+void print_current_dir() {
+    char buf[PATH_MAX];
+    getcwd(buf, PATH_MAX);
+    printf("Current directory %s\n", buf);
+}
+
+void print_path_contents(const char *path) {
+    DIR *mydir;
+    struct dirent *myfile;
+    struct stat mystat;
+
+    char buf[PATH_MAX];
+    mydir = opendir(path);
+    while((myfile = readdir(mydir)) != NULL)
+    {
+        sprintf(buf, "%s/%s", path, myfile->d_name);
+        stat(buf, &mystat);
+        if(strcmp(myfile->d_name, ".") != 0 && strcmp(myfile->d_name, "..") != 0) {
+            printf("%s\n", myfile->d_name);
+        }
+    }
+    closedir(mydir);
+}

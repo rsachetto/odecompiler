@@ -33,6 +33,9 @@ typedef enum token_type_t {
 	RPAREN     , // ")"
 	LBRACE     , // "{"
 	RBRACE     , // "}"
+    LBRACKET   , // "["
+    RBRACKET   , // "]"
+
 
 	FUNCTION   , //"FUNCTION"
 	ODE        , //"ODE"

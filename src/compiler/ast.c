@@ -22,6 +22,13 @@ ast *make_assignement_stmt(token t, ast_tag tag) {
 	return make_base_ast(t, tag);
 }
 
+ast *make_grouped_assignement_stmt(token t) {
+    ast *a = make_base_ast(t, ast_grouped_assignment_stmt);
+    a->grouped_assignement_stmt.names = NULL;
+    a->grouped_assignement_stmt.call_expr = NULL;
+    return a;
+}
+
 ast *make_while_stmt(token t) {
     ast *a = make_base_ast(t, ast_while_stmt);
     a->while_stmt.body = NULL;
@@ -112,8 +119,13 @@ static sds return_stmt_to_str(ast *a) {
 
 	buf = sdscatfmt(buf, "%s ", token_literal(a));
 
-	if(a->return_stmt.return_value != NULL) {
-		buf = sdscat(buf, ast_to_string(a->return_stmt.return_value));
+	if(a->return_stmt.return_values != NULL) {
+        int n = arrlen(a->return_stmt.return_values);
+		buf = sdscat(buf, ast_to_string(a->return_stmt.return_values[0]));
+
+        for(int i = 1; i < n; i++) {
+            buf = sdscatfmt(buf, ", %s", ast_to_string(a->return_stmt.return_values[i]));
+        }
 	}
 
 	buf = sdscat(buf, ";");

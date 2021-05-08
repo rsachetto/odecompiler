@@ -208,6 +208,12 @@ token next_token(lexer *l) {
 		case '}':
 			tok = new_token(RBRACE, ch, l->current_line, l->file_name);
 			break;
+        case '[':
+            tok = new_token(LBRACKET, ch, l->current_line, l->file_name);
+            break;
+        case ']':
+            tok = new_token(RBRACKET, ch, l->current_line, l->file_name);
+            break;
 		case '\0':
 			tok.literal = "";
 			tok.type = ENDOF;

@@ -34,7 +34,6 @@ string_array read_lines(const char *filename);
 bool dir_exists(const char *path);
 bool file_exists(const char *path);
 
-int get_step_from_filename(char *filename);
 void get_path_information(const char *path, struct path_information *input_info);
 void free_path_information(struct path_information *input_info);
 
@@ -45,7 +44,7 @@ char *get_dir_from_path(const char *path);
 char *get_file_from_path(const char *path);
 char *get_executable_dir();
 const char *get_home_dir();
-
 FILE *open_file_or_exit(char *filename, char *mode);
-
+void print_current_dir();
+void print_path_contents(const char *path);
 #endif // MONOALG3D_FILE_UTILS_H

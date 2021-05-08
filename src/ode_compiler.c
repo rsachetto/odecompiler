@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
     }
 
-
 	size_t file_size;
 	const char *source = read_entire_file_with_mmap(file_name, &file_size);
 
@@ -35,5 +34,4 @@ int main(int argc, char **argv) {
     //TODO: command line switch to choose the solver
 	convert_to_c(program, outfile, CVODE_SOLVER);
 	fclose(outfile);
-
 }

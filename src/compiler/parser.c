@@ -9,6 +9,8 @@
 #define ERROR_PREFIX "Parse error on line %d of file %s: "
 #define NEW_ERROR_PREFIX sdscatprintf(sdsempty(), ERROR_PREFIX, p->cur_token.line_number, p->l->file_name)
 
+ast ** parse_expression_list(parser *, bool);
+
 void print_program(program p) {
 
 	sds *p_str = program_to_string(p);
@@ -18,7 +20,6 @@ void print_program(program p) {
 	for(int i = 0; i < n; i++) {
 		printf("%s\n", p_str[i]);
 	}
-
 }
 
 bool check_parser_errors(parser *p, bool exit_on_error) {
@@ -87,7 +88,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     if(!skip_ident) {
         if (!expect_peek(p, IDENT)) {
             sds msg = NEW_ERROR_PREFIX;
-            msg = sdscatprintf(msg, "identifier expected before assignment expected\n");
+            msg = sdscatprintf(msg, "identifier expected before assignment\n");
             arrput(p->errors, msg);
             return NULL;
         }
@@ -131,13 +132,15 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     return stmt;
 }
 
+
+
 ast *parse_return_statement(parser *p) {
 
 	ast *stmt = make_return_stmt(p->cur_token);
 
 	advance_token(p);
 
-    stmt->return_stmt.return_value = parse_expression(p, LOWEST);
+    stmt->return_stmt.return_values = parse_expression_list(p, false);
 
     if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
@@ -285,6 +288,69 @@ ast *parse_grouped_expression(parser *p) {
     return exp;
 }
 
+ast **parse_grouped_assignment_names(parser *p) {
+    advance_token(p);
+
+    ast ** identifiers = NULL;
+
+    ast *ident = make_identifier(p->cur_token, p->cur_token.literal);
+    arrput(identifiers, ident);
+
+    while (peek_token_is(p, COMMA)) {
+        advance_token(p);
+        advance_token(p);
+        ident = make_identifier(p->cur_token, p->cur_token.literal);
+        arrput(identifiers, ident);
+    }
+
+    return identifiers;
+}
+
+ast *parse_grouped_assignment(parser *p) {
+
+    ast *stmt = make_grouped_assignement_stmt(p->cur_token);
+
+    if (peek_token_is(p, RBRACKET)) {
+        sds msg = NEW_ERROR_PREFIX;
+        msg = sdscatprintf(msg, "expected at least one identifier\n");
+        arrput(p->errors, msg);
+        return NULL;
+    }
+
+    stmt->grouped_assignement_stmt.names = parse_grouped_assignment_names(p);
+
+    if (!expect_peek(p, RBRACKET)) {
+        sds msg = NEW_ERROR_PREFIX;
+        msg = sdscatprintf(msg, "] expected\n");
+        arrput(p->errors, msg);
+        return NULL;
+    }
+
+    if (!expect_peek(p, ASSIGN)) {
+        sds msg = NEW_ERROR_PREFIX;
+        msg = sdscatprintf(msg, "= expected\n");
+        arrput(p->errors, msg);
+        return NULL;
+    }
+
+    advance_token(p);
+
+    stmt->grouped_assignement_stmt.call_expr = parse_expression(p, LOWEST);
+
+    if(stmt->grouped_assignement_stmt.call_expr->tag != ast_call_expression) {
+        sds msg = NEW_ERROR_PREFIX;
+        msg = sdscatprintf(msg, "grouped expressions are only supported with function calls\n");
+        arrput(p->errors, msg);
+        return NULL;
+    }
+
+    if(peek_token_is(p, SEMICOLON)) {
+        advance_token(p);
+    }
+
+    return stmt;
+}
+
 
 ast *parse_if_expression(parser *p) {
 
@@ -340,7 +406,6 @@ ast ** parse_function_parameters(parser *p) {
 
     advance_token(p);
 
-	ast * stmt = make_function_statement(p->cur_token);
     ast *ident = make_identifier(p->cur_token, p->cur_token.literal);
 
     arrput(identifiers, ident);
@@ -361,6 +426,66 @@ ast ** parse_function_parameters(parser *p) {
 
     return identifiers;
 
+}
+
+void count_return(ast *a);
+
+static void count_in_expression(ast *a) {
+
+    if (a->expr_stmt != NULL) {
+        count_return(a->expr_stmt);
+    }
+
+}
+
+static void count_in_if(ast *a) {
+
+    int n = arrlen(a->if_expr.consequence);
+    for(int i = 0; i < n; i++) {
+        count_return(a->if_expr.consequence[i]);
+    }
+
+    n = arrlen(a->if_expr.alternative);
+
+    if(n) {
+        for(int i = 0; i < n; i++) {
+            count_return(a->if_expr.alternative[i]);
+        }
+
+    }
+
+
+}
+
+static void count_in_while(ast *a) {
+
+    int n = arrlen(a->while_stmt.body);
+    for(int i = 0; i < n; i++) {
+        count_return(a->while_stmt.body[i]);
+    }
+
+}
+
+void count_return(ast *a) {
+
+    static int count = 1;
+
+    if(a->tag == ast_return_stmt) {
+        printf("%d\n", count);
+        count++;
+    }
+
+    if(a->tag == ast_expression_stmt) {
+        return count_in_expression(a);
+    }
+
+    if(a->tag == ast_if_expr) {
+        return count_in_if(a);
+    }
+
+    if(a->tag == ast_while_stmt) {
+        return count_in_while(a);
+    }
 }
 
 ast *parse_function_statement(parser *p) {
@@ -394,20 +519,34 @@ ast *parse_function_statement(parser *p) {
 
 	stmt->function_stmt.body = parse_block_statement(p);
 
+    int len = arrlen(stmt->function_stmt.body);
+
+    bool first_return = true;
+    int return_len = 0;
+
+    for(int i = 0; i < len; i++) {
+        //TODO: add the returns stmts in a ast array
+        count_return(stmt->function_stmt.body[i]);
+    }
+
+    stmt->function_stmt.has_grouped_return = (return_len > 1);
+
 	return stmt;
 
 }
 
-ast ** parse_expression_list(parser *p, token_type end) {
+ast ** parse_expression_list(parser *p, bool with_paren) {
 
-    ast ** list = NULL;
+    ast **list = NULL;
 
-    if (peek_token_is(p, end)) {
+    if (with_paren) {
+        if (peek_token_is(p, RPAREN)) {
+            advance_token(p);
+            return list;
+        }
+
         advance_token(p);
-        return list;
     }
-
-    advance_token(p);
 
     arrpush(list, parse_expression(p, LOWEST));
 
@@ -417,11 +556,13 @@ ast ** parse_expression_list(parser *p, token_type end) {
         arrpush(list, parse_expression(p, LOWEST));
     }
 
-    if (!expect_peek(p, end)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, ") expected\n");
-        arrput(p->errors, msg);
-        return NULL;
+    if(with_paren) {
+        if (!expect_peek(p, RPAREN)) {
+            sds msg = NEW_ERROR_PREFIX;
+            msg = sdscatprintf(msg, ") expected\n");
+            arrput(p->errors, msg);
+            return NULL;
+        }
     }
 
     return list;
@@ -429,7 +570,7 @@ ast ** parse_expression_list(parser *p, token_type end) {
 
 ast *parse_call_expression(parser *p, ast *function) {
     ast *exp = make_call_expression(p->cur_token, function);
-    exp->call_expr.arguments = parse_expression_list(p, RPAREN);
+    exp->call_expr.arguments = parse_expression_list(p, true);
     return exp;
 }
 
@@ -534,6 +675,10 @@ ast * parse_statement(parser *p) {
 
     if(cur_token_is(p, IMPORT)) {
         return parse_import_statement(p);
+    }
+
+    if(cur_token_is(p, LBRACKET)) {
+        return parse_grouped_assignment(p);
     }
 
 	return parse_expression_statement(p);
