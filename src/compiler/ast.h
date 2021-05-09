@@ -65,12 +65,13 @@ typedef struct function_statement_t {
     struct ast_t *name;
     struct ast_t **parameters;
     struct ast_t **body;
-    bool has_grouped_return;
+    int num_return_values;
 } function_statement;
 
 typedef struct call_expression_t {
     struct ast_t *function;
     struct ast_t **arguments;
+    int num_expected_returns;
 } call_expression;
 
 typedef enum ast_tag_t {

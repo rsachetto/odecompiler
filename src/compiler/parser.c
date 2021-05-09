@@ -13,28 +13,28 @@ ast ** parse_expression_list(parser *, bool);
 
 void print_program(program p) {
 
-	sds *p_str = program_to_string(p);
+    sds *p_str = program_to_string(p);
 
-	int n = arrlen(p_str);
+    int n = arrlen(p_str);
 
-	for(int i = 0; i < n; i++) {
-		printf("%s\n", p_str[i]);
-	}
+    for(int i = 0; i < n; i++) {
+        printf("%s\n", p_str[i]);
+    }
 }
 
 bool check_parser_errors(parser *p, bool exit_on_error) {
 
-	int err_len = arrlen(p->errors);
+    int err_len = arrlen(p->errors);
 
-	if (!err_len) {
-		return false;
-	}
+    if (!err_len) {
+        return false;
+    }
 
-	fprintf(stderr, "parser has %d errors\n", err_len);
+    fprintf(stderr, "parser has %d errors\n", err_len);
 
-	for(int i = 0; i < err_len; i++) {
-		fprintf(stderr, "%s", p->errors[i]);
-	}
+    for(int i = 0; i < err_len; i++) {
+        fprintf(stderr, "%s", p->errors[i]);
+    }
 
     if(exit_on_error) {
         exit(1);
@@ -46,39 +46,41 @@ bool check_parser_errors(parser *p, bool exit_on_error) {
 
 parser * new_parser(lexer *l) {
 
-	parser *p = (parser*)malloc(sizeof(parser));
-	p->l = l;
-	p->errors = NULL;
+    parser *p = (parser*)calloc(1, sizeof(parser));
+    p->l = l;
 
-	advance_token(p);
-	advance_token(p);
+    shdefault(p->function_num_args, -1);
+    sh_new_arena(p->function_num_args);
 
-	return p;
+    advance_token(p);
+    advance_token(p);
+
+    return p;
 
 }
 
 void advance_token(parser *p) {
-	p->cur_token = p->peek_token;
-	p->peek_token = next_token(p->l);
+    p->cur_token = p->peek_token;
+    p->peek_token = next_token(p->l);
 }
 
 bool cur_token_is(parser *p, token_type t) {
-	return p->cur_token.type == t;
+    return p->cur_token.type == t;
 }
 
 bool peek_token_is(parser *p, token_type t) {
-	return p->peek_token.type == t;
+    return p->peek_token.type == t;
 }
 
 
 bool expect_peek(parser *p, token_type t) {
-	if(peek_token_is(p, t)) {
-		advance_token(p);
-		return true;
-	} else {
-		peek_error(p, t);
-		return false;
-	}
+    if(peek_token_is(p, t)) {
+        advance_token(p);
+        return true;
+    } else {
+        peek_error(p, t);
+        return false;
+    }
 }
 
 ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
@@ -136,9 +138,9 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
 ast *parse_return_statement(parser *p) {
 
-	ast *stmt = make_return_stmt(p->cur_token);
+    ast *stmt = make_return_stmt(p->cur_token);
 
-	advance_token(p);
+    advance_token(p);
 
     stmt->return_stmt.return_values = parse_expression_list(p, false);
 
@@ -146,7 +148,7 @@ ast *parse_return_statement(parser *p) {
         advance_token(p);
     }
 
-	return stmt;
+    return stmt;
 }
 
 ast *parse_import_statement(parser *p) {
@@ -223,7 +225,7 @@ ast *parse_while_statement(parser *p) {
 }
 
 ast *parse_identifier(parser *p) {
-	return make_identifier(p->cur_token, p->cur_token.literal);
+    return make_identifier(p->cur_token, p->cur_token.literal);
 }
 
 ast *parse_boolean_literal(parser *p) {
@@ -231,45 +233,45 @@ ast *parse_boolean_literal(parser *p) {
 }
 
 ast *parse_number_literal(parser *p) {
-	ast *lit = make_number_literal(p->cur_token);
-	char *end;
-	double value = strtod(p->cur_token.literal, &end);
-	if(p->cur_token.literal == end) {
+    ast *lit = make_number_literal(p->cur_token);
+    char *end;
+    double value = strtod(p->cur_token.literal, &end);
+    if(p->cur_token.literal == end) {
         sds msg = NEW_ERROR_PREFIX;
-		msg = sdscatprintf(msg, "could not parse %s as number\n", p->cur_token.literal);
-		arrput(p->errors, msg);
-		return NULL;
-	}
+        msg = sdscatprintf(msg, "could not parse %s as number\n", p->cur_token.literal);
+        arrput(p->errors, msg);
+        return NULL;
+    }
 
-	lit->num_literal.value = value;
-	return lit;
+    lit->num_literal.value = value;
+    return lit;
 }
 
 ast *parse_string_literal(parser *p) {
-	return make_string_literal(p->cur_token, p->cur_token.literal);
+    return make_string_literal(p->cur_token, p->cur_token.literal);
 }
 
 ast *parse_prefix_expression(parser *p) {
 
-	ast *expression = make_prefix_expression(p->cur_token, p->cur_token.literal);
-	advance_token(p);
-	expression->prefix_expr.right = parse_expression(p, PREFIX);
+    ast *expression = make_prefix_expression(p->cur_token, p->cur_token.literal);
+    advance_token(p);
+    expression->prefix_expr.right = parse_expression(p, PREFIX);
 
-	return expression;
+    return expression;
 
 }
 
 ast *parse_infix_expression(parser *p, ast *left) {
 
-	ast *expression = make_infix_expression(p->cur_token, p->cur_token.literal, left);
+    ast *expression = make_infix_expression(p->cur_token, p->cur_token.literal, left);
 
-	enum operator_precedence precedence = cur_precedence(p);
+    enum operator_precedence precedence = cur_precedence(p);
 
-	advance_token(p);
+    advance_token(p);
 
-	expression->infix_expr.right = parse_expression(p, precedence);
+    expression->infix_expr.right = parse_expression(p, precedence);
 
-	return expression;
+    return expression;
 
 }
 
@@ -428,28 +430,28 @@ ast ** parse_function_parameters(parser *p) {
 
 }
 
-void count_return(ast *a);
+void count_return(ast *a, program *return_stmts);
 
-static void count_in_expression(ast *a) {
+static void count_in_expression(ast *a, program *stmts) {
 
     if (a->expr_stmt != NULL) {
-        count_return(a->expr_stmt);
+        count_return(a->expr_stmt, stmts);
     }
 
 }
 
-static void count_in_if(ast *a) {
+static void count_in_if(ast *a, program *stmts) {
 
     int n = arrlen(a->if_expr.consequence);
     for(int i = 0; i < n; i++) {
-        count_return(a->if_expr.consequence[i]);
+        count_return(a->if_expr.consequence[i], stmts);
     }
 
     n = arrlen(a->if_expr.alternative);
 
     if(n) {
         for(int i = 0; i < n; i++) {
-            count_return(a->if_expr.alternative[i]);
+            count_return(a->if_expr.alternative[i], stmts);
         }
 
     }
@@ -457,81 +459,100 @@ static void count_in_if(ast *a) {
 
 }
 
-static void count_in_while(ast *a) {
+static void count_in_while(ast *a, program *stmts) {
 
     int n = arrlen(a->while_stmt.body);
     for(int i = 0; i < n; i++) {
-        count_return(a->while_stmt.body[i]);
+        count_return(a->while_stmt.body[i], stmts);
     }
 
 }
 
-void count_return(ast *a) {
-
-    static int count = 1;
+void count_return(ast *a, program *stmts) {
 
     if(a->tag == ast_return_stmt) {
-        printf("%d\n", count);
-        count++;
+        arrput(*stmts, a);
     }
 
     if(a->tag == ast_expression_stmt) {
-        return count_in_expression(a);
+        return count_in_expression(a,stmts);
     }
 
     if(a->tag == ast_if_expr) {
-        return count_in_if(a);
+        return count_in_if(a, stmts);
     }
 
     if(a->tag == ast_while_stmt) {
-        return count_in_while(a);
+        return count_in_while(a, stmts);
     }
 }
 
 ast *parse_function_statement(parser *p) {
 
-	ast * stmt = make_function_statement(p->cur_token);
+    ast * stmt = make_function_statement(p->cur_token);
 
-	if(!expect_peek(p, IDENT)) {
+    if(!expect_peek(p, IDENT)) {
         sds msg = NEW_ERROR_PREFIX;
         msg = sdscatprintf(msg, "expected identifier after fn statement\n");
         arrput(p->errors, msg);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	stmt->function_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
+    stmt->function_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
 
-	if(!expect_peek(p, LPAREN)) {
+    if(!expect_peek(p, LPAREN)) {
         sds msg = NEW_ERROR_PREFIX;
         msg = sdscatprintf(msg, "( expected\n");
         arrput(p->errors, msg);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	stmt->function_stmt.parameters = parse_function_parameters(p);
+    stmt->function_stmt.parameters = parse_function_parameters(p);
 
-	if(!expect_peek(p, LBRACE)) {
+    if(!expect_peek(p, LBRACE)) {
         sds msg = NEW_ERROR_PREFIX;
         msg = sdscatprintf(msg, "{ expected\n");
         arrput(p->errors, msg);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	stmt->function_stmt.body = parse_block_statement(p);
+    stmt->function_stmt.body = parse_block_statement(p);
 
     int len = arrlen(stmt->function_stmt.body);
 
     bool first_return = true;
     int return_len = 0;
 
+    program return_stmts = NULL;
     for(int i = 0; i < len; i++) {
-        //TODO: add the returns stmts in a ast array
-        count_return(stmt->function_stmt.body[i]);
+        count_return(stmt->function_stmt.body[i], &return_stmts);
     }
 
-    stmt->function_stmt.has_grouped_return = (return_len > 1);
+    //TODO: I think we always need a return stmt
+    len = arrlen(return_stmts);
 
-	return stmt;
+    if(len) {
+
+        return_len = arrlen(return_stmts[0]->return_stmt.return_values);
+
+        for(int i = 1; i < len; i++) {
+            int tmp = arrlen(return_stmts[i]->return_stmt.return_values);
+
+            if(tmp != return_len) {
+                sds msg = NEW_ERROR_PREFIX;
+                msg = sdscatprintf(msg, "a function has always to return the same number of values\n");
+                arrput(p->errors, msg);
+                return NULL;
+
+            }
+        }
+    }
+
+    stmt->function_stmt.num_return_values = return_len;
+
+    shput(p->function_num_args, stmt->function_stmt.name->identifier.value, return_len);
+
+    return stmt;
 
 }
 
@@ -569,27 +590,30 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
 }
 
 ast *parse_call_expression(parser *p, ast *function) {
+
     ast *exp = make_call_expression(p->cur_token, function);
     exp->call_expr.arguments = parse_expression_list(p, true);
+
+    exp->call_expr.num_expected_returns = shget(p->function_num_args, function->identifier.value);
     return exp;
 }
 
 ast *parse_expression(parser *p, enum operator_precedence precedence) {
 
-	ast *left_expr;
+    ast *left_expr;
 
     //prefix expression
-	if(TOKEN_TYPE_EQUALS(p->cur_token, IDENT)) {
-		left_expr = parse_identifier(p);
-	} else if(TOKEN_TYPE_EQUALS(p->cur_token, NUMBER)) {
-		left_expr =  parse_number_literal(p);
-	} else if(TOKEN_TYPE_EQUALS(p->cur_token, STRING)) {
-		left_expr =  parse_string_literal(p);
-	} else if(TOKEN_TYPE_EQUALS(p->cur_token, TRUE) || TOKEN_TYPE_EQUALS(p->cur_token, FALSE)) {
+    if(TOKEN_TYPE_EQUALS(p->cur_token, IDENT)) {
+        left_expr = parse_identifier(p);
+    } else if(TOKEN_TYPE_EQUALS(p->cur_token, NUMBER)) {
+        left_expr =  parse_number_literal(p);
+    } else if(TOKEN_TYPE_EQUALS(p->cur_token, STRING)) {
+        left_expr =  parse_string_literal(p);
+    } else if(TOKEN_TYPE_EQUALS(p->cur_token, TRUE) || TOKEN_TYPE_EQUALS(p->cur_token, FALSE)) {
         left_expr = parse_boolean_literal(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, BANG) || TOKEN_TYPE_EQUALS(p->cur_token, MINUS)) {
-		left_expr = parse_prefix_expression(p);
-	} else if(TOKEN_TYPE_EQUALS(p->cur_token, LPAREN)) {
+        left_expr = parse_prefix_expression(p);
+    } else if(TOKEN_TYPE_EQUALS(p->cur_token, LPAREN)) {
         left_expr = parse_grouped_expression(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, IF)) {
         left_expr = parse_if_expression(p);
@@ -597,29 +621,29 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
         sds msg = NEW_ERROR_PREFIX;
         msg = sdscatprintf(msg, "no prefix parse function for the token \"%s\"\n", p->cur_token.literal);
         arrput(p->errors, msg);
-		return NULL;
-	}
+        return NULL;
+    }
 
     //infix expression
-	while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
+    while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
 
-		bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS)     ||
-						TOKEN_TYPE_EQUALS(p->peek_token, MINUS)    ||
-						TOKEN_TYPE_EQUALS(p->peek_token, SLASH)    ||
-						TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
-						TOKEN_TYPE_EQUALS(p->peek_token, EQ)       ||
-						TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ)   ||
-						TOKEN_TYPE_EQUALS(p->peek_token, LT)       ||
-						TOKEN_TYPE_EQUALS(p->peek_token, GT)       ||
-						TOKEN_TYPE_EQUALS(p->peek_token, AND)      ||
-						TOKEN_TYPE_EQUALS(p->peek_token, OR)       ||
+        bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS)     ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, MINUS)    ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, SLASH)    ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, EQ)       ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ)   ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LT)       ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GT)       ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, AND)      ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, OR)       ||
                         TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
 
-		if (!is_infix) {
-			return left_expr;
-		}
+        if (!is_infix) {
+            return left_expr;
+        }
 
-		advance_token(p);
+        advance_token(p);
 
         if(TOKEN_TYPE_EQUALS(p->cur_token, LPAREN)) {
             left_expr = parse_call_expression(p, left_expr);
@@ -628,19 +652,19 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
             left_expr = parse_infix_expression(p, left_expr);
         }
 
-	}
+    }
 
-	return left_expr;
+    return left_expr;
 
 }
 
 ast * parse_expression_statement(parser *p) {
-	ast *stmt = make_expression_stmt(p->cur_token);
-	stmt->expr_stmt = parse_expression(p, LOWEST);
-	if (peek_token_is(p, SEMICOLON)) {
-		advance_token(p);
-	}
-	return stmt;
+    ast *stmt = make_expression_stmt(p->cur_token);
+    stmt->expr_stmt = parse_expression(p, LOWEST);
+    if (peek_token_is(p, SEMICOLON)) {
+        advance_token(p);
+    }
+    return stmt;
 }
 
 ast * parse_statement(parser *p) {
@@ -653,7 +677,7 @@ ast * parse_statement(parser *p) {
         return parse_assignment_statement(p, ast_ode_stmt, false);
     }
 
-	if(cur_token_is(p, INITIAL)) {
+    if(cur_token_is(p, INITIAL)) {
         return parse_assignment_statement(p, ast_initial_stmt, false);
     }
 
@@ -661,15 +685,15 @@ ast * parse_statement(parser *p) {
         return parse_assignment_statement(p, ast_global_stmt, false);
     }
 
-	if(cur_token_is(p, RETURN_STMT)) {
-		return parse_return_statement(p);
-	}
+    if(cur_token_is(p, RETURN_STMT)) {
+        return parse_return_statement(p);
+    }
 
-	if(cur_token_is(p, WHILE)) {
+    if(cur_token_is(p, WHILE)) {
         return parse_while_statement(p);
     }
 
-	if(cur_token_is(p, FUNCTION)) {
+    if(cur_token_is(p, FUNCTION)) {
         return parse_function_statement(p);
     }
 
@@ -681,22 +705,22 @@ ast * parse_statement(parser *p) {
         return parse_grouped_assignment(p);
     }
 
-	return parse_expression_statement(p);
+    return parse_expression_statement(p);
 
 }
 
 program parse_program(parser *p) {
 
-	program  program = NULL;
+    program  program = NULL;
 
-	while(!TOKEN_TYPE_EQUALS(p->cur_token, ENDOF)) {
-		  ast *stmt = parse_statement(p);
-		  if (stmt != NULL) {
-			  arrput(program, stmt);
-		  }
-		  advance_token(p);
-	}
-	return program;
+    while(!TOKEN_TYPE_EQUALS(p->cur_token, ENDOF)) {
+          ast *stmt = parse_statement(p);
+          if (stmt != NULL) {
+              arrput(program, stmt);
+          }
+          advance_token(p);
+    }
+    return program;
 
 }
 
@@ -708,9 +732,9 @@ void peek_error(parser *p, token_type t) {
 
 static enum operator_precedence get_precedence (token t) {
 
-	if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
-		return EQUALS;
-	}
+    if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
+        return EQUALS;
+    }
 
     if(TOKEN_TYPE_EQUALS(t, AND)) {
         return ANDP;
@@ -720,31 +744,31 @@ static enum operator_precedence get_precedence (token t) {
         return ORP;
     }
 
-	if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT)) {
-		return LESSGREATER;
-	}
+    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT)) {
+        return LESSGREATER;
+    }
 
 
-	if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS))  {
-		return SUM;
-	}
+    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS))  {
+        return SUM;
+    }
 
-	if(TOKEN_TYPE_EQUALS(t, SLASH) || TOKEN_TYPE_EQUALS(t, ASTERISK)) {
-		return PRODUCT;
-	}
+    if(TOKEN_TYPE_EQUALS(t, SLASH) || TOKEN_TYPE_EQUALS(t, ASTERISK)) {
+        return PRODUCT;
+    }
 
     if(TOKEN_TYPE_EQUALS(t, LPAREN)) {
         return CALL;
     }
 
-	return LOWEST;
+    return LOWEST;
 
 }
 
 enum operator_precedence peek_precedence(parser *p) {
-	return get_precedence(p->peek_token);
+    return get_precedence(p->peek_token);
 }
 
 enum operator_precedence cur_precedence(parser *p) {
-	return get_precedence(p->cur_token);
+    return get_precedence(p->cur_token);
 }
