@@ -69,9 +69,8 @@ typedef struct function_statement_t {
 } function_statement;
 
 typedef struct call_expression_t {
-    struct ast_t *function;
+    struct ast_t *function_identifier;
     struct ast_t **arguments;
-    int num_expected_returns;
 } call_expression;
 
 typedef enum ast_tag_t {

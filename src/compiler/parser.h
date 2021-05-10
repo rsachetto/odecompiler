@@ -18,20 +18,12 @@ enum operator_precedence {
 	CALL
 };
 
-typedef struct function_num_args_hash_entry_t {
-    char *key;
-    int value;
-} function_num_args_hash_entry;
-
 typedef struct parser_t {
 
 	lexer *l;
 	char **errors;
-
 	token cur_token;
 	token peek_token;
-
-    function_num_args_hash_entry *function_num_args;
 
 } parser;
 

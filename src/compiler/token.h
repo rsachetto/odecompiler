@@ -22,6 +22,8 @@ typedef enum token_type_t {
 	SLASH      , //"/"
 	LT         , //"<"
 	GT         , //">"
+    LEQ        , //"<="
+    GEQ        , //">="
 	EQ         , //"=="
 	NOT_EQ     , //"!="
 	AND        , //"and"

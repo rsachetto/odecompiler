@@ -49,14 +49,10 @@ parser * new_parser(lexer *l) {
     parser *p = (parser*)calloc(1, sizeof(parser));
     p->l = l;
 
-    shdefault(p->function_num_args, -1);
-    sh_new_arena(p->function_num_args);
-
     advance_token(p);
     advance_token(p);
 
     return p;
-
 }
 
 void advance_token(parser *p) {
@@ -550,8 +546,6 @@ ast *parse_function_statement(parser *p) {
 
     stmt->function_stmt.num_return_values = return_len;
 
-    shput(p->function_num_args, stmt->function_stmt.name->identifier.value, return_len);
-
     return stmt;
 
 }
@@ -593,8 +587,6 @@ ast *parse_call_expression(parser *p, ast *function) {
 
     ast *exp = make_call_expression(p->cur_token, function);
     exp->call_expr.arguments = parse_expression_list(p, true);
-
-    exp->call_expr.num_expected_returns = shget(p->function_num_args, function->identifier.value);
     return exp;
 }
 
@@ -635,6 +627,8 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
                         TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ)   ||
                         TOKEN_TYPE_EQUALS(p->peek_token, LT)       ||
                         TOKEN_TYPE_EQUALS(p->peek_token, GT)       ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LEQ)      ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GEQ)      ||
                         TOKEN_TYPE_EQUALS(p->peek_token, AND)      ||
                         TOKEN_TYPE_EQUALS(p->peek_token, OR)       ||
                         TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
@@ -744,10 +738,9 @@ static enum operator_precedence get_precedence (token t) {
         return ORP;
     }
 
-    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT)) {
+    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT) || TOKEN_TYPE_EQUALS(t, LEQ) || TOKEN_TYPE_EQUALS(t, GEQ)) {
         return LESSGREATER;
     }
-
 
     if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS))  {
         return SUM;

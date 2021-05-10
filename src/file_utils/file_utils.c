@@ -201,7 +201,7 @@ char *read_entire_file(const char *filename, size_t *size) {
     if(buffer == NULL)
         return NULL;
 
-    fread(buffer, sizeof(char), numbytes, infile);
+    (void)fread(buffer, sizeof(char), numbytes, infile);
     fclose(infile);
 
     *size = numbytes;

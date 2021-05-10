@@ -21,31 +21,31 @@ FILE_UTILS=src/file_utils/file_utils.c src/file_utils/file_utils.h
 C_CONVERTER=src/code_converter.c src/code_converter.h
 
 ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
-	gcc -g src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/ode_shell -lreadline
+	gcc -O3 src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/ode_shell -lreadline
 
 ode_compiler: src/ode_compiler.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
-	gcc -g src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec
+	gcc -O3 src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec
 
 token.o: ${TOKEN}
-	gcc -g -c  src/compiler/token.c -o  build/token.o
+	gcc -O3 -c  src/compiler/token.c -o  build/token.o
 
 lexer.o: ${LEXER} ${TOKEN}
-	gcc -g -c  src/compiler/lexer.c -o  build/lexer.o
+	gcc -O3 -c  src/compiler/lexer.c -o  build/lexer.o
 
 sds.o: ${SDS}
-	gcc -g -c src/string/sds.c -o  build/sds.o
+	gcc -O3 -c src/string/sds.c -o  build/sds.o
 
 file_utils.o: ${FILE_UTILS}
-	gcc -g -c src/file_utils/file_utils.c -o  build/file_utils.o
+	gcc -O3 -c src/file_utils/file_utils.c -o  build/file_utils.o
 
 ast.o: ${TOKEN} ${AST} ${SDS}
-	gcc -g -c  src/compiler/ast.c -o  build/ast.o
+	gcc -O3 -c  src/compiler/ast.c -o  build/ast.o
 
 parser.o: ${AST} ${LEXER} ${TOKEN} ${PARSER}
-	gcc -g -c  src/compiler/parser.c -o  build/parser.o
+	gcc -O3 -c  src/compiler/parser.c -o  build/parser.o
 
 code_converter.o: ${CODE_CONVERTER} ${AST} ${LEXER} ${TOKEN} ${PARSER}
-	gcc -g -c  src/code_converter.c -o build/code_converter.o
+	gcc -O3 -c  src/code_converter.c -o build/code_converter.o
 
 clean:
 	rm bin/* build/*.o

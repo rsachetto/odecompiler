@@ -43,7 +43,7 @@ char *read_identifier(lexer *l) {
 
 	int count = 0;
 
-	while(isalpha(l->ch) || l->ch == '_' || l->ch == '\'') {
+	while(isalpha(l->ch) || isdigit(l->ch) || l->ch == '_' || l->ch == '\'') {
 		count++;
 		read_char(l);
 	}
@@ -125,7 +125,7 @@ void skip_whitespace(lexer *l) {
 }
 
 void skip_comment(lexer *l) {
-    if (l->ch == '#') {
+    while (l->ch == '#') {
         while (l->ch != '\n') {
             read_char(l);
         }
@@ -138,9 +138,13 @@ token next_token(lexer *l) {
 	token tok;
 
 	skip_whitespace(l);
-    skip_comment(l);
 
-	char ch[3];
+    while (l->ch == '#') {
+        skip_comment(l);
+        skip_whitespace(l);
+    }
+
+    char ch[3];
 	ch[0] = l->ch;
 	ch[1] = '\0';
 	ch[2] = '\0';
@@ -179,10 +183,23 @@ token next_token(lexer *l) {
 			tok = new_token(ASTERISK, ch, l->current_line, l->file_name);
 			break;
 		case '<':
-			tok = new_token(LT, ch, l->current_line, l->file_name);
+            if(peek_char(l) == '=') {
+                read_char(l);
+                ch[1] = l->ch;
+                tok = new_token(LEQ, ch, l->current_line, l->file_name);
+            }
+            else {
+                tok = new_token(LT, ch, l->current_line, l->file_name);
+            }
 			break;
 		case '>':
-			tok = new_token(GT, ch, l->current_line, l->file_name);
+            if(peek_char(l) == '=') {
+                read_char(l);
+                ch[1] = l->ch;
+                tok = new_token(GEQ, ch, l->current_line, l->file_name);
+            }else {
+                tok = new_token(GT, ch, l->current_line, l->file_name);
+            }
 			break;
 		case ';':
 			tok = new_token(SEMICOLON, ch, l->current_line, l->file_name);

@@ -99,7 +99,7 @@ ast *make_function_statement(token t) {
 
 ast *make_call_expression(token t, ast *function) {
     ast *a = make_base_ast(t, ast_call_expression);
-    a->call_expr.function = function;
+    a->call_expr.function_identifier = function;
     a->call_expr.arguments = NULL;
 
     return a;
@@ -277,7 +277,7 @@ static sds call_expr_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, ast_to_string(a->call_expr.function));
+    buf = sdscat(buf, ast_to_string(a->call_expr.function_identifier));
     buf = sdscat(buf, "(");
 
     int n = arrlen(a->call_expr.arguments);
