@@ -6,4 +6,3 @@ TODO: consider \r maybe on skip comment function (lexer.c)
 
 TODO: check for empty initial conditions
 TODO: check if a variable was already declared in the global scope.
-#TODO: check if the passed arguments == number of function expected arguments

@@ -37,7 +37,7 @@ static sds return_stmt_to_c(ast *a, declared_variable_hash *declared_variables_i
     return buf;
 }
 
-static sds assignement_stmt_to_c(ast *a,  declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
+static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     sds buf = sdsempty();
     char *var_type;
@@ -99,7 +99,7 @@ static sds assignement_stmt_to_c(ast *a,  declared_variable_hash *declared_varia
             }
         } else {
 
-            char *f_name                  = a->grouped_assignement_stmt.call_expr->call_expr.function_identifier->identifier.value;
+            char *f_name               = a->grouped_assignement_stmt.call_expr->call_expr.function_identifier->identifier.value;
             declared_variable_entry dv = shgets(global_scope, f_name);
             int num_expected_assignements = dv.value;
 
@@ -382,18 +382,60 @@ static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope,
 
 }
 
-void write_initial_conditions(program p, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope, solver_type solver) {
+void write_initial_conditions(program p, program odes, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope, solver_type solver) {
+
+    ode_initialized_hash_entry *result = NULL;
+    shdefault(result, false);
+    sh_new_strdup(result);
 
     int n_stmt = arrlen(p);
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
+        if(!shget(result, a->assignement_stmt.name->identifier.value)) {
+            shput(result, a->assignement_stmt.name->identifier.value, true);
+        }
+        else {
+            printf("Warning on line %d of file %s. Duplicate initialization ode variable %s\n", a->token.line_number, a->token.file_name, a->assignement_stmt.name->identifier.value);
+        }
+
+        int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
+
         if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
         }
         else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    x0[%d] = %s; //%s\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    x0[%d] = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
         }
     }
+
+    int n_odes = arrlen(odes);
+
+    string_array non_initialized_edos = NULL;
+
+    for(int i = 0; i < n_odes; i++) {
+        char *tmp = strndup(odes[i]->assignement_stmt.name->identifier.value, (int)strlen(odes[i]->assignement_stmt.name->identifier.value)-1);
+        if(shget(result, tmp)) {
+            shdel(result, tmp);
+        }
+        else {
+            arrput(non_initialized_edos, tmp);
+        }
+    }
+
+    int wrong_initialized = shlen(result);
+    for(int i = 0; i < wrong_initialized; i++) {
+        printf("Error - initialization of a non ode variable (%s)\n", result[i].key);
+    }
+
+    int non_initialized = arrlen(non_initialized_edos);
+    for(int i = 0; i < non_initialized; i++) {
+        fprintf(stderr, "Warning - No initial condition provided for %s'!\n", non_initialized_edos[i]);
+        free(non_initialized_edos[i]);
+    }
+
+    arrfree(non_initialized_edos);
+    shfree(result);
+
 }
 
 void write_odes_old_values(program p, FILE *file, solver_type solver) {
@@ -559,7 +601,8 @@ declared_variable_hash create_variables_scope(ast **odes, ast **variables) {
     for(int i = 0; i < arrlen(odes); i++) {
         //removing ' in the end of the ode identifier
         char *tmp = strndup(odes[i]->assignement_stmt.name->identifier.value, (int)strlen(odes[i]->assignement_stmt.name->identifier.value)-1);
-        shput(declared_variables, tmp, 1);
+        //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
+        shput(declared_variables, tmp, i+1);
     }
 
     //Adding VARS to scope.
@@ -652,7 +695,7 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     write_functions(functions, file, global_scope);
 
     fprintf(file, "void set_initial_conditions(N_Vector x0) { \n\n");
-    write_initial_conditions(initial, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
+    write_initial_conditions(initial, odes, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -797,7 +840,7 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     write_functions(functions, file, global_scope);
 
     fprintf(file, "void set_initial_conditions(real * x0) { \n\n");
-    write_initial_conditions(initial, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
+    write_initial_conditions(initial, odes, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -952,7 +995,6 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
                   "\treturn (0);\n"
                   "}");
 }
-
 void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     program odes = NULL;
@@ -984,8 +1026,11 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
         }
     }
 
-    if(arrlen(odes) == 0) {
+    int n_odes = arrlen(odes);
+
+    if(n_odes == 0) {
         fprintf(stderr, "Error - no odes defined\n");
+        exit(EXIT_FAILURE);
     }
 
     sds out_header = out_file_header(odes);

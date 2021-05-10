@@ -26,7 +26,6 @@ initial m = 5.000000e-02
 initial h = 6.000000e-01
 initial n = 3.250000e-01
 
-
 #ODEs
 ode V' = ((-((-stim(time))+i_Na+i_K+i_L))/Cm)
 ode m' = ((alpha_m*(1.0-m))-(beta_m*m))

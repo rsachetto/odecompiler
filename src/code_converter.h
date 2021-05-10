@@ -87,10 +87,10 @@ typedef enum solver_type_t{
 
 typedef declared_variable_entry * declared_variable_hash;
 
-typedef struct num_function_params_hash_entry_t {
+typedef struct ode_initialized_hash_entry_t {
     char *key;
-    int value;
-} num_function_params_hash_entry;
+    bool value;
+} ode_initialized_hash_entry;
 
 void convert_to_c(program p, FILE *out, solver_type solver);
 
