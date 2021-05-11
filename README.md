@@ -12,7 +12,7 @@ global init_i = 3
 beta = 0.4/n
 gamma = 0.04
 
-#Variables used in initial condition have to be marked as global
+#Variables used in initial conditions have to be marked as global
 initial S = n - init_i
 initial I = init_i
 initial R = 0
