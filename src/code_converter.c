@@ -528,8 +528,8 @@ void write_functions(program p, FILE *file, declared_variable_hash global_scope)
             }
 
             if(a->function_stmt.num_return_values > 1) {
-                for(int i = 0; i < a->function_stmt.num_return_values; i++) {
-                    fprintf(file, ", real *ret_val_%d", i);
+                for(int j = 0; j < a->function_stmt.num_return_values; j++) {
+                    fprintf(file, ", real *ret_val_%d", j);
                 }
             }
 
@@ -537,8 +537,8 @@ void write_functions(program p, FILE *file, declared_variable_hash global_scope)
         else {
             if(a->function_stmt.num_return_values > 1) {
                 fprintf(file, "real *ret_val_%d", 0);
-                for(int i = 1; i < a->function_stmt.num_return_values; i++) {
-                    fprintf(file, ", real *ret_val_%d", i);
+                for(int k = 1; k < a->function_stmt.num_return_values; k++) {
+                    fprintf(file, ", real *ret_val_%d", k);
                 }
             }
         }
@@ -999,7 +999,6 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     program odes = NULL;
     program variables = NULL;
-    program grouped_assignments = NULL;
     program functions = NULL;
     program initial = NULL;
     program globals = NULL;
@@ -1009,9 +1008,7 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = prog[i];
-        if(a->tag == ast_assignment_stmt) {
-            arrput(variables, a);
-        } else if(a->tag == ast_grouped_assignment_stmt) {
+        if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt) {
             arrput(variables, a);
         } else if(a->tag == ast_function_statement) {
             arrput(functions, a);

@@ -39,7 +39,9 @@ char *command_generator(const char *text, int state) {
 }
 
 char **command_completion(const char *text, int start, int end) {
-  return rl_completion_matches(text, command_generator);
+    (void)start;
+    (void)end;
+    return rl_completion_matches(text, command_generator);
 }
 
 bool check_command_number_argument(const char* command, int expected_args, int num_args) {
