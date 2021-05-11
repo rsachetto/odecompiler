@@ -3,6 +3,4 @@ TODO: add a python src code generator and a monoalg3d generator (and more)
 TODO: put CVODE in 3rd_part/ folder and ship it with the program
 TODO: we do not know the value of function types
 TODO: consider \r maybe on skip comment function (lexer.c)
-
-TODO: check for empty initial conditions
 TODO: check if a variable was already declared in the global scope.

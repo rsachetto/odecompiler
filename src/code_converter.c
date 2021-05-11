@@ -59,7 +59,9 @@ static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variab
         }
 
         else {
-            int declared = shget(*(declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
+            int declared = 1;
+            if(declared_variables_in_scope)
+                declared = shget(*(declared_variables_in_scope), a->assignement_stmt.name->identifier.value);
 
             if (!declared) {
                 buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
@@ -327,11 +329,25 @@ static sds call_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_
     return buf;
 }
 
+static sds global_variable_to_c(ast *a, declared_variable_hash global_scope) {
+
+    int global = shget(global_scope, a->assignement_stmt.name->identifier.value);
+
+    sds buf = sdsempty();
+    buf = sdscatfmt(buf, "real %s = %s;\n", a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, NULL, global_scope));
+
+}
+
 static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt) {
         return assignement_stmt_to_c(a, declared_variables_in_scope, global_scope);
     }
+
+    if(a->tag == ast_global_stmt) {
+        return global_variable_to_c(a, global_scope);
+    }
+
 
     if(a->tag == ast_return_stmt) {
         return return_stmt_to_c(a, declared_variables_in_scope, global_scope);

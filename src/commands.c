@@ -8,8 +8,6 @@
 
 char *command_generator(const char *text, int state) {
 
-    static char *commands[] = {CMD_EXIT, CMD_LOAD, CMD_RUN, CMD_PLOT, CMD_REPLOT, CMD_LIST, CMD_VARS, CMD_PLOT_SET_X, CMD_PLOT_SET_Y, CMD_CD, CMD_LS, CMD_PWD, CMD_LOAD_CMDS};
-
     static string_array matches = NULL;
     static size_t match_index = 0;
 
@@ -21,7 +19,7 @@ char *command_generator(const char *text, int state) {
 
         sds textstr = sdsnew(text);
         for (int i = 0; i < len; i++) {
-            char *word = commands[i];
+            char *word = (char*)commands[i];
             size_t wlen = strlen(word);
             size_t tlen = strlen(textstr);
 
