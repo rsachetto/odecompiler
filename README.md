@@ -24,6 +24,11 @@ To compile and use the interactive shell:
 $ git clone https://github.com/rsachetto/odecompiler
 $ cd odecompiler
 $ make
+```
+
+Using the interactive shell
+
+```
 $ ./bin/ode_shell
 Current directory odecompiler
 ode_shell> cd examples
@@ -34,7 +39,7 @@ ode_shell> plot
 
 ![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode.png)
 
-```sh
+```
 ode_shell> vars
 Model vars for model sir:
 t, 1
@@ -46,7 +51,7 @@ ode_shell> replot
 ```
 ![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode2.png)
 
-```sh
+```
 ode_shell> setploty R
 ode_shell> replot
 ode_shell> exit
