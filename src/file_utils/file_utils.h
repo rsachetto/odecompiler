@@ -2,8 +2,8 @@
 // Created by sachetto on 18/10/17.
 //
 
-#ifndef MONOALG3D_FILE_UTILS_H
-#define MONOALG3D_FILE_UTILS_H
+#ifndef FILE_UTILS_H
+#define FILE_UTILS_H
 
 #define LOG_LINE_SEPARATOR "======================================================================\n"
 
@@ -11,11 +11,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include "../string_utils.h"
 
 #define FILE_HAS_EXTENSION(file_ext__, ext__) (strcmp(file_ext__, ext__) == 0)
 #define ENDS_WITH_SLASH(path__) (path__[strlen(path__) - 1] == '/')
-
-typedef char **string_array;
 
 struct path_information {
     bool exists, is_file, is_dir;
@@ -47,4 +46,4 @@ const char *get_home_dir();
 FILE *open_file_or_exit(char *filename, char *mode);
 void print_current_dir();
 void print_path_contents(const char *path);
-#endif // MONOALG3D_FILE_UTILS_H
+#endif // FILE_UTILS_H

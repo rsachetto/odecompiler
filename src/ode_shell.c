@@ -19,6 +19,10 @@
 
 #include "code_converter.h"
 
+#include "commands.h"
+
+#include "string_utils.h"
+
 struct var_index_hash_entry {
     char *key;
     int value;
@@ -36,89 +40,24 @@ struct model_config {
     int yindex;
 };
 
-//TODO: move to a header file
 struct model_hash_entry {
     char *key;
     struct model_config *value;
 };
 
-struct shell_variables {
-    struct model_hash_entry *loaded_models;
-    char *last_loaded_model;
-    FILE *gnuplot_handle;
-};
-void run_commands_from_file(char *file_name, struct shell_variables *shell_state);
-
-#define STR_EQUALS(s1, s2) (strcmp((s1), (s2)) == 0)
 #define PROMPT "ode_shell> "
-
-#define CMD_EXIT        "quit"
-#define CMD_LOAD        "load"
-#define CMD_RUN         "run"
-#define CMD_PLOT        "plot"
-#define CMD_REPLOT      "replot"
-#define CMD_LIST        "list"
-#define CMD_VARS        "vars"
-#define CMD_PLOT_SET_X "plotsetx"
-#define CMD_PLOT_SET_Y "plotsety"
-#define CMD_CD          "cd"
-#define CMD_LS          "ls"
-#define CMD_PWD         "pwd"
-#define CMD_LOAD_CMDS   "load_cmds"
 
 #define HISTORY_FILE ".ode_history"
 
-#define CHECK_ARGS(command, expected, received)                                  \
-    do {                                                                         \
-        if (!check_command_number_argument((command), (expected), (received))) { \
-            return;                                                              \
-        }                                                                        \
-    } while (0)
-
+static void parse_and_execute_command(sds line, struct shell_variables *shell_state);
 
 static sigjmp_buf env;
 
-void  ctrl_c_handler(int sig) {
+static void ctrl_c_handler(int sig) {
     siglongjmp(env, 42);
 }
 
-char *command_generator(const char *text, int state) {
-
-    static char *commands[] = {CMD_EXIT, CMD_LOAD, CMD_RUN, CMD_PLOT, CMD_REPLOT, CMD_LIST, CMD_VARS, CMD_PLOT_SET_X, CMD_PLOT_SET_Y, CMD_CD, CMD_LS, CMD_PWD, CMD_LOAD_CMDS};
-
-    static string_array matches = NULL;
-    static size_t match_index = 0;
-
-    if (state == 0) {
-        arrsetlen(matches, 0);
-        match_index = 0;
-
-        int len = sizeof(commands)/sizeof(commands[0]);
-
-        sds textstr = sdsnew(text);
-        for (int i = 0; i < len; i++) {
-            char *word = commands[i];
-            size_t wlen = strlen(word);
-            size_t tlen = strlen(textstr);
-
-            if (wlen >= sdslen(textstr) &&  strncmp(word, textstr, tlen) == 0) {
-                arrput(matches, word);
-            }
-        }
-    }
-
-    if (match_index >= arrlen(matches)) {
-        return NULL;
-    } else {
-        return strdup(matches[match_index++]);
-    }
-}
-
-char **command_completion(const char *text, int start, int end) {
-  return rl_completion_matches(text, command_generator);
-}
-
-void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
+static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
   va_list ap;
 
   va_start(ap, cmd);
@@ -130,15 +69,7 @@ void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
 
 }
 
-bool check_command_number_argument(const char* command, int expected_args, int num_args) {
-    if(expected_args != num_args) {
-        printf("Error: command %s accept %d argument(s). %d argument(s) given!\n", command, expected_args, num_args);
-        return false;
-    }
-    return true;
-}
-
-bool check_and_print_execution_errors(FILE *fp) {
+static bool check_and_print_execution_errors(FILE *fp) {
 
     bool error = false;
     char msg[PATH_MAX];
@@ -152,45 +83,8 @@ bool check_and_print_execution_errors(FILE *fp) {
 
 }
 
-double string_to_double(char *string) {
 
-    char *endptr = NULL;
-    double result = 0;
-
-    /* reset errno to 0 before call */
-    errno = 0;
-
-    result = strtod(string, &endptr);
-
-    /* test return to number and errno values */
-    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && string && *endptr != 0))  {
-        return NAN;
-    }
-
-    return result;
-
-}
-
-long string_to_long(char *string, bool *error) {
-
-    char *endptr = NULL;
-    long result;
-    *error = false;
-
-    /* reset errno to 0 before call */
-    errno = 0;
-
-    result = strtol(string, &endptr, 10);
-
-    /* test return to number and errno values */
-    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && string && *endptr != 0))  {
-        *error = true;
-    }
-
-    return result;
-}
-
-bool generate_program(char *file_name, struct model_config *model) {
+static bool generate_program(char *file_name, struct model_config *model) {
 
     if(!file_exists(file_name)) {
         printf("Error: file %s does not exist!\n", file_name);
@@ -231,7 +125,7 @@ bool generate_program(char *file_name, struct model_config *model) {
 
 }
 
-struct model_config *load_model_config(struct shell_variables *shell_state, sds *tokens, int num_args, int model_name_position) {
+static struct model_config *load_model_config(struct shell_variables *shell_state, sds *tokens, int num_args, int model_name_position) {
 
     char *command = tokens[0];
 
@@ -262,7 +156,7 @@ struct model_config *load_model_config(struct shell_variables *shell_state, sds 
 
 }
 
-char * get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
+static char * get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
     int len = shlen(var_indexes);
 
     for(int i = 0; i < len; i++) {
@@ -272,7 +166,36 @@ char * get_var_name_from_index(struct var_index_hash_entry *var_indexes, int ind
     return NULL;
 }
 
-void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
+static void run_commands_from_file(char *file_name, struct shell_variables *shell_state) {
+    if (!file_exists(file_name)) {
+        printf("File %s does not exist!\n", file_name);
+    } else {
+        FILE *f = fopen(file_name, "r");
+
+        if (!f) {
+            printf("Error opening file %s for reading!\n", file_name);
+        } else {
+            char *line = NULL;
+            size_t len = 0;
+            sds command;
+
+            while ((getline(&line, &len, f)) != -1) {
+                command = sdsnew(line);
+                command = sdstrim(command, "\n ");
+                add_history(command);
+                parse_and_execute_command(command, shell_state);
+                printf("%s%s\n", PROMPT, command);
+                sdsfree(command);
+            }
+
+            fclose(f);
+            if (line)
+                free(line);
+        }
+    }
+}
+
+static void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     int  num_args;
     int token_count;
@@ -561,42 +484,13 @@ void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
     }
 }
 
-void setup_ctrl_c_handler() {
+static void setup_ctrl_c_handler() {
     /* Setup SIGINT */
     struct sigaction s;
     s.sa_handler = ctrl_c_handler;
     sigemptyset(&s.sa_mask);
     s.sa_flags = SA_RESTART;
     sigaction(SIGINT, &s, NULL);
-}
-
-void run_commands_from_file(char *file_name, struct shell_variables *shell_state) {
-    if (!file_exists(file_name)) {
-        printf("File %s does not exist!\n", file_name);
-    } else {
-        FILE *f = fopen(file_name, "r");
-
-        if (!f) {
-            printf("Error opening file %s for reading!\n", file_name);
-        } else {
-            char *line = NULL;
-            size_t len = 0;
-            sds command;
-
-            while ((getline(&line, &len, f)) != -1) {
-                command = sdsnew(line);
-                command = sdstrim(command, "\n ");
-                add_history(command);
-                parse_and_execute_command(command, shell_state);
-                printf("%s%s\n", PROMPT, command);
-                sdsfree(command);
-            }
-
-            fclose(f);
-            if (line)
-                free(line);
-        }
-    }
 }
 
 int main(int argc, char **argv) {
