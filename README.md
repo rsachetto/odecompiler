@@ -18,7 +18,7 @@ ode x' = x*(alpha - beta*y)
 ode y' = y*(delta*x- gamma)
 ```
 
-To compile and use the interactive shell
+To compile and use the interactive shell:
 
 ```sh
 $ git clone https://github.com/rsachetto/odecompiler
@@ -30,6 +30,11 @@ ode_shell> cd examples
 ode_shell> load sir.ode
 ode_shell> run
 ode_shell> plot
+```
+
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode.png)
+
+```sh
 ode_shell> vars
 Model vars for model sir:
 t, 1
@@ -38,10 +43,14 @@ I, 3
 R, 4
 ode_shell> setploty I
 ode_shell> replot
+```
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode2.png)
+
+```sh
 ode_shell> setploty R
 ode_shell> replot
 ode_shell> exit
-
 ```
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode3.png)
 
 
