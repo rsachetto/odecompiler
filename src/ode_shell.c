@@ -30,6 +30,7 @@ struct var_index_hash_entry {
 
 struct model_config {
     char *model_name;
+    char *model_file;
     char *model_command;
     char *output_file;
     char *xlabel;
@@ -38,6 +39,12 @@ struct model_config {
     struct var_index_hash_entry *var_indexes;
     int xindex;
     int yindex;
+};
+
+struct shell_variables {
+    struct model_hash_entry *loaded_models;
+    struct model_config *last_loaded_model;
+    FILE *gnuplot_handle;
 };
 
 struct model_hash_entry {
@@ -84,7 +91,9 @@ static bool check_and_print_execution_errors(FILE *fp) {
 }
 
 
-static bool generate_program(char *file_name, struct model_config *model) {
+static bool generate_program(struct model_config *model) {
+
+        char *file_name = model->model_file;
 
     if(!file_exists(file_name)) {
         printf("Error: file %s does not exist!\n", file_name);
@@ -132,7 +141,7 @@ static struct model_config *load_model_config(struct shell_variables *shell_stat
     const char *model_name;
 
     if(num_args == model_name_position) {
-        model_name = shell_state->last_loaded_model;
+        return shell_state->last_loaded_model;
     }
     else {
         model_name = tokens[1];
@@ -149,8 +158,6 @@ static struct model_config *load_model_config(struct shell_variables *shell_stat
         printf ("Error executing command %s. model %s is not loaded. Load a model first using \"load %s.edo\" or list loaded models using \"list\"\n", command, model_name, model_name);
         return NULL;
     }
-
-    model_config->model_name = strdup(model_name);
 
     return model_config;
 
@@ -195,24 +202,39 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
     }
 }
 
-static void execute_load_command(struct shell_variables *shell_state, const char *command, sds *tokens, int num_args) {
+static void execute_load_command(struct shell_variables *shell_state, const char *model_file, bool reloding) {
 
-    char *model_name = get_filename_without_ext(tokens[1]);
+    struct model_config *model_config;
+    bool error = false;
 
-    sds compiled_file = sdsnew(model_name);
+    if(reloding) {
+        model_config = shell_state->last_loaded_model;
+    }
+    else {
+        model_config = calloc(1, sizeof(struct model_config));
+        char *model_name = get_filename_without_ext(model_file);
+        model_config->model_name = strdup(model_name);
+        model_config->model_file = strdup(model_file);
+        error = generate_program(model_config);
+
+        if(error) return;
+
+        model_config->xindex = 1;
+        model_config->yindex = 2;
+
+        model_config->xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
+        model_config->ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
+
+        sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_config->model_name);
+        model_config->model_command = compiled_model_name;
+
+        shput(shell_state->loaded_models, model_config->model_name, model_config);
+        shell_state->last_loaded_model = model_config;
+
+    }
+
+    sds compiled_file = sdsnew(model_config->model_name);
     compiled_file = sdscat(compiled_file, "_XXXXXX.c");
-
-    struct model_config *model_config = calloc(1, sizeof(struct model_config));
-
-    bool error = generate_program(tokens[1], model_config);
-
-    if(error) return;
-
-    sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_name);
-    model_config->model_command = compiled_model_name;
-
-    model_config->xindex = 1;
-    model_config->yindex = 2;
 
     int fd = mkstemps(compiled_file, 2);
 
@@ -220,14 +242,8 @@ static void execute_load_command(struct shell_variables *shell_state, const char
     convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
     fclose(outfile);
 
-    model_config->xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
-    model_config->ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
-
-    shput(shell_state->loaded_models, model_name, model_config);
-    shell_state->last_loaded_model = strdup(model_name);
-
     sds compiler_command = sdsnew("gcc");
-    compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, compiled_model_name);
+    compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, model_config->model_command);
 
     FILE *fp = popen(compiler_command, "r");
     error = check_and_print_execution_errors(fp);
@@ -278,7 +294,9 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     sdsfree(model_command);
 }
 
-static void execute_plot_command(struct shell_variables *shell_state, const char *command, sds *tokens, int num_args) {
+static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    const char *command = tokens[0];
 
     struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
 
@@ -303,7 +321,9 @@ static void execute_plot_command(struct shell_variables *shell_state, const char
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->xindex, model_config->yindex, model_config->ylabel);
 }
 
-static void execute_setplot_command(struct shell_variables *shell_state, const char *command, sds *tokens, int num_args) {
+static void execute_setplot_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    const char *command = tokens[0];
 
     struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 1);
 
@@ -373,7 +393,7 @@ static void execute_list_command(struct shell_variables *shell_state) {
         return;
     }
 
-    printf("Last loaded model: %s\n", shell_state->last_loaded_model);
+    printf("Last loaded model: %s\n", shell_state->last_loaded_model->model_name);
     printf("Loaded models:\n");
     for(int i = 0; i < len; i++) {
         printf("%s\n", shell_state->loaded_models[i].key);
@@ -443,7 +463,6 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
 
     if(!model_config) return;
 
-
     char *xname = get_var_name_from_index(model_config->var_indexes, model_config->xindex);
     char *yname = get_var_name_from_index(model_config->var_indexes, model_config->yindex);
 
@@ -451,8 +470,67 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
 
     printf("Graph X: %s (%d)\n", xname, model_config->xindex);
     printf("Graph Y: %s (%d)\n", yname, model_config->yindex);
-    //TODO: set gnuplot lables
+    //TODO: set gnuplot labels
     return;
+
+}
+
+static void execute_setinitialvalue_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    const char *command = tokens[0];
+    char *var_name;
+    char *new_value;
+
+    if(num_args == 2) {
+        var_name = tokens[1];
+        new_value = tokens[2];
+    }
+    else {
+        var_name = tokens[2];
+        new_value = tokens[3];
+    }
+
+    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 2);
+
+    if(!model_config) return;
+
+    double new_value_number =string_to_double(new_value);
+
+    if(isnan(new_value_number)) {
+        printf("%s is not a number! For now, command %s only accepts numerical values!\n", new_value, command);
+        return;
+    }
+
+    int n = arrlen(model_config->program);
+
+    int i;
+    for(i = 0; i < n; i++) {
+        ast *a = model_config->program[i];
+        if(a->tag == ast_initial_stmt) {
+            if(STR_EQUALS(a->assignement_stmt.name->identifier.value, var_name)) {
+                //TODO: maybe remove
+                printf("Changing variable %s value from %s to %s for model %s\n", var_name, ast_to_string(a->assignement_stmt.value), new_value, model_config->model_name);
+
+                //TODO: we should accept any expression here, but for now we are only accepting numbers
+                token tok;
+                tok.literal = strdup(new_value);
+				tok.type = NUMBER;
+                ast *new_ast = make_number_literal(tok);
+                new_ast->num_literal.value = new_value_number;
+                a->assignement_stmt.value = new_ast;
+                break;
+            }
+        }
+    }
+
+    if(i == n ) {
+        printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n", command, var_name, model_config->model_name);
+    }
+    else {
+        printf("Reloading model %s\n", model_config->model_name);
+        execute_load_command(shell_state, NULL, true);
+
+    }
 
 }
 
@@ -473,7 +551,7 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     }
     else if(STR_EQUALS(command, CMD_LOAD)) {
         CHECK_ARGS(command, 1, num_args);
-        execute_load_command(shell_state, command, tokens, num_args);
+        execute_load_command(shell_state, tokens[1], false);
     }
     else if(STR_EQUALS(command, CMD_RUN)) {
         CHECK_2_ARGS(command, 1, 2, num_args);
@@ -481,7 +559,7 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     }
     else if(STR_EQUALS(command, CMD_PLOT) || STR_EQUALS(command, CMD_REPLOT)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
-        execute_plot_command(shell_state, command, tokens, num_args);
+        execute_plot_command(shell_state, tokens, num_args);
     } else if(STR_EQUALS(command, CMD_LIST)) {
         CHECK_ARGS("list", 0, num_args);
         execute_list_command(shell_state);
@@ -492,7 +570,7 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     }
     else if(STR_EQUALS(command, CMD_PLOT_SET_X) || STR_EQUALS(command, CMD_PLOT_SET_Y)) {
         CHECK_2_ARGS(command, 1, 2, num_args);
-        execute_setplot_command(shell_state, command, tokens, num_args);
+        execute_setplot_command(shell_state,  tokens, num_args);
     }
     else if(STR_EQUALS(command, CMD_CD)) {
         CHECK_ARGS(command, 1, num_args);
@@ -517,6 +595,15 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     else if(STR_EQUALS(command, CMD_GET_PLOT_CONFIG)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_getplotconfig_command(shell_state, tokens, num_args);
+    }
+    else if(STR_EQUALS(command, CMD_SET_INITIAL_VALUE)) {
+        CHECK_2_ARGS(command, 2, 3, num_args);
+        execute_setinitialvalue_command(shell_state, tokens, num_args);
+    }
+    else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUE)) {
+        CHECK_2_ARGS(command, 1, 2, num_args);
+        //TODO: implement
+        //execute_getinitialvalue_command(shell_state, tokens, num_args);
     }
     else {
         printf("Invalid command: %s\n", command);

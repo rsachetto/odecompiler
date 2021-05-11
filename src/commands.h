@@ -4,24 +4,26 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", "load", "ls", "plot", "setplotx", "setploty", "pwd", "replot",  "run", "vars", "getplotconfig"};
+static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", "load", "ls", "plot", "setplotx", "setploty", "pwd", "replot",  "run", "vars", "getplotconfig", "setinitialvalue", "getinitialvalue"};
 
-#define CMD_CD              commands[0]
-#define CMD_EXIT            commands[1]
-#define CMD_HELP            commands[2]
-#define CMD_LIST            commands[3]
-#define CMD_LOAD_CMDS       commands[4]
-#define CMD_LOAD            commands[5]
-#define CMD_LS              commands[6]
-#define CMD_PLOT            commands[7]
-#define CMD_PLOT_SET_X      commands[8]
-#define CMD_PLOT_SET_Y      commands[9]
-#define CMD_PWD             commands[10]
-#define CMD_REPLOT          commands[11]
-#define CMD_RUN             commands[12]
-#define CMD_VARS            commands[13]
-#define CMD_GET_PLOT_CONFIG commands[14]
-//#define NEW_COMMAND commands[15]
+#define CMD_CD                  commands[0]
+#define CMD_EXIT                commands[1]
+#define CMD_HELP                commands[2]
+#define CMD_LIST                commands[3]
+#define CMD_LOAD_CMDS           commands[4]
+#define CMD_LOAD                commands[5]
+#define CMD_LS                  commands[6]
+#define CMD_PLOT                commands[7]
+#define CMD_PLOT_SET_X          commands[8]
+#define CMD_PLOT_SET_Y          commands[9]
+#define CMD_PWD                 commands[10]
+#define CMD_REPLOT              commands[11]
+#define CMD_RUN                 commands[12]
+#define CMD_VARS                commands[13]
+#define CMD_GET_PLOT_CONFIG     commands[14]
+#define CMD_SET_INITIAL_VALUE   commands[15]
+#define CMD_GET_INITIAL_VALUE   commands[16]
+//#define CMD_SET_CURRENT_MODEL commands[17] //Next command
 
 #define CHECK_ARGS(command, expected, received)                                  \
     do {                                                                         \
@@ -48,11 +50,7 @@ static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", 
     } while (0)
 
 
-struct shell_variables {
-    struct model_hash_entry *loaded_models;
-    char *last_loaded_model;
-    FILE *gnuplot_handle;
-};
+
 
 char *command_generator(const char *text, int state);
 char **command_completion(const char *text, int start, int end);
