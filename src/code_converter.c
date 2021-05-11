@@ -101,8 +101,9 @@ static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variab
             }
         } else {
 
-            char *f_name               = a->grouped_assignement_stmt.call_expr->call_expr.function_identifier->identifier.value;
+            char *f_name = a->grouped_assignement_stmt.call_expr->call_expr.function_identifier->identifier.value;
             declared_variable_entry dv = shgets(global_scope, f_name);
+
             int num_expected_assignements = dv.value;
 
             if(n != num_expected_assignements) {
@@ -398,13 +399,34 @@ static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope,
 
 }
 
-void write_initial_conditions(program p, program odes, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope, solver_type solver) {
+void write_initial_conditions(program p, FILE *file, declared_variable_hash *declared_variables_in_scope, solver_type solver) {
+
+    int n_stmt = arrlen(p);
+    for(int i = 0; i < n_stmt; i++) {
+        ast *a = p[i];
+
+        int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
+
+        if(solver == CVODE_SOLVER) {
+            fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s\n", position-1, position-1, a->assignement_stmt.name->identifier.value);
+        }
+        else if(solver == EULER_ADPT_SOLVER) {
+            fprintf(file, "    x0[%d] = values[%d]; //%s\n", position-1, position-1, a->assignement_stmt.name->identifier.value);
+        }
+    }
+
+}
+
+void generate_initial_conditions_values(program p, program odes, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     ode_initialized_hash_entry *result = NULL;
     shdefault(result, false);
     sh_new_strdup(result);
 
     int n_stmt = arrlen(p);
+
+    fprintf(file, "    real values[%d];\n", n_stmt);
+
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
         if(!shget(result, a->assignement_stmt.name->identifier.value)) {
@@ -413,15 +435,8 @@ void write_initial_conditions(program p, program odes, FILE *file, declared_vari
         else {
             printf("Warning on line %d of file %s. Duplicate initialization ode variable %s\n", a->token.line_number, a->token.file_name, a->assignement_stmt.name->identifier.value);
         }
-
         int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
-
-        if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(x0, %d) = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
-        }
-        else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    x0[%d] = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
-        }
+        fprintf(file, "    values[%d] = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
     }
 
     int n_odes = arrlen(odes);
@@ -434,7 +449,7 @@ void write_initial_conditions(program p, program odes, FILE *file, declared_vari
             shdel(result, tmp);
         }
         else {
-            arrput(non_initialized_edos, tmp);
+                    arrput(non_initialized_edos, tmp);
         }
     }
 
@@ -449,8 +464,8 @@ void write_initial_conditions(program p, program odes, FILE *file, declared_vari
         free(non_initialized_edos[i]);
     }
 
-    arrfree(non_initialized_edos);
-    shfree(result);
+            arrfree(non_initialized_edos);
+            shfree(result);
 
 }
 
@@ -710,8 +725,8 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
 
     write_functions(functions, file, global_scope);
 
-    fprintf(file, "void set_initial_conditions(N_Vector x0) { \n\n");
-    write_initial_conditions(initial, odes, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
+    fprintf(file, "void set_initial_conditions(N_Vector x0, real *values) { \n\n");
+    write_initial_conditions(initial, file, &variables_and_odes_scope, CVODE_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -830,8 +845,9 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "\nint main(int argc, char **argv) {\n"
                   "\n"
                   "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
-                  "\n"
-                  "\tset_initial_conditions(x0);\n"
+                  "\n");
+    generate_initial_conditions_values(initial, odes, file, &variables_and_odes_scope, global_scope);
+    fprintf(file, "\tset_initial_conditions(x0, values);\n"
                   "\n"
                   "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
                   "\n"
@@ -855,8 +871,8 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     write_functions(functions, file, global_scope);
 
-    fprintf(file, "void set_initial_conditions(real * x0) { \n\n");
-    write_initial_conditions(initial, odes, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
+    fprintf(file, "void set_initial_conditions(real *x0, real *values) { \n\n");
+    write_initial_conditions(initial, file, &variables_and_odes_scope, EULER_ADPT_SOLVER);
     fprintf(file, "\n}\n\n");
 
     // RHS CPU
@@ -1002,8 +1018,9 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "\nint main(int argc, char **argv) {\n"
                   "\n"
                   "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
-                  "\n"
-                  "\tset_initial_conditions(x0);\n"
+                  "\n");
+    generate_initial_conditions_values(initial, odes, file, &variables_and_odes_scope, global_scope);
+    fprintf(file,"\tset_initial_conditions(x0, values);\n"
                   "\n"
                   "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
                   "\n"
