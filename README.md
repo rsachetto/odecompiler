@@ -18,7 +18,7 @@ ode x' = x*(alpha - beta*y)
 ode y' = y*(delta*x- gamma)
 ```
 
-To compile and use the interactive shell:
+To compile:
 
 ```sh
 $ git clone https://github.com/rsachetto/odecompiler
@@ -26,7 +26,7 @@ $ cd odecompiler
 $ make
 ```
 
-Using the interactive shell
+Using the interactive shell (needs gnuplot in path for the plot command):
 
 ```
 $ ./bin/ode_shell
