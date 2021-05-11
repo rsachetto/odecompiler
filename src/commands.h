@@ -4,23 +4,24 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", "load", "ls", "plot", "setplotx", "setploty", "pwd", "replot",  "run", "vars"};
+static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", "load", "ls", "plot", "setplotx", "setploty", "pwd", "replot",  "run", "vars", "getplotconfig"};
 
-#define CMD_CD         commands[0]
-#define CMD_EXIT       commands[1]
-#define CMD_HELP       commands[2]
-#define CMD_LIST       commands[3]
-#define CMD_LOAD_CMDS  commands[4]
-#define CMD_LOAD       commands[5]
-#define CMD_LS         commands[6]
-#define CMD_PLOT       commands[7]
-#define CMD_PLOT_SET_X commands[8]
-#define CMD_PLOT_SET_Y commands[9]
-#define CMD_PWD        commands[10]
-#define CMD_REPLOT     commands[11]
-#define CMD_RUN        commands[12]
-#define CMD_VARS       commands[13]
-//#define CMD_NEW     commands[14]
+#define CMD_CD              commands[0]
+#define CMD_EXIT            commands[1]
+#define CMD_HELP            commands[2]
+#define CMD_LIST            commands[3]
+#define CMD_LOAD_CMDS       commands[4]
+#define CMD_LOAD            commands[5]
+#define CMD_LS              commands[6]
+#define CMD_PLOT            commands[7]
+#define CMD_PLOT_SET_X      commands[8]
+#define CMD_PLOT_SET_Y      commands[9]
+#define CMD_PWD             commands[10]
+#define CMD_REPLOT          commands[11]
+#define CMD_RUN             commands[12]
+#define CMD_VARS            commands[13]
+#define CMD_GET_PLOT_CONFIG commands[14]
+//#define NEW_COMMAND commands[15]
 
 #define CHECK_ARGS(command, expected, received)                                  \
     do {                                                                         \
@@ -36,6 +37,14 @@ static const char *commands[] = {"cd",  "quit",  "help",  "list",  "load_cmds", 
             printf("Error: command %s accept %d or %d argument(s). %d argument(s) given!\n", command, accept0, accept1, num_args); \
             goto dealloc_vars;                                                                                                     \
         }                                                                                                                          \
+    } while (0)
+
+#define CHECK_3_ARGS(command, accept0, accept1, accept2, num_args)                                                                              \
+    do {                                                                                                                                        \
+        if (num_args != accept0 && num_args != accept1 && num_args != accept2) {                                                                \
+            printf("Error: command %s accept %d, %d or %d argument(s). %d argument(s) given!\n", command, accept0, accept1, accept2, num_args); \
+            goto dealloc_vars;                                                                                                                  \
+        }                                                                                                                                       \
     } while (0)
 
 

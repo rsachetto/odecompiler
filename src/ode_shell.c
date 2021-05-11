@@ -276,9 +276,7 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     pclose(fp);
 
     sdsfree(model_command);
-
 }
-
 
 static void execute_plot_command(struct shell_variables *shell_state, const char *command, sds *tokens, int num_args) {
 
@@ -435,7 +433,27 @@ static void execute_help_command(sds *tokens, int num_args) {
         }
     }
     else {
+        //TODO: implement help for individual commands
     }
+}
+
+static void execute_getplotconfig_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+
+    if(!model_config) return;
+
+
+    char *xname = get_var_name_from_index(model_config->var_indexes, model_config->xindex);
+    char *yname = get_var_name_from_index(model_config->var_indexes, model_config->yindex);
+
+    printf("Plot configuration for model %s\n\n", model_config->model_name);
+
+    printf("Graph X: %s (%d)\n", xname, model_config->xindex);
+    printf("Graph Y: %s (%d)\n", yname, model_config->yindex);
+    //TODO: set gnuplot lables
+    return;
+
 }
 
 static void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
@@ -495,6 +513,10 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     else if(STR_EQUALS(command, CMD_HELP)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_help_command(tokens, num_args);
+    }
+    else if(STR_EQUALS(command, CMD_GET_PLOT_CONFIG)) {
+        CHECK_2_ARGS(command, 0, 1, num_args);
+        execute_getplotconfig_command(shell_state, tokens, num_args);
     }
     else {
         printf("Invalid command: %s\n", command);

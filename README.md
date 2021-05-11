@@ -1,5 +1,5 @@
 # odecompiler
-A simple compiler and an interactive shell to play with Ordinary Differential Equations (ODEs). 
+A simple compiler and an interactive shell to play with Ordinary Differential Equations (ODEs).
 The ODEs can be described using a very simple language and compiled to c source code (more languages will be available). It is also
 possible to use the interactive shell to load, solve and plot the ODEs.
 
@@ -17,3 +17,31 @@ initial y = 2
 ode x' = x*(alpha - beta*y)
 ode y' = y*(delta*x- gamma)
 ```
+
+To compile and use the interactive shell
+
+```sh
+$ git clone https://github.com/rsachetto/odecompiler
+$ cd odecompiler
+$ make
+$ ./bin/ode_shell
+Current directory odecompiler
+ode_shell> cd examples
+ode_shell> load sir.ode
+ode_shell> run
+ode_shell> plot
+ode_shell> vars
+Model vars for model sir:
+t, 1
+S, 2
+I, 3
+R, 4
+ode_shell> setploty I
+ode_shell> replot
+ode_shell> setploty R
+ode_shell> replot
+ode_shell> exit
+
+```
+
+
