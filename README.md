@@ -3,19 +3,23 @@ A simple compiler and an interactive shell to play with Ordinary Differential Eq
 The ODEs can be described using a very simple language and compiled to c source code (more languages will be available). It is also
 possible to use the interactive shell to load, solve and plot the ODEs.
 
-Below is the Lotka-Volterra model using the ode language:
+Below is the SIR model using the ode language:
 
 ```
-alpha = 1
-beta  = 1
-delta = 1
-gamma = 1
+global n = 1000
+global init_i = 3
 
-initial x = 2
-initial y = 2
+beta = 0.4/n
+gamma = 0.04
 
-ode x' = x*(alpha - beta*y)
-ode y' = y*(delta*x- gamma)
+#Variables used in initial condition have to be marked as global
+initial S = n - init_i
+initial I = init_i
+initial R = 0
+
+ode S' = -beta*S*I
+ode I' = beta*S*I - gamma*I
+ode R' = gamma*I
 ```
 
 ## To compile:
