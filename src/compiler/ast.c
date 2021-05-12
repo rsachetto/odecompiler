@@ -171,10 +171,10 @@ static sds prefix_expr_to_str(ast *a) {
 
 	sds buf = sdsempty();
 
-	//buf = sdscat(buf, "(");
+	buf = sdscat(buf, "(");
 	buf = sdscatfmt(buf, "%s", a->prefix_expr.op);
 	buf = sdscatfmt(buf, "%s", ast_to_string(a->prefix_expr.right));
-	//buf = sdscat(buf, ")");
+	buf = sdscat(buf, ")");
 
 	return buf;
 
@@ -184,11 +184,11 @@ static sds infix_expr_to_str(ast *a) {
 
 	sds buf = sdsempty();
 
-	//buf = sdscat(buf, "(");
+	buf = sdscat(buf, "(");
 	buf = sdscatfmt(buf, "%s", ast_to_string(a->infix_expr.left));
 	buf = sdscatfmt(buf, "%s", a->infix_expr.op);
 	buf = sdscatfmt(buf, "%s", ast_to_string(a->infix_expr.right));
-	//buf = sdscat(buf, ")");
+	buf = sdscat(buf, ")");
 
 	return buf;
 

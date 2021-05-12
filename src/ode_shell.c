@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <linux/limits.h>
 #include <math.h>
 #include <readline/history.h>
@@ -19,42 +18,11 @@
 #include "string/sds.h"
 #include "string_utils.h"
 
-struct var_index_hash_entry {
-    char *key;
-    int value;
-};
+#include "ode_shell.h"
 
-struct model_config {
-    char *model_name;
-    char *model_file;
-    char *model_command;
-    char *output_file;
-    char *xlabel;
-    char *ylabel;
-    program program;
-    struct var_index_hash_entry *var_indexes;
-    int xindex;
-    int yindex;
-};
-
-struct shell_variables {
-    struct model_hash_entry *loaded_models;
-    struct model_config *last_loaded_model;
-    FILE *gnuplot_handle;
-};
-
-struct model_hash_entry {
-    char *key;
-    struct model_config *value;
-};
-
-#define PROMPT "ode_shell> "
-#define HISTORY_FILE ".ode_history"
-
-static void parse_and_execute_command(sds line, struct shell_variables *shell_state);
+static bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 
 static sigjmp_buf env;
-
 static void ctrl_c_handler(int sig) {
     siglongjmp(env, 42);
 }
@@ -288,10 +256,9 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     sdsfree(model_command);
 }
 
-static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
     const char *command = tokens[0];
-
     struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
@@ -302,7 +269,7 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
     }
 
     if(shell_state->gnuplot_handle == NULL) {
-        if(STR_EQUALS(command, CMD_REPLOT)) {
+        if(c_type == CMD_REPLOT) {
             printf ("Error executing command %s. no previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
             return;
         }
@@ -315,7 +282,7 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->xindex, model_config->yindex, model_config->ylabel);
 }
 
-static void execute_setplot_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+static void execute_setplot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
     const char *command = tokens[0];
 
@@ -358,7 +325,7 @@ static void execute_setplot_command(struct shell_variables *shell_state, sds *to
         }
     }
 
-    if(STR_EQUALS(command, CMD_PLOT_SET_X)) {
+    if(c_type == CMD_PLOT_SET_X) {
         model_config->xindex = index;
         if(index_as_str) {
             model_config->xlabel = strdup(index_str);
@@ -441,9 +408,9 @@ static void execute_ls_command(char *p, int num_args) {
 static void execute_help_command(sds *tokens, int num_args) {
     if(num_args == 0) {
         printf("Available commands:\n");
-        int nc = sizeof(commands)/sizeof(commands[0]);
+        int nc = shlen(commands);
         for(int i = 0; i < nc; i++) {
-            printf("%s\n", commands[i]);
+            printf("%s\n", commands[i].key);
         }
     } else {
         //TODO: implement help for individual commands
@@ -572,7 +539,7 @@ static void execute_get_values_command(struct shell_variables *shell_state, sds 
     printf("\n");
 }
 
-static void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
+static bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     int  num_args;
     int token_count;
@@ -585,85 +552,76 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
 
     num_args = token_count - 1;
 
-    const char *command = tokens[0];
+    command command = shgets(commands, tokens[0]);
+    command_type c_type = command.value;
 
-    if(STR_EQUALS(tokens[0], CMD_EXIT)) {
-        //Exit is handled by the main loop
-        CHECK_ARGS(command, 0, num_args);
+    if(c_type == CMD_INVALID) {
+        printf("Invalid command: %s\n", tokens[0]);
+        goto dealloc_vars;
     }
-    else if(STR_EQUALS(command, CMD_LOAD)) {
-        CHECK_ARGS(command, 1, num_args);
+
+    CHECK_2_ARGS(command.key, command.accept[0], command.accept[1], num_args);
+
+    if(c_type == CMD_QUIT) {
+        //Exit is handled by the main loop
+        return true;
+    }
+    else if(c_type == CMD_LOAD) {
         execute_load_command(shell_state, tokens[1], false);
     }
-    else if(STR_EQUALS(command, CMD_RUN)) {
-        CHECK_2_ARGS(command, 1, 2, num_args);
+    else if(c_type == CMD_RUN) {
         execute_run_command(shell_state, tokens, num_args);
     }
-    else if(STR_EQUALS(command, CMD_PLOT) || STR_EQUALS(command, CMD_REPLOT)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
-        execute_plot_command(shell_state, tokens, num_args);
-    } else if(STR_EQUALS(command, CMD_LIST)) {
-        CHECK_ARGS("list", 0, num_args);
+    else if(c_type == CMD_PLOT || c_type == CMD_REPLOT) {
+        execute_plot_command(shell_state, tokens, c_type, num_args);
+    } else if(c_type == CMD_LIST) {
         execute_list_command(shell_state);
-    } else if(STR_EQUALS(command, CMD_VARS)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_VARS) {
         execute_vars_command(shell_state, tokens, num_args);
-    } else if(STR_EQUALS(command, CMD_PLOT_SET_X) || STR_EQUALS(command, CMD_PLOT_SET_Y)) {
-        CHECK_2_ARGS(command, 1, 2, num_args);
-        execute_setplot_command(shell_state,  tokens, num_args);
-    } else if(STR_EQUALS(command, CMD_CD)) {
-        CHECK_ARGS(command, 1, num_args);
+    } else if(c_type == CMD_PLOT_SET_X || c_type == CMD_PLOT_SET_Y) {
+        execute_setplot_command(shell_state,  tokens, c_type, num_args);
+    } else if(c_type == CMD_CD) {
         execute_cd_command(tokens[1]);
-    } else if(STR_EQUALS(command, CMD_PWD)) {
-        CHECK_ARGS(command, 0, num_args);
+    } else if(c_type == CMD_PWD) {
         print_current_dir();
-    } else if(STR_EQUALS(command, CMD_LOAD_CMDS)) {
-        CHECK_ARGS(command, 1, num_args);
+    } else if(c_type == CMD_LOAD_CMDS) {
         run_commands_from_file(tokens[1], shell_state);
-    } else if(STR_EQUALS(command, CMD_LS)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_LS) {
         execute_ls_command(tokens[1], num_args);
-    } else if(STR_EQUALS(command, CMD_HELP)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_HELP) {
         execute_help_command(tokens, num_args);
-    } else if(STR_EQUALS(command, CMD_GET_PLOT_CONFIG)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_GET_PLOT_CONFIG) {
         execute_getplotconfig_command(shell_state, tokens, num_args);
-    } else if(STR_EQUALS(command, CMD_SET_INITIAL_VALUE)) {
-        CHECK_2_ARGS(command, 2, 3, num_args);
+    } else if(c_type == CMD_SET_INITIAL_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
-    } else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUE)) {
-        CHECK_2_ARGS(command, 1, 2, num_args);
+    } else if(c_type == CMD_GET_INITIAL_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
-    } else if(STR_EQUALS(command, CMD_SET_PARAM_VALUE)) {
-        CHECK_2_ARGS(command, 2, 3, num_args);
+    } else if(c_type == CMD_SET_PARAM_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
-    } else if(STR_EQUALS(command, CMD_GET_PARAM_VALUE)) {
-        CHECK_2_ARGS(command, 1, 2, num_args);
+    } else if(c_type == CMD_GET_PARAM_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
-    } else if(STR_EQUALS(command, CMD_SET_GLOBAL_VALUE)) {
-        CHECK_2_ARGS(command, 2, 3, num_args);
+    } else if(c_type == CMD_SET_GLOBAL_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
-    } else if(STR_EQUALS(command, CMD_GET_GLOBAL_VALUE)) {
-        CHECK_2_ARGS(command, 1, 2, num_args);
+    } else if(c_type == CMD_GET_GLOBAL_VALUE) {
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
-    } else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUES)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_GET_INITIAL_VALUES) {
         execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
-    } else if(STR_EQUALS(command, CMD_GET_PARAM_VALUES)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_GET_PARAM_VALUES) {
         execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
-    } else if(STR_EQUALS(command, CMD_GET_GLOBAL_VALUES)) {
-        CHECK_2_ARGS(command, 0, 1, num_args);
+    } else if(c_type == CMD_GET_GLOBAL_VALUES) {
         execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
-    }
-    else {
-        printf("Invalid command: %s\n", command);
-        goto dealloc_vars;
+    } else if(c_type == CMD_SET_ODE_VALUE) {
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, true);
+    } else if(c_type == CMD_GET_ODE_VALUE) {
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
+    } else if(c_type == CMD_GET_ODE_VALUES) {
+        execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
     }
 
     dealloc_vars:
         sdsfreesplitres(tokens, token_count);
+
+    return false;
 
 }
 
@@ -685,6 +643,8 @@ void strip_extra_spaces(char* str) {
 }
 
 int main(int argc, char **argv) {
+
+    initialize_commands();
 
     print_current_dir();
 
@@ -714,17 +674,17 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
+    bool quit;
+
     while ((line = readline(PROMPT)) != 0) {
         if(*line) {
             strip_extra_spaces(line);
             command = sdsnew(line);
             command = sdstrim(command, "\n ");
             add_history(command);
-            if(STR_EQUALS(command, CMD_EXIT)) {
-                break;
-            }
-            parse_and_execute_command(command, &shell_state);
+            quit = parse_and_execute_command(command, &shell_state);
             sdsfree(command);
+            if(quit) break;
         }
     }
 
