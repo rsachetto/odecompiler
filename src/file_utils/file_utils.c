@@ -201,7 +201,14 @@ char *read_entire_file(const char *filename, size_t *size) {
     if(buffer == NULL)
         return NULL;
 
-    fread(buffer, sizeof(char), numbytes, infile);
+    size_t n = fread(buffer, sizeof(char), numbytes, infile);
+
+    if(n != numbytes) {
+        fprintf(stderr, "Error reading file %s\n", filename);
+        fclose(infile);
+        return NULL;
+    }
+
     fclose(infile);
 
     *size = numbytes;
@@ -506,8 +513,12 @@ const char *get_home_dir() {
 
 void print_current_dir() {
     char buf[PATH_MAX];
-    getcwd(buf, PATH_MAX);
-    printf("Current directory %s\n", buf);
+    if(!getcwd(buf, PATH_MAX)) {
+        printf("Error calling getcwd\n");
+    }
+    else {
+        printf("Current directory %s\n", buf);
+    }
 }
 
 void print_path_contents(const char *path) {

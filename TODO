@@ -8,4 +8,5 @@ TODO: initial conditions can only be assigned with numerical expressions or glob
 //Maybes
 TODO: maybe change the model name when reloading the model after a variable change to preserve the original model (allowing multiple plotting)
 TODO: maybe implement auto model reloading when the model is changed externally
+TODO: maybe add an option to change the initial time
 TODO: consider \r maybe on skip comment function (lexer.c)

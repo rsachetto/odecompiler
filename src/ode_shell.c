@@ -12,13 +12,14 @@
 
 #include "code_converter.h"
 #include "commands.h"
-#include "compiler/parser.h"
 #include "file_utils/file_utils.h"
 #include "stb/stb_ds.h"
 #include "string/sds.h"
 #include "string_utils.h"
 
 #include "ode_shell.h"
+
+extern command *commands;
 
 static bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 
@@ -250,7 +251,7 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     model_command = sdscatprintf(model_command, " %lf %s", simulation_steps, model_config->output_file);
 
     FILE *fp = popen(model_command, "r");
-    bool error = check_and_print_execution_errors(fp);
+    check_and_print_execution_errors(fp);
     pclose(fp);
 
     sdsfree(model_command);
@@ -264,13 +265,13 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
     if(!model_config) return;
 
     if(!model_config->output_file) {
-        printf ("Error executing command %s. model %s was not executed. Run then model first using \"run %s\" or list loaded models using \"list\"\n", command, model_config->model_name, model_config->model_name);
+        printf ("Error executing command %s. Model %s was not executed. Run then model first using \"run %s\" or list loaded models using \"list\"\n", command, model_config->model_name, model_config->model_name);
         return;
     }
 
     if(shell_state->gnuplot_handle == NULL) {
         if(c_type == CMD_REPLOT) {
-            printf ("Error executing command %s. no previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
+            printf ("Error executing command %s. No previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
             return;
         }
 
@@ -413,7 +414,14 @@ static void execute_help_command(sds *tokens, int num_args) {
             printf("%s\n", commands[i].key);
         }
     } else {
-        //TODO: implement help for individual commands
+         command command = shgets(commands, tokens[1]);
+         if(command.help) {
+             printf("%s\n", command.help);
+         }
+         else {
+             printf("No help available for command %s yet\n", tokens[1]);
+         }
+
     }
 }
 
@@ -512,8 +520,6 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
 
 static void execute_get_values_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag) {
 
-    const char *command = tokens[0];
-
     struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
@@ -537,6 +543,23 @@ static void execute_get_values_command(struct shell_variables *shell_state, sds 
     }
 
     printf("\n");
+}
+
+void execute_command_save_plot(const char *command, struct shell_variables *shell_state, char *file_name) {
+
+    if(shell_state->gnuplot_handle == NULL) {
+        printf ("Error executing command %s. No previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
+        return;
+    }
+
+    //TODO: check if the name ends with pdf
+    gnuplot_cmd(shell_state->gnuplot_handle, "set terminal pdf");
+    gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
+    gnuplot_cmd(shell_state->gnuplot_handle, "replot");
+
+    //TODO: get default terminal using "show t"
+    gnuplot_cmd(shell_state->gnuplot_handle, "set terminal qt");
+
 }
 
 static bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
@@ -616,6 +639,9 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
     } else if(c_type == CMD_GET_ODE_VALUES) {
         execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
+    }
+    else if(c_type == CMD_SAVEPLOT) {
+        execute_command_save_plot(tokens[0], shell_state, tokens[1]);
     }
 
     dealloc_vars:

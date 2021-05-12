@@ -5,7 +5,8 @@
 #ifndef ODECOMPILER_ODE_SHELL_H
 #define ODECOMPILER_ODE_SHELL_H
 
-extern command *commands;
+#include "compiler/parser.h"
+#include <stdio.h>
 
 struct var_index_hash_entry {
     char *key;

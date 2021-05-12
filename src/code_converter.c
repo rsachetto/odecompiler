@@ -2,6 +2,67 @@
 #include "code_converter.h"
 #include "stb/stb_ds.h"
 
+static const char *builtin_functions[] = {"acos",
+                                    "asin",
+                                    "atan",
+                                    "atan2",
+                                    "ceil",
+                                    "cos",
+                                    "cosh",
+                                    "exp",
+                                    "fabs",
+                                    "floor",
+                                    "fmod",
+                                    "frexp",
+                                    "ldexp",
+                                    "log",
+                                    "log10",
+                                    "modf",
+                                    "pow",
+                                    "sin",
+                                    "sinh",
+                                    "sqrt",
+                                    "tan",
+                                    "tanh",
+                                    "cosh",
+                                    "asinh",
+                                    "atanh",
+                                    "cbrt",
+                                    "copysign",
+                                    "erf",
+                                    "erfc",
+                                    "exp2",
+                                    "expm1",
+                                    "fdim",
+                                    "fma",
+                                    "fmax",
+                                    "fmin",
+                                    "hypot",
+                                    "ilogb",
+                                    "lgamma",
+                                    "llrint",
+                                    "lrint",
+                                    "llround",
+                                    "lround",
+                                    "log1p",
+                                    "log2",
+                                    "logb",
+                                    "nan",
+                                    "nearbyint",
+                                    "nextafter",
+                                    "nexttoward",
+                                    "remainder",
+                                    "remquo",
+                                    "rint",
+                                    "round",
+                                    "scalbln",
+                                    "scalbn",
+                                    "tgamma",
+                                    "trunc"};
+
+static int indentation_level = 0;
+static char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
+
 static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope);
 
 static sds expression_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
@@ -332,10 +393,10 @@ static sds call_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_
 
 static sds global_variable_to_c(ast *a, declared_variable_hash global_scope) {
 
-    int global = shget(global_scope, a->assignement_stmt.name->identifier.value);
-
     sds buf = sdsempty();
     buf = sdscatfmt(buf, "real %s = %s;\n", a->assignement_stmt.name->identifier.value, ast_to_c(a->assignement_stmt.value, NULL, global_scope));
+
+    return buf;
 
 }
 
@@ -348,7 +409,6 @@ static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope,
     if(a->tag == ast_global_stmt) {
         return global_variable_to_c(a, global_scope);
     }
-
 
     if(a->tag == ast_return_stmt) {
         return return_stmt_to_c(a, declared_variables_in_scope, global_scope);
@@ -660,7 +720,7 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
     for(int i = 0; i < nb; i++) {
         declared_variable_entry tmp;
-        tmp.key = builtin_functions[i];
+        tmp.key = (char*) builtin_functions[i];
         tmp.value = 1;
         tmp.num_args = 1;
 

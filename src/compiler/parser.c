@@ -516,7 +516,6 @@ ast *parse_function_statement(parser *p) {
 
     int len = arrlen(stmt->function_stmt.body);
 
-    bool first_return = true;
     int return_len = 0;
 
     program return_stmts = NULL;
