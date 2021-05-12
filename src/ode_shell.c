@@ -11,16 +11,12 @@
 #include <unistd.h>
 #include <setjmp.h>
 
-#include "file_utils/file_utils.h"
-#include "string/sds.h"
-#include "stb/stb_ds.h"
-
-#include "compiler/parser.h"
-
 #include "code_converter.h"
-
 #include "commands.h"
-
+#include "compiler/parser.h"
+#include "file_utils/file_utils.h"
+#include "stb/stb_ds.h"
+#include "string/sds.h"
 #include "string_utils.h"
 
 struct var_index_hash_entry {
@@ -53,7 +49,6 @@ struct model_hash_entry {
 };
 
 #define PROMPT "ode_shell> "
-
 #define HISTORY_FILE ".ode_history"
 
 static void parse_and_execute_command(sds line, struct shell_variables *shell_state);
@@ -90,10 +85,9 @@ static bool check_and_print_execution_errors(FILE *fp) {
 
 }
 
-
 static bool generate_program(struct model_config *model) {
 
-        char *file_name = model->model_file;
+    char *file_name = model->model_file;
 
     if(!file_exists(file_name)) {
         printf("Error: file %s does not exist!\n", file_name);
@@ -451,8 +445,7 @@ static void execute_help_command(sds *tokens, int num_args) {
         for(int i = 0; i < nc; i++) {
             printf("%s\n", commands[i]);
         }
-    }
-    else {
+    } else {
         //TODO: implement help for individual commands
     }
 }
@@ -475,61 +468,77 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
 
 }
 
-static void execute_setinitialvalue_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+static void execute_set_or_get_value_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag, bool set) {
 
     const char *command = tokens[0];
     char *var_name;
     char *new_value;
 
-    if(num_args == 2) {
-        var_name = tokens[1];
-        new_value = tokens[2];
-    }
-    else {
-        var_name = tokens[2];
-        new_value = tokens[3];
-    }
+    struct model_config *model_config;
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 2);
+    if(set) {
+        if(num_args == 2) {
+            var_name = tokens[1];
+            new_value = tokens[2];
+        }
+        else {
+            var_name = tokens[2];
+            new_value = tokens[3];
+        }
+
+        model_config = load_model_config(shell_state, tokens, num_args, 2);
+    } else {
+        if(num_args == 1) {
+            var_name = tokens[1];
+        }
+        else {
+            var_name = tokens[2];
+        }
+
+        model_config = load_model_config(shell_state, tokens, num_args, 1);
+
+    }
 
     if(!model_config) return;
-
-    double new_value_number =string_to_double(new_value);
-
-    if(isnan(new_value_number)) {
-        printf("%s is not a number! For now, command %s only accepts numerical values!\n", new_value, command);
-        return;
-    }
 
     int n = arrlen(model_config->program);
 
     int i;
     for(i = 0; i < n; i++) {
         ast *a = model_config->program[i];
-        if(a->tag == ast_initial_stmt) {
+        if(a->tag == tag) {
             if(STR_EQUALS(a->assignement_stmt.name->identifier.value, var_name)) {
-                //TODO: maybe remove
-                printf("Changing variable %s value from %s to %s for model %s\n", var_name, ast_to_string(a->assignement_stmt.value), new_value, model_config->model_name);
 
-                //TODO: we should accept any expression here, but for now we are only accepting numbers
-                token tok;
-                tok.literal = strdup(new_value);
-				tok.type = NUMBER;
-                ast *new_ast = make_number_literal(tok);
-                new_ast->num_literal.value = new_value_number;
-                a->assignement_stmt.value = new_ast;
+                if(set) {
+                    lexer *l = new_lexer(new_value, model_config->model_name);
+                    parser *p = new_parser(l);
+                    program program = parse_program(p);
+
+                    check_parser_errors(p, true);
+
+                    printf("Changing value of variable %s from %s to %s for model %s\n",
+                            var_name, ast_to_string(a->assignement_stmt.value),
+                            ast_to_string(program[0]), model_config->model_name);
+
+                    free(a->assignement_stmt.value);
+                    a->assignement_stmt.value = program[0];
+                } else {
+                    printf("%s = %s for model %s\n", var_name, ast_to_string(a->assignement_stmt.value), model_config->model_name);
+                }
                 break;
             }
         }
     }
 
     if(i == n ) {
-        printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n", command, var_name, model_config->model_name);
+        printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n",
+                command, var_name, model_config->model_name);
     }
     else {
-        printf("Reloading model %s\n", model_config->model_name);
-        execute_load_command(shell_state, NULL, true);
-
+        if(set) {
+            printf("Reloading model %s\n", model_config->model_name);
+            execute_load_command(shell_state, NULL, true);
+        }
     }
 
 }
@@ -540,6 +549,10 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     int token_count;
 
     sds *tokens = sdssplit(line, " ", &token_count);
+
+    for(int i = 0; i < token_count; i++) {
+        tokens[i] = sdstrim(tokens[i], " ");
+    }
 
     num_args = token_count - 1;
 
@@ -563,49 +576,49 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     } else if(STR_EQUALS(command, CMD_LIST)) {
         CHECK_ARGS("list", 0, num_args);
         execute_list_command(shell_state);
-    }
-    else if(STR_EQUALS(command, CMD_VARS)) {
+    } else if(STR_EQUALS(command, CMD_VARS)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_vars_command(shell_state, tokens, num_args);
-    }
-    else if(STR_EQUALS(command, CMD_PLOT_SET_X) || STR_EQUALS(command, CMD_PLOT_SET_Y)) {
+    } else if(STR_EQUALS(command, CMD_PLOT_SET_X) || STR_EQUALS(command, CMD_PLOT_SET_Y)) {
         CHECK_2_ARGS(command, 1, 2, num_args);
         execute_setplot_command(shell_state,  tokens, num_args);
-    }
-    else if(STR_EQUALS(command, CMD_CD)) {
+    } else if(STR_EQUALS(command, CMD_CD)) {
         CHECK_ARGS(command, 1, num_args);
         execute_cd_command(tokens[1]);
-    }
-    else if(STR_EQUALS(command, CMD_PWD)) {
+    } else if(STR_EQUALS(command, CMD_PWD)) {
         CHECK_ARGS(command, 0, num_args);
         print_current_dir();
-    }
-    else if(STR_EQUALS(command, CMD_LOAD_CMDS)) {
+    } else if(STR_EQUALS(command, CMD_LOAD_CMDS)) {
         CHECK_ARGS(command, 1, num_args);
         run_commands_from_file(tokens[1], shell_state);
-    }
-    else if(STR_EQUALS(command, CMD_LS)) {
+    } else if(STR_EQUALS(command, CMD_LS)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_ls_command(tokens[1], num_args);
-    }
-    else if(STR_EQUALS(command, CMD_HELP)) {
+    } else if(STR_EQUALS(command, CMD_HELP)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_help_command(tokens, num_args);
-    }
-    else if(STR_EQUALS(command, CMD_GET_PLOT_CONFIG)) {
+    } else if(STR_EQUALS(command, CMD_GET_PLOT_CONFIG)) {
         CHECK_2_ARGS(command, 0, 1, num_args);
         execute_getplotconfig_command(shell_state, tokens, num_args);
-    }
-    else if(STR_EQUALS(command, CMD_SET_INITIAL_VALUE)) {
+    } else if(STR_EQUALS(command, CMD_SET_INITIAL_VALUE)) {
         CHECK_2_ARGS(command, 2, 3, num_args);
-        execute_setinitialvalue_command(shell_state, tokens, num_args);
-    }
-    else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUE)) {
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
+    } else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUE)) {
         CHECK_2_ARGS(command, 1, 2, num_args);
-        //TODO: implement
-        //execute_getinitialvalue_command(shell_state, tokens, num_args);
-    }
-    else {
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
+    } else if(STR_EQUALS(command, CMD_SET_PARAM_VALUE)) {
+        CHECK_2_ARGS(command, 2, 3, num_args);
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
+    } else if(STR_EQUALS(command, CMD_GET_PARAM_VALUE)) {
+        CHECK_2_ARGS(command, 1, 2, num_args);
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
+    } else if(STR_EQUALS(command, CMD_SET_GLOBAL_VALUE)) {
+        CHECK_2_ARGS(command, 2, 3, num_args);
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
+    } else if(STR_EQUALS(command, CMD_GET_GLOBAL_VALUE)) {
+        CHECK_2_ARGS(command, 1, 2, num_args);
+        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
+    } else {
         printf("Invalid command: %s\n", command);
         goto dealloc_vars;
     }
@@ -622,6 +635,14 @@ static void setup_ctrl_c_handler() {
     sigemptyset(&s.sa_mask);
     s.sa_flags = SA_RESTART;
     sigaction(SIGINT, &s, NULL);
+}
+
+void strip_extra_spaces(char* str) {
+    int i, x;
+    for(i=x=0; str[i]; ++i)
+        if(!isspace(str[i]) || (i > 0 && !isspace(str[i-1])))
+            str[x++] = str[i];
+    str[x] = '\0';
 }
 
 int main(int argc, char **argv) {
@@ -656,6 +677,7 @@ int main(int argc, char **argv) {
 
     while ((line = readline(PROMPT)) != 0) {
         if(*line) {
+            strip_extra_spaces(line);
             command = sdsnew(line);
             command = sdstrim(command, "\n ");
             add_history(command);
