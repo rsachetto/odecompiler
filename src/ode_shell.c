@@ -543,6 +543,35 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
 
 }
 
+static void execute_get_values_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag) {
+
+    const char *command = tokens[0];
+
+    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+
+    if(!model_config) return;
+
+    int n = arrlen(model_config->program);
+
+    printf("Model %s: ", model_config->model_name);
+
+    bool empty = true;
+
+    for(int i = 0; i < n; i++) {
+        ast *a = model_config->program[i];
+        if(a->tag == tag) {
+            printf("\n%s = %s", a->assignement_stmt.name->identifier.value, ast_to_string(a->assignement_stmt.value));
+            empty = false;
+        }
+    }
+
+    if(empty) {
+        printf("No values to show");
+    }
+
+    printf("\n");
+}
+
 static void parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     int  num_args;
@@ -618,7 +647,17 @@ static void parse_and_execute_command(sds line, struct shell_variables *shell_st
     } else if(STR_EQUALS(command, CMD_GET_GLOBAL_VALUE)) {
         CHECK_2_ARGS(command, 1, 2, num_args);
         execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
-    } else {
+    } else if(STR_EQUALS(command, CMD_GET_INITIAL_VALUES)) {
+        CHECK_2_ARGS(command, 0, 1, num_args);
+        execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
+    } else if(STR_EQUALS(command, CMD_GET_PARAM_VALUES)) {
+        CHECK_2_ARGS(command, 0, 1, num_args);
+        execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
+    } else if(STR_EQUALS(command, CMD_GET_GLOBAL_VALUES)) {
+        CHECK_2_ARGS(command, 0, 1, num_args);
+        execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
+    }
+    else {
         printf("Invalid command: %s\n", command);
         goto dealloc_vars;
     }
