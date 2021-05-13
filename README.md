@@ -3,6 +3,8 @@ A simple compiler and an interactive shell to play with Ordinary Differential Eq
 The ODEs can be described using a very simple language and compiled to c source code (more languages will be available). It is also
 possible to use the interactive shell to load, solve and plot the ODEs.
 
+**This software is in constant development. Keep it updated to have access to newer commands**
+
 Below is the SIR model using the ode language:
 
 ```
@@ -22,13 +24,22 @@ ode I' = beta*S*I - gamma*I
 ode R' = gamma*I
 ```
 
-## To compile:
+## To download and compile:
 
 ```sh
 $ git clone https://github.com/rsachetto/odecompiler
 $ cd odecompiler
 $ make
 ```
+
+## To update and compile:
+
+```sh
+$ cd odecompiler
+$ git pull
+$ make
+```
+
 
 ## Using the interactive shell (needs gnuplot in path for the plot command):
 
