@@ -1,0 +1,26 @@
+#from https://hplgit.github.io/scaling-book/doc/pub/book/html/sphinx-cbc/._book003.html
+
+#vaccination goes from day 7 to day 15
+fn calc_delta(t, delta) {
+	if(t >= 7 and t <= 15) {
+		return delta;
+	}
+	else {
+		return 0.0;
+	}
+}
+
+R0 = 5
+gamma = 0.05
+delta = 0.5
+
+initial S = 0.98
+initial I = 0.02
+initial R = 0
+initial V = 0
+
+ode S' = -R0*S*I - calc_delta(time, delta)*S + gamma*R
+ode I' = R0*S*I - I
+ode R' = I - gamma*R
+ode V' = calc_delta(time, delta)*S
+

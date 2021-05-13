@@ -28,7 +28,7 @@ struct model_config {
 
 struct shell_variables {
     struct model_hash_entry *loaded_models;
-    struct model_config *last_loaded_model;
+    struct model_config *current_model;
     FILE *gnuplot_handle;
 };
 

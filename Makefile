@@ -17,7 +17,7 @@ debug: debug_set common
 release: release_set common
 
 release_set:
-	$(eval OPT_FLAGS=-O3 -Wno-stringop-overflow)
+	$(eval OPT_FLAGS=-O2 -Wno-stringop-overflow)
 
 debug_set:
 	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow)

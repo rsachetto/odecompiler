@@ -262,8 +262,6 @@ static int cstring_cmp(const void *a, const void *b) {
     }
 
     return int_a - int_b;
-    /* strcmp functions works exactly as expected from
-    comparison function */
 }
 
 // We only return the file names here, not the full path!!

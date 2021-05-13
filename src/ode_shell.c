@@ -20,6 +20,7 @@
 #include "ode_shell.h"
 
 extern command *commands;
+extern string_array commands_sorted;
 
 static bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 
@@ -97,22 +98,22 @@ static bool generate_program(struct model_config *model) {
 
 }
 
-static struct model_config *load_model_config(struct shell_variables *shell_state, sds *tokens, int num_args, int model_name_position) {
+static struct model_config *load_model_config_or_print_error(struct shell_variables *shell_state, sds *tokens, int num_args, int model_name_position) {
 
     char *command = tokens[0];
-
-    const char *model_name;
-
-    if(num_args == model_name_position) {
-        return shell_state->last_loaded_model;
-    }
-    else {
-        model_name = tokens[1];
-    }
 
     if(shlen(shell_state->loaded_models) == 0) {
         printf ("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command);
         return NULL;
+    }
+
+    const char *model_name;
+
+    if(num_args == model_name_position) {
+        return shell_state->current_model;
+    }
+    else {
+        model_name = tokens[1];
     }
 
     struct model_config *model_config = shget(shell_state->loaded_models, model_name);
@@ -171,7 +172,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
     bool error = false;
 
     if(reloding) {
-        model_config = shell_state->last_loaded_model;
+        model_config = shell_state->current_model;
     }
     else {
         model_config = calloc(1, sizeof(struct model_config));
@@ -192,7 +193,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
         model_config->model_command = compiled_model_name;
 
         shput(shell_state->loaded_models, model_config->model_name, model_config);
-        shell_state->last_loaded_model = model_config;
+        shell_state->current_model = model_config;
 
     }
 
@@ -238,7 +239,7 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
         return;
     }
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 1);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
 
     if(!model_config) return;
 
@@ -260,7 +261,7 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
 static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
     const char *command = tokens[0];
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
 
@@ -287,7 +288,7 @@ static void execute_setplot_command(struct shell_variables *shell_state, sds *to
 
     const char *command = tokens[0];
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 1);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
 
     if(!model_config) return;
 
@@ -355,7 +356,7 @@ static void execute_list_command(struct shell_variables *shell_state) {
         return;
     }
 
-    printf("Last loaded model: %s\n", shell_state->last_loaded_model->model_name);
+    printf("Current model: %s\n", shell_state->current_model->model_name);
     printf("Loaded models:\n");
     for(int i = 0; i < len; i++) {
         printf("%s\n", shell_state->loaded_models[i].key);
@@ -365,7 +366,7 @@ static void execute_list_command(struct shell_variables *shell_state) {
 
 static void execute_vars_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
 
@@ -409,9 +410,9 @@ static void execute_ls_command(char *p, int num_args) {
 static void execute_help_command(sds *tokens, int num_args) {
     if(num_args == 0) {
         printf("Available commands:\n");
-        int nc = shlen(commands);
+        int nc = arrlen(commands_sorted);
         for(int i = 0; i < nc; i++) {
-            printf("%s\n", commands[i].key);
+            printf("%s\n", commands_sorted[i]);
         }
     } else {
          command command = shgets(commands, tokens[1]);
@@ -427,7 +428,7 @@ static void execute_help_command(sds *tokens, int num_args) {
 
 static void execute_getplotconfig_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
 
@@ -461,7 +462,7 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
             new_value = tokens[3];
         }
 
-        model_config = load_model_config(shell_state, tokens, num_args, 2);
+        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 2);
     } else {
         if(num_args == 1) {
             var_name = tokens[1];
@@ -470,7 +471,7 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
             var_name = tokens[2];
         }
 
-        model_config = load_model_config(shell_state, tokens, num_args, 1);
+        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
 
     }
 
@@ -520,7 +521,7 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
 
 static void execute_get_values_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag) {
 
-    struct model_config *model_config = load_model_config(shell_state, tokens, num_args, 0);
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
     if(!model_config) return;
 
@@ -562,6 +563,20 @@ void execute_command_save_plot(const char *command, struct shell_variables *shel
 
 }
 
+void execute_cmd_set_current_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
+
+    if(!model_config) return;
+
+
+    shell_state->current_model = model_config;
+
+    printf("Current model set to %s\n", shell_state->current_model->model_name);
+
+}
+
+
 static bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     int  num_args;
@@ -585,63 +600,93 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
 
     CHECK_2_ARGS(command.key, command.accept[0], command.accept[1], num_args);
 
-    if(c_type == CMD_QUIT) {
-        //Exit is handled by the main loop
-        return true;
-    }
-    else if(c_type == CMD_LOAD) {
-        execute_load_command(shell_state, tokens[1], false);
-    }
-    else if(c_type == CMD_RUN) {
-        execute_run_command(shell_state, tokens, num_args);
-    }
-    else if(c_type == CMD_PLOT || c_type == CMD_REPLOT) {
-        execute_plot_command(shell_state, tokens, c_type, num_args);
-    } else if(c_type == CMD_LIST) {
-        execute_list_command(shell_state);
-    } else if(c_type == CMD_VARS) {
-        execute_vars_command(shell_state, tokens, num_args);
-    } else if(c_type == CMD_PLOT_SET_X || c_type == CMD_PLOT_SET_Y) {
-        execute_setplot_command(shell_state,  tokens, c_type, num_args);
-    } else if(c_type == CMD_CD) {
-        execute_cd_command(tokens[1]);
-    } else if(c_type == CMD_PWD) {
-        print_current_dir();
-    } else if(c_type == CMD_LOAD_CMDS) {
-        run_commands_from_file(tokens[1], shell_state);
-    } else if(c_type == CMD_LS) {
-        execute_ls_command(tokens[1], num_args);
-    } else if(c_type == CMD_HELP) {
-        execute_help_command(tokens, num_args);
-    } else if(c_type == CMD_GET_PLOT_CONFIG) {
-        execute_getplotconfig_command(shell_state, tokens, num_args);
-    } else if(c_type == CMD_SET_INITIAL_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
-    } else if(c_type == CMD_GET_INITIAL_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
-    } else if(c_type == CMD_SET_PARAM_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
-    } else if(c_type == CMD_GET_PARAM_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
-    } else if(c_type == CMD_SET_GLOBAL_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
-    } else if(c_type == CMD_GET_GLOBAL_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
-    } else if(c_type == CMD_GET_INITIAL_VALUES) {
-        execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
-    } else if(c_type == CMD_GET_PARAM_VALUES) {
-        execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
-    } else if(c_type == CMD_GET_GLOBAL_VALUES) {
-        execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
-    } else if(c_type == CMD_SET_ODE_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, true);
-    } else if(c_type == CMD_GET_ODE_VALUE) {
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
-    } else if(c_type == CMD_GET_ODE_VALUES) {
-        execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
-    }
-    else if(c_type == CMD_SAVEPLOT) {
-        execute_command_save_plot(tokens[0], shell_state, tokens[1]);
+    switch(c_type) {
+        case CMD_INVALID:
+            //should never happens as we return on invalid command
+            break;
+        case CMD_QUIT:
+            //Exit is handled by the main loop
+            return true;
+        case CMD_LOAD:
+            execute_load_command(shell_state, tokens[1], false);
+            break;
+        case CMD_RUN:
+            execute_run_command(shell_state, tokens, num_args);
+            break;
+        case CMD_PLOT:
+        case CMD_REPLOT:
+            execute_plot_command(shell_state, tokens, c_type, num_args);
+            break;
+        case CMD_LIST:
+            execute_list_command(shell_state);
+            break;
+        case CMD_VARS:
+            execute_vars_command(shell_state, tokens, num_args);
+            break;
+        case CMD_PLOT_SET_X:
+        case CMD_PLOT_SET_Y:
+            execute_setplot_command(shell_state,  tokens, c_type, num_args);
+            break;
+        case CMD_CD:
+            execute_cd_command(tokens[1]);
+            break;
+        case CMD_PWD:
+            print_current_dir();
+            break;
+        case CMD_LOAD_CMDS:
+            run_commands_from_file(tokens[1], shell_state);
+            break;
+        case CMD_LS:
+            execute_ls_command(tokens[1], num_args);
+            break;
+        case CMD_HELP:
+            execute_help_command(tokens, num_args);
+            break;
+        case CMD_GET_PLOT_CONFIG:
+            execute_getplotconfig_command(shell_state, tokens, num_args);
+            break;
+        case CMD_SET_INITIAL_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
+            break;
+        case CMD_GET_INITIAL_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
+            break;
+        case CMD_SET_PARAM_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
+            break;
+        case CMD_GET_PARAM_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
+            break;
+        case CMD_SET_GLOBAL_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
+            break;
+        case CMD_GET_GLOBAL_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
+            break;
+        case CMD_GET_INITIAL_VALUES:
+            execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
+            break;
+        case CMD_GET_PARAM_VALUES:
+            execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
+            break;
+        case CMD_GET_GLOBAL_VALUES:
+            execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
+            break;
+        case CMD_SET_ODE_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, true);
+            break;
+        case CMD_GET_ODE_VALUE:
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
+            break;
+        case CMD_GET_ODE_VALUES:
+            execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
+            break;
+        case CMD_SAVEPLOT:
+            execute_command_save_plot(tokens[0], shell_state, tokens[1]);
+            break;
+        case CMD_SET_CURRENT_MODEL:
+            execute_cmd_set_current_model(shell_state, tokens, num_args);
+            break;
     }
 
     dealloc_vars:

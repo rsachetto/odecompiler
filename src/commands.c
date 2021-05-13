@@ -1,5 +1,4 @@
 #include "commands.h"
-
 #include "stb/stb_ds.h"
 #include "string/sds.h"
 #include "file_utils/file_utils.h"
@@ -7,6 +6,7 @@
 #include <readline/readline.h>
 
 command *commands = NULL;
+string_array commands_sorted = NULL;
 
 static void add_cmd(char *cmd, command_type type, int accept_min, int accept_max, char *help) {
 
@@ -23,6 +23,7 @@ static void add_cmd(char *cmd, command_type type, int accept_min, int accept_max
     }
 
     shputs(commands, c);
+    arrput(commands_sorted, strdup(cmd));
 
 }
 
@@ -32,8 +33,10 @@ void initialize_commands() {
     def.key = strdup("invalid");
     def.value = CMD_INVALID;
 
-    sh_new_arena(commands);
     shdefaults(commands, def);
+    sh_new_arena(commands);
+
+    arrsetcap(commands_sorted, 32);
 
     add_cmd("cd",               CMD_CD,                 1, 1, "Changes the current directory, e.g., cd examples");
     add_cmd("quit",             CMD_QUIT,               0, 0, "Quits the shell (CTRL+d also quits).");
@@ -63,6 +66,9 @@ void initialize_commands() {
     add_cmd("getodevalue",      CMD_GET_ODE_VALUE,      1, 2, "Prints the value of a model's ODE. If only one argurment is provided, the command is executed using the last loaded model. E.g., getodevalue sir S");
     add_cmd("getodevalues",     CMD_GET_ODE_VALUES,     0, 1, "Prints the values of all model's ODEs. If no argurments are provided, the command is executed using the last loaded model. E.g., getodevalues sir");
     add_cmd("saveplot",         CMD_SAVEPLOT,           1, 1, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
+    add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
+
+    qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }
 
 

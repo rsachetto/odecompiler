@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <string.h>
+
+int string_cmp(const void *a, const void *b) {
+    const char **ia = (const char **)a;
+    const char **ib = (const char **)b;
+    return strcmp(*ia, *ib);
+}
 
 double string_to_double(char *string) {
 

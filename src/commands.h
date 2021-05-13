@@ -33,7 +33,8 @@ typedef enum commmand_type_t {
     CMD_SET_ODE_VALUE,
     CMD_GET_ODE_VALUE,
     CMD_GET_ODE_VALUES,
-    CMD_SAVEPLOT
+    CMD_SAVEPLOT,
+    CMD_SET_CURRENT_MODEL
 } command_type;
 
 typedef struct command_t {
@@ -60,14 +61,6 @@ typedef struct command_t {
             printf("Error: command %s accept %d or %d argument(s). %d argument(s) given!\n", command, accept0, accept1, num_args); \
             goto dealloc_vars;                                                                                                     \
         }                                                                                                                          \
-    } while (0)
-
-#define CHECK_3_ARGS(command, accept0, accept1, accept2, num_args)                                                                              \
-    do {                                                                                                                                        \
-        if (num_args != accept0 && num_args != accept1 && num_args != accept2) {                                                                \
-            printf("Error: command %s accept %d, %d or %d argument(s). %d argument(s) given!\n", command, accept0, accept1, accept2, num_args); \
-            goto dealloc_vars;                                                                                                                  \
-        }                                                                                                                                       \
     } while (0)
 
 void initialize_commands();
