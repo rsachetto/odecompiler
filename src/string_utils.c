@@ -3,6 +3,10 @@
 #include <errno.h>
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdio.h>
+
+#include "stb/stb_ds.h"
 
 int string_cmp(const void *a, const void *b) {
     const char **ia = (const char **)a;
@@ -46,4 +50,88 @@ long string_to_long(char *string, bool *error) {
     }
 
     return result;
+}
+
+string_array parse_input(sds line, bool *error) {
+
+    *error = false;
+
+    string_array tokens = NULL;
+
+    sds par = sdsempty();
+
+    int l_size = sdslen(line);
+    bool mark_begin = false;
+    bool mark_end = false;
+
+    bool wrong_mark = false;
+
+    for(int i = 0; i < l_size; i++) {
+
+        if(line[i] == '\"') {
+
+            if(!mark_begin) {
+                mark_begin = true;
+                mark_end = false;
+            }
+            else {
+
+                if(i < l_size - 1) {
+                    if(!isspace(line[i+1])) {
+                        wrong_mark = true;
+                    }
+                }
+
+                mark_begin = false;
+                mark_end = true;
+            }
+            continue;
+        }
+
+        if(!mark_begin) {
+            if(!isspace(line[i])) {
+                par = sdscatprintf(par, "%c", line[i]);
+            }
+            else {
+                arrput(tokens, sdsnew(par));
+                sdsfree(par);
+                par = sdsempty();
+            }
+        }
+
+        else {
+            if(!mark_end) {
+                par = sdscatprintf(par, "%c", line[i]);
+            }
+            else {
+                arrput(tokens, sdsnew(par));
+                sdsfree(par);
+                par = sdsempty();
+            }
+        }
+    }
+
+    //copy the last token
+    arrput(tokens, sdsnew(par));
+
+    int token_count = arrlen(tokens);
+
+
+    if(mark_begin && !mark_end) {
+        printf("Error - unterminated parameter!\n");
+        *error = true;
+    }
+
+    if(wrong_mark) {
+        printf("Error - invalid \" in the middle of parameter!\n");
+        *error = true;
+    }
+
+
+    for(int i = 0; i < token_count; i++) {
+        tokens[i] = sdstrim(tokens[i], " ");
+    }
+
+    return tokens;
+
 }

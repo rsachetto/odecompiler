@@ -21,6 +21,7 @@ typedef enum commmand_type_t {
     CMD_PLOT_SET_Y,
     CMD_PLOT_SET_X_LABEL,
     CMD_PLOT_SET_Y_LABEL,
+    CMD_PLOT_SET_TITLE,
     CMD_PWD,
     CMD_SOLVE,
     CMD_SOLVE_PLOT,

@@ -53,6 +53,7 @@ void initialize_commands() {
     add_cmd("setploty",         CMD_PLOT_SET_Y,         1, 2, "Sets the variable to be plotted along the y axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir R or setplotx R");
     add_cmd("setplotxlabel",    CMD_PLOT_SET_X_LABEL,   1, 2, "Sets x axis label. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotxlabel sir Pop or setplotxlabel Pop");
     add_cmd("setplotylabel",    CMD_PLOT_SET_Y_LABEL,   1, 2, "Sets y axis label. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotylabel sir days or setplotylabel days");
+    add_cmd("setplottitle",     CMD_PLOT_SET_TITLE,     1, 2, "Sets the current plot title. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplottitle sir title1 or setplottitle title1");
     add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
     add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
     add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
