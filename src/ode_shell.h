@@ -20,10 +20,12 @@ struct model_config {
     char *output_file;
     char *xlabel;
     char *ylabel;
+    int version;
     program program;
     struct var_index_hash_entry *var_indexes;
     int xindex;
     int yindex;
+    struct model_config *parent_model;
 };
 
 struct shell_variables {

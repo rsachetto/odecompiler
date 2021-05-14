@@ -142,5 +142,6 @@ ast *make_string_literal(token t, char *name);
 
 sds *program_to_string(program p);
 sds ast_to_string(ast *a);
+program copy_program(program src);
 
 #endif /* __AST_H */

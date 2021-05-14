@@ -154,8 +154,8 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
                 command = sdsnew(line);
                 command = sdstrim(command, "\n ");
                 add_history(command);
-                parse_and_execute_command(command, shell_state);
                 printf("%s%s\n", PROMPT, command);
+                parse_and_execute_command(command, shell_state);
                 sdsfree(command);
             }
 
@@ -166,19 +166,16 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
     }
 }
 
-static void execute_load_command(struct shell_variables *shell_state, const char *model_file, bool reloding) {
+static void execute_load_command(struct shell_variables *shell_state, const char *model_file, struct model_config *model_config) {
 
-    struct model_config *model_config;
     bool error = false;
 
-    if(reloding) {
-        model_config = shell_state->current_model;
-    }
-    else {
+    if(model_config == NULL) {
         model_config = calloc(1, sizeof(struct model_config));
         char *model_name = get_filename_without_ext(model_file);
         model_config->model_name = strdup(model_name);
         model_config->model_file = strdup(model_file);
+
         error = generate_program(model_config);
 
         if(error) return;
@@ -189,13 +186,13 @@ static void execute_load_command(struct shell_variables *shell_state, const char
         model_config->xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
         model_config->ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
 
-        sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_config->model_name);
-        model_config->model_command = compiled_model_name;
-
-        shput(shell_state->loaded_models, model_config->model_name, model_config);
-        shell_state->current_model = model_config;
-
     }
+
+    sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_config->model_name);
+    model_config->model_command = compiled_model_name;
+
+    shput(shell_state->loaded_models, model_config->model_name, model_config);
+    shell_state->current_model = model_config;
 
     sds compiled_file = sdsnew(model_config->model_name);
     compiled_file = sdscat(compiled_file, "_XXXXXX.c");
@@ -221,7 +218,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
 
 }
 
-static void execute_run_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+static bool execute_solve_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
     char *simulation_steps_str;
     double simulation_steps = 0;
 
@@ -235,13 +232,13 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     simulation_steps = string_to_double(simulation_steps_str);
 
     if(isnan(simulation_steps) || simulation_steps == 0) {
-        printf ("Error parsing command run. Invalid number: %s\n", simulation_steps_str);
-        return;
+        printf ("Error parsing command %s. Invalid number: %s\n", tokens[0], simulation_steps_str);
+        return false;
     }
 
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
 
-    if(!model_config) return;
+    if(!model_config) return false;
 
     sds model_out_file = sdscatfmt(sdsempty(), "%s_out.txt", model_config->model_command);
     model_config->output_file = model_out_file;
@@ -256,6 +253,9 @@ static void execute_run_command(struct shell_variables *shell_state, sds *tokens
     pclose(fp);
 
     sdsfree(model_command);
+
+    return true;
+
 }
 
 static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
@@ -266,7 +266,7 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
     if(!model_config) return;
 
     if(!model_config->output_file) {
-        printf ("Error executing command %s. Model %s was not executed. Run then model first using \"run %s\" or list loaded models using \"list\"\n", command, model_config->model_name, model_config->model_name);
+        printf ("Error executing command %s. Model %s was not executed. Run then model first using \"solve %s\" or list loaded models using \"list\"\n", command, model_config->model_name, model_config->model_name);
         return;
     }
 
@@ -450,7 +450,7 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     char *var_name;
     char *new_value;
 
-    struct model_config *model_config;
+    struct model_config *parent_model_config;
 
     if(set) {
         if(num_args == 2) {
@@ -462,7 +462,8 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
             new_value = tokens[3];
         }
 
-        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 2);
+        parent_model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 2);
+
     } else {
         if(num_args == 1) {
             var_name = tokens[1];
@@ -471,11 +472,28 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
             var_name = tokens[2];
         }
 
-        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
+        parent_model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
 
     }
 
-    if(!model_config) return;
+    if(!parent_model_config) return;
+
+    parent_model_config->version++;
+
+    sds new_model_name = sdsnew(parent_model_config->model_name);
+    new_model_name     = sdscatfmt(new_model_name, "_v%i", parent_model_config->version);
+
+    struct model_config *model_config = calloc(1, sizeof(struct model_config));
+    model_config->model_name = strdup(new_model_name);
+    model_config->model_file = parent_model_config->model_file;
+
+    model_config->xindex = parent_model_config->xindex;
+    model_config->yindex = parent_model_config->yindex;
+
+    model_config->xlabel = strdup(parent_model_config->xlabel);
+    model_config->ylabel = strdup(parent_model_config->ylabel);
+
+    model_config->program = copy_program(parent_model_config->program);
 
     int n = arrlen(model_config->program);
 
@@ -494,7 +512,7 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
 
                     printf("Changing value of variable %s from %s to %s for model %s\n",
                             var_name, ast_to_string(a->assignement_stmt.value),
-                            ast_to_string(program[0]), model_config->model_name);
+                            ast_to_string(program[0]), parent_model_config->model_name);
 
                     free(a->assignement_stmt.value);
                     a->assignement_stmt.value = program[0];
@@ -512,8 +530,8 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     }
     else {
         if(set) {
-            printf("Reloading model %s\n", model_config->model_name);
-            execute_load_command(shell_state, NULL, true);
+            printf("Reloading model %s as %s\n", parent_model_config->model_name, model_config->model_name);
+            execute_load_command(shell_state, NULL, model_config);
         }
     }
 
@@ -553,17 +571,33 @@ void execute_command_save_plot(const char *command, struct shell_variables *shel
         return;
     }
 
-    //TODO: check if the name ends with pdf
-    gnuplot_cmd(shell_state->gnuplot_handle, "set terminal pdf");
+    const char *ext = get_filename_ext(file_name);
+
+    if(!FILE_HAS_EXTENSION(ext, "pdf") && !FILE_HAS_EXTENSION(ext, "png")) {
+        printf("Error executing command %s. Only .pdf and .png outputs are supported\n", command);
+    }
+
+    gnuplot_cmd(shell_state->gnuplot_handle, "set terminal %s", ext);
     gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
     gnuplot_cmd(shell_state->gnuplot_handle, "replot");
+
+
+    //gnuplot_cmd(shell_state->gnuplot_handle, "show t");
+
+    char msg[PATH_MAX];
+
+    //if(fgets(msg, PATH_MAX, shell_state->gnuplot_handle)) {
+    //    int count;
+    //    sds *split = sdssplit(msg, " ", &count);
+    //    printf("----%d %s\n",count, split[0]);
+   // }
 
     //TODO: get default terminal using "show t"
     gnuplot_cmd(shell_state->gnuplot_handle, "set terminal qt");
 
 }
 
-void execute_cmd_set_current_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
+void execute_command_set_current_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
 
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
@@ -573,6 +607,35 @@ void execute_cmd_set_current_model(struct shell_variables *shell_state, sds *tok
     shell_state->current_model = model_config;
 
     printf("Current model set to %s\n", shell_state->current_model->model_name);
+
+}
+
+void execute_command_solve_plot(struct shell_variables *shell_state, sds *tokens, int num_args, command_type c_type) {
+
+    bool success = execute_solve_command(shell_state, tokens, num_args);
+
+    if(!success) return;
+
+    char *new_tokens[2];
+    new_tokens[0] = "plot";
+
+    if(num_args == 2) {
+        new_tokens[1] = tokens[1];
+    }
+
+    execute_plot_command(shell_state, new_tokens, c_type, num_args-1);
+
+}
+
+void execute_command_print_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
+
+    if(!model_config) return;
+
+    printf("\n");
+    print_program(model_config->program);
+    printf("\n");
 
 }
 
@@ -608,10 +671,13 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             //Exit is handled by the main loop
             return true;
         case CMD_LOAD:
-            execute_load_command(shell_state, tokens[1], false);
+            execute_load_command(shell_state, tokens[1], NULL);
             break;
-        case CMD_RUN:
-            execute_run_command(shell_state, tokens, num_args);
+        case CMD_SOLVE:
+            execute_solve_command(shell_state, tokens, num_args);
+            break;
+        case CMD_SOLVE_PLOT:
+            execute_command_solve_plot(shell_state, tokens, num_args, c_type);
             break;
         case CMD_PLOT:
         case CMD_REPLOT:
@@ -685,7 +751,10 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             execute_command_save_plot(tokens[0], shell_state, tokens[1]);
             break;
         case CMD_SET_CURRENT_MODEL:
-            execute_cmd_set_current_model(shell_state, tokens, num_args);
+            execute_command_set_current_model(shell_state, tokens, num_args);
+            break;
+        case CMD_PRINT_MODEL:
+            execute_command_print_model(shell_state, tokens, num_args);
             break;
     }
 

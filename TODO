@@ -4,6 +4,7 @@ TODO: put CVODE in 3rd_part/ folder and ship it with the program
 TODO: we do not know the value of function types
 TODO: check if a variable was already declared in the global scope.
 TODO: initial conditions can only be assigned with numerical expressions or global variables (error if this is not happening)
+TODO: add indentation level on ast_to_str
 
 //Maybes
 TODO: maybe change the model name when reloading the model after a variable change to preserve the original model (allowing multiple plotting)

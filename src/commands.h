@@ -18,7 +18,8 @@ typedef enum commmand_type_t {
     CMD_PLOT_SET_Y,
     CMD_PWD,
     CMD_REPLOT,
-    CMD_RUN,
+    CMD_SOLVE,
+    CMD_SOLVE_PLOT,
     CMD_VARS,
     CMD_GET_PLOT_CONFIG,
     CMD_SET_INITIAL_VALUE,
@@ -34,7 +35,8 @@ typedef enum commmand_type_t {
     CMD_GET_ODE_VALUE,
     CMD_GET_ODE_VALUES,
     CMD_SAVEPLOT,
-    CMD_SET_CURRENT_MODEL
+    CMD_SET_CURRENT_MODEL,
+    CMD_PRINT_MODEL,
 } command_type;
 
 typedef struct command_t {

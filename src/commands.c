@@ -50,7 +50,8 @@ void initialize_commands() {
     add_cmd("setploty",         CMD_PLOT_SET_Y,         1, 2, "Sets the variable to be plotted along the y axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir R or setplotx R");
     add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
     add_cmd("replot",           CMD_REPLOT,             0, 1, "Adds the output of a model execution (one variable) in to an existing plot. If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
-    add_cmd("run",              CMD_RUN,                1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
+    add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
+    add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
     add_cmd("vars",             CMD_VARS,               0, 1, "List all variables available for plotting in a loaded model. If no argurments are provided, the command is executed using the last loaded model. E.g vars sir");
     add_cmd("getplotconfig",    CMD_GET_PLOT_CONFIG,    0, 1, "Prints the current plot configuration of a model. If no argurment are provided, the command is executed using the last loaded model. E.g., getplotconfig sir");
     add_cmd("setinitialvalue",  CMD_SET_INITIAL_VALUE,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setinitialvalue sir I 10");
@@ -67,6 +68,7 @@ void initialize_commands() {
     add_cmd("getodevalues",     CMD_GET_ODE_VALUES,     0, 1, "Prints the values of all model's ODEs. If no argurments are provided, the command is executed using the last loaded model. E.g., getodevalues sir");
     add_cmd("saveplot",         CMD_SAVEPLOT,           1, 1, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
     add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
+    add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g print sir");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }

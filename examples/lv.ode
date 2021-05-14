@@ -1,8 +1,8 @@
+fn configure_params() {
+	return 1,1,1,1
+}
 
-alpha = 1
-beta  = 1
-delta = 1
-gamma = 1
+[alpha, beta, delta, gamma] = configure_params()
 
 initial x = 2
 initial y = 2
