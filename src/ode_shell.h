@@ -13,24 +13,30 @@ struct var_index_hash_entry {
     int value;
 };
 
+struct plot_config {
+    const char *xlabel;
+    const char *ylabel;
+    const char *title;
+    int xindex;
+    int yindex;
+};
+
 struct model_config {
     char *model_name;
     char *model_file;
     char *model_command;
     char *output_file;
-    char *xlabel;
-    char *ylabel;
     int version;
     program program;
     struct var_index_hash_entry *var_indexes;
-    int xindex;
-    int yindex;
     struct model_config *parent_model;
+    struct plot_config plot_config;
 };
 
 struct shell_variables {
     struct model_hash_entry *loaded_models;
     struct model_config *current_model;
+
     FILE *gnuplot_handle;
     const char *default_gnuplot_term;
 };

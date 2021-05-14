@@ -187,11 +187,20 @@ static void execute_load_command(struct shell_variables *shell_state, const char
 
         if(error) return;
 
-        model_config->xindex = 1;
-        model_config->yindex = 2;
+        model_config->plot_config.xindex = 1;
+        model_config->plot_config.yindex = 2;
 
-        model_config->xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
-        model_config->ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
+        if(!model_config->plot_config.xlabel) {
+            model_config->plot_config.xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
+            }
+
+        if(!model_config->plot_config.ylabel) {
+            model_config->plot_config.ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
+        }
+
+        if(!model_config->plot_config.title) {
+            model_config->plot_config.title = model_config->plot_config.ylabel;
+        }
 
     }
 
@@ -314,9 +323,9 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
         gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
     }
 
-    gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->xlabel);
-    gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->ylabel);
-    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->xindex, model_config->yindex, model_config->ylabel);
+    gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->plot_config.xlabel);
+    gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->plot_config.ylabel);
+    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->plot_config.xindex, model_config->plot_config.yindex, model_config->plot_config.title);
 
 
     reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
@@ -331,57 +340,72 @@ static void execute_setplot_command(struct shell_variables *shell_state, sds *to
 
     if(!model_config) return;
 
-    char *index_str;
+    if(c_type == CMD_PLOT_SET_X || c_type == CMD_PLOT_SET_Y) {
+        char *index_str;
 
-    if(num_args == 1) {
-        index_str = tokens[1];
-    }
-    else {
-        index_str = tokens[2];
-    }
-
-    bool index_as_str;
-    int index = (int)string_to_long(index_str, &index_as_str);
-
-    if(index_as_str) {
-        //string was passed, try to get the index from the var_indexes on model_config
-        index = shget(model_config->var_indexes, index_str);
-
-        if(index == -1) {
-            printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n", command, index_str, model_config->model_name);
-            return;
-        }
-    }
-
-    char *var_name = NULL;
-
-    if(!index_as_str) {
-
-        var_name = get_var_name_from_index(model_config->var_indexes, index);
-
-        if(!var_name) {
-            printf ("Error parsing command %s. Invalid index: %d. You can list model variable name using vars %s\n", command, index, model_config->model_name);
-            return;
-
-        }
-    }
-
-    if(c_type == CMD_PLOT_SET_X) {
-        model_config->xindex = index;
-        if(index_as_str) {
-            model_config->xlabel = strdup(index_str);
+        if(num_args == 1) {
+            index_str = tokens[1];
         }
         else {
-            model_config->xlabel = strdup(var_name);
+            index_str = tokens[2];
+        }
+
+        bool index_as_str;
+        int index = (int)string_to_long(index_str, &index_as_str);
+
+        if(index_as_str) {
+            //string was passed, try to get the index from the var_indexes on model_config
+            index = shget(model_config->var_indexes, index_str);
+
+            if(index == -1) {
+                printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n", command, index_str, model_config->model_name);
+                return;
+            }
+        }
+
+        char *var_name = NULL;
+
+        if(!index_as_str) {
+
+            var_name = get_var_name_from_index(model_config->var_indexes, index);
+
+            if(!var_name) {
+                printf ("Error parsing command %s. Invalid index: %d. You can list model variable name using vars %s\n", command, index, model_config->model_name);
+                return;
+
+            }
+        }
+
+        if(c_type == CMD_PLOT_SET_X) {
+            model_config->plot_config.xindex = index;
+        }
+        else {
+            model_config->plot_config.yindex = index;
+
+            if(index_as_str) {
+                model_config->plot_config.title = strdup(index_str);
+            }
+            else {
+                model_config->plot_config.title = strdup(var_name);
+            }
         }
     }
     else {
-        model_config->yindex = index;
-        if(index_as_str) {
-            model_config->ylabel = strdup(index_str);
+
+        const char *new_label;
+
+        if(num_args == 1) {
+            new_label = strdup(tokens[1]);
         }
         else {
-            model_config->ylabel = strdup(var_name);
+            new_label = strdup(tokens[2]);
+        }
+
+        if(c_type == CMD_PLOT_SET_X_LABEL) {
+                model_config->plot_config.xlabel = new_label;
+        }
+        else {
+                model_config->plot_config.ylabel = new_label;
         }
     }
 }
@@ -471,14 +495,18 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
 
     if(!model_config) return;
 
-    char *xname = get_var_name_from_index(model_config->var_indexes, model_config->xindex);
-    char *yname = get_var_name_from_index(model_config->var_indexes, model_config->yindex);
+    char *xname = get_var_name_from_index(model_config->var_indexes, model_config->plot_config.xindex);
+    char *yname = get_var_name_from_index(model_config->var_indexes, model_config->plot_config.yindex);
 
     printf("Plot configuration for model %s\n\n", model_config->model_name);
 
-    printf("Graph X: %s (%d)\n", xname, model_config->xindex);
-    printf("Graph Y: %s (%d)\n", yname, model_config->yindex);
-    //TODO: set gnuplot labels
+    printf("Var on X: %s (%d)\n", xname, model_config->plot_config.xindex);
+    printf("Var on Y: %s (%d)\n", yname, model_config->plot_config.yindex);
+
+    printf("Label X: %s\n", model_config->plot_config.xlabel);
+    printf("Label Y: %s\n", model_config->plot_config.ylabel);
+
+
     return;
 
 }
@@ -526,11 +554,11 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     model_config->model_name = strdup(new_model_name);
     model_config->model_file = parent_model_config->model_file;
 
-    model_config->xindex = parent_model_config->xindex;
-    model_config->yindex = parent_model_config->yindex;
+    model_config->plot_config.xindex = parent_model_config->plot_config.xindex;
+    model_config->plot_config.yindex = parent_model_config->plot_config.yindex;
 
-    model_config->xlabel = strdup(parent_model_config->xlabel);
-    model_config->ylabel = strdup(parent_model_config->ylabel);
+    model_config->plot_config.xlabel = strdup(parent_model_config->plot_config.xlabel);
+    model_config->plot_config.ylabel = strdup(parent_model_config->plot_config.ylabel);
 
     model_config->program = copy_program(parent_model_config->program);
 
@@ -720,6 +748,9 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             break;
         case CMD_PLOT_SET_X:
         case CMD_PLOT_SET_Y:
+            execute_setplot_command(shell_state,  tokens, c_type, num_args);
+        case CMD_PLOT_SET_X_LABEL:
+        case CMD_PLOT_SET_Y_LABEL:
             execute_setplot_command(shell_state,  tokens, c_type, num_args);
             break;
         case CMD_CD:
