@@ -32,6 +32,7 @@ struct shell_variables {
     struct model_hash_entry *loaded_models;
     struct model_config *current_model;
     FILE *gnuplot_handle;
+    const char *default_gnuplot_term;
 };
 
 struct model_hash_entry {

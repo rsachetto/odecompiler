@@ -46,10 +46,12 @@ void initialize_commands() {
     add_cmd("load",             CMD_LOAD,               1, 1, "Loads a model from a ode file. The model has to be located in the current directory, e.g, load sir.ode");
     add_cmd("ls",               CMD_LS,                 0, 1, "Lists the content of a given directory.");
     add_cmd("plot",             CMD_PLOT,               0, 1, "Plots the output of a model execution (one variable). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
+    add_cmd("replot",           CMD_REPLOT,             0, 1, "Adds the output of a model execution (one variable) in to an existing plot. If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
+    add_cmd("plottofile",       CMD_PLOT_FILE,          1, 2, "Plots the output of a model execution (one variable) in the specified file (pdf or png). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
+    add_cmd("replottofile",     CMD_REPLOT_FILE,        1, 2, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
     add_cmd("setplotx",         CMD_PLOT_SET_X,         1, 2, "Sets the variable to be plotted along the x axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir t or setplotx t");
     add_cmd("setploty",         CMD_PLOT_SET_Y,         1, 2, "Sets the variable to be plotted along the y axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir R or setplotx R");
     add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
-    add_cmd("replot",           CMD_REPLOT,             0, 1, "Adds the output of a model execution (one variable) in to an existing plot. If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
     add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
     add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
     add_cmd("vars",             CMD_VARS,               0, 1, "List all variables available for plotting in a loaded model. If no argurments are provided, the command is executed using the last loaded model. E.g vars sir");
@@ -66,7 +68,7 @@ void initialize_commands() {
     add_cmd("setodevalue",      CMD_SET_ODE_VALUE,      2, 3, "Changes the value of a model's ODE and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g seodevalue sir S gama*beta");
     add_cmd("getodevalue",      CMD_GET_ODE_VALUE,      1, 2, "Prints the value of a model's ODE. If only one argurment is provided, the command is executed using the last loaded model. E.g., getodevalue sir S");
     add_cmd("getodevalues",     CMD_GET_ODE_VALUES,     0, 1, "Prints the values of all model's ODEs. If no argurments are provided, the command is executed using the last loaded model. E.g., getodevalues sir");
-    add_cmd("saveplot",         CMD_SAVEPLOT,           1, 1, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
+    add_cmd("saveplot",         CMD_SAVEPLOT,           1, 2, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
     add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
     add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g print sir");
 

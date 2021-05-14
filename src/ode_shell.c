@@ -41,6 +41,10 @@ static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
 
 }
 
+static void reset_terminal(FILE *handle, const char *default_term) {
+    gnuplot_cmd(handle, "set terminal %s", default_term);
+}
+
 static bool check_and_print_execution_errors(FILE *fp) {
 
     bool error = false;
@@ -151,6 +155,9 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
             sds command;
 
             while ((getline(&line, &len, f)) != -1) {
+
+                if(line[0] == '#') continue;
+
                 command = sdsnew(line);
                 command = sdstrim(command, "\n ");
                 add_history(command);
@@ -261,7 +268,14 @@ static bool execute_solve_command(struct shell_variables *shell_state, sds *toke
 static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
     const char *command = tokens[0];
-    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
+    struct model_config *model_config = NULL;
+
+    if(c_type == CMD_PLOT || c_type == CMD_REPLOT) {
+        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
+    }
+    else {
+        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
+    }
 
     if(!model_config) return;
 
@@ -271,7 +285,7 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
     }
 
     if(shell_state->gnuplot_handle == NULL) {
-        if(c_type == CMD_REPLOT) {
+        if(c_type == CMD_REPLOT || c_type == CMD_REPLOT_FILE) {
             printf ("Error executing command %s. No previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
             return;
         }
@@ -279,9 +293,34 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
         shell_state->gnuplot_handle = popen("gnuplot", "w");
     }
 
+    if(c_type == CMD_PLOT_FILE || c_type == CMD_REPLOT_FILE) {
+        if(c_type == CMD_PLOT_FILE) {
+            command = "plot";
+        }
+        else {
+            command = "replot";
+        }
+
+        const char *file_name = tokens[num_args];
+
+        const char *ext = get_filename_ext(file_name);
+
+        if(!FILE_HAS_EXTENSION(ext, "pdf") && !FILE_HAS_EXTENSION(ext, "png")) {
+            printf("Error executing command %s. Only .pdf and .png outputs are supported\n", command);
+            return;
+        }
+
+        gnuplot_cmd(shell_state->gnuplot_handle, "set terminal %s", ext);
+        gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
+    }
+
     gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->xlabel);
     gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->ylabel);
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->xindex, model_config->yindex, model_config->ylabel);
+
+
+    reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
+
 }
 
 static void execute_setplot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
@@ -575,26 +614,14 @@ void execute_command_save_plot(const char *command, struct shell_variables *shel
 
     if(!FILE_HAS_EXTENSION(ext, "pdf") && !FILE_HAS_EXTENSION(ext, "png")) {
         printf("Error executing command %s. Only .pdf and .png outputs are supported\n", command);
+        return;
     }
 
     gnuplot_cmd(shell_state->gnuplot_handle, "set terminal %s", ext);
     gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
     gnuplot_cmd(shell_state->gnuplot_handle, "replot");
 
-
-    //gnuplot_cmd(shell_state->gnuplot_handle, "show t");
-
-    char msg[PATH_MAX];
-
-    //if(fgets(msg, PATH_MAX, shell_state->gnuplot_handle)) {
-    //    int count;
-    //    sds *split = sdssplit(msg, " ", &count);
-    //    printf("----%d %s\n",count, split[0]);
-   // }
-
-    //TODO: get default terminal using "show t"
-    gnuplot_cmd(shell_state->gnuplot_handle, "set terminal qt");
-
+    reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
 }
 
 void execute_command_set_current_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
@@ -681,6 +708,8 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             break;
         case CMD_PLOT:
         case CMD_REPLOT:
+        case CMD_PLOT_FILE:
+        case CMD_REPLOT_FILE:
             execute_plot_command(shell_state, tokens, c_type, num_args);
             break;
         case CMD_LIST:
@@ -791,6 +820,9 @@ int main(int argc, char **argv) {
     rl_attempted_completion_function = command_completion;
 
     struct shell_variables shell_state = {0};
+
+    //TODO: find a way to get the defualt terminal. Maybe we will need to use pipes
+    shell_state.default_gnuplot_term = "qt";
 
     shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
