@@ -56,7 +56,7 @@ void initialize_commands() {
     add_cmd("setplottitle",     CMD_PLOT_SET_TITLE,     1, 2, "Sets the current plot title. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplottitle sir title1 or setplottitle title1");
     add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
     add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
-    add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
+    add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 1, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
     add_cmd("vars",             CMD_VARS,               0, 1, "List all variables available for plotting in a loaded model. If no argurments are provided, the command is executed using the last loaded model. E.g vars sir");
     add_cmd("getplotconfig",    CMD_GET_PLOT_CONFIG,    0, 1, "Prints the current plot configuration of a model. If no argurment are provided, the command is executed using the last loaded model. E.g., getplotconfig sir");
     add_cmd("setinitialvalue",  CMD_SET_INITIAL_VALUE,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setinitialvalue sir I 10");

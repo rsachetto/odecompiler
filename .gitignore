@@ -7,4 +7,6 @@ src/**/.ccls-cache
 examples/*.c
 examples/*auto_compiled_model_out*
 examples/*.txt
+examples/*.pdf
+examples/*.png
 run.od

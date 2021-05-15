@@ -1,0 +1,21 @@
+load sird.ode
+load sir.ode
+solve sird 100
+setplotxlabel sird "Population"
+setplotylabel sird Day
+plot sird
+setploty sird I
+replot sird
+setploty sird R
+replot sird
+setploty sird D
+replot sird
+saveplot sird.pdf
+#solve sir (last loaded model)
+solve 100
+plottofile "sir_S.pdf"
+setploty I
+plottofile  "sir_I.pdf"
+setploty sird R
+plottofile "sir_R.pdf"
+

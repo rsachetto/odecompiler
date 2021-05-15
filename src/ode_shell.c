@@ -182,7 +182,7 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
 
             while ((getline(&line, &len, f)) != -1) {
 
-                if(line[0] == '#') continue;
+                if(!line[0] || line[0] == '#' || line[0] == '\n') continue;
 
                 command = sdsnew(line);
                 command = sdstrim(command, "\n ");
@@ -660,7 +660,7 @@ static void execute_get_values_command(struct shell_variables *shell_state, sds 
     printf("\n");
 }
 
-void execute_command_save_plot(const char *command, struct shell_variables *shell_state, char *file_name) {
+void execute_save_plot_command(const char *command, struct shell_variables *shell_state, char *file_name) {
 
     if(shell_state->gnuplot_handle == NULL) {
         printf ("Error executing command %s. No previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
@@ -681,7 +681,7 @@ void execute_command_save_plot(const char *command, struct shell_variables *shel
     reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
 }
 
-void execute_command_set_current_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
+void execute_set_current_model_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
 
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
@@ -694,7 +694,7 @@ void execute_command_set_current_model(struct shell_variables *shell_state, sds 
 
 }
 
-void execute_command_solve_plot(struct shell_variables *shell_state, sds *tokens, int num_args, command_type c_type) {
+void execute_solve_plot_command(struct shell_variables *shell_state, sds *tokens, int num_args, command_type c_type) {
 
     bool success = execute_solve_command(shell_state, tokens, num_args);
 
@@ -711,7 +711,7 @@ void execute_command_solve_plot(struct shell_variables *shell_state, sds *tokens
 
 }
 
-void execute_command_print_model(struct shell_variables *shell_state, sds *tokens, int num_args) {
+void execute_print_model_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
 
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
 
@@ -729,13 +729,13 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
 
     bool error;
 
-    string_array tokens = parse_input(line, &error);
+    //string_array tokens = parse_input(line, &error);
+    sds *tokens = sdssplitargs(line, &token_count);
 
-    if(error) {
+    if(!tokens) {
+        printf("Error parsing command line!\n");
         goto dealloc_vars;
     }
-
-    token_count = arrlen(tokens);
 
     num_args = token_count - 1;
 
@@ -763,7 +763,7 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             execute_solve_command(shell_state, tokens, num_args);
             break;
         case CMD_SOLVE_PLOT:
-            execute_command_solve_plot(shell_state, tokens, num_args, c_type);
+            execute_solve_plot_command(shell_state, tokens, num_args, c_type);
             break;
         case CMD_PLOT:
         case CMD_REPLOT:
@@ -839,33 +839,37 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
             break;
         case CMD_SAVEPLOT:
-            execute_command_save_plot(tokens[0], shell_state, tokens[1]);
+            execute_save_plot_command(tokens[0], shell_state, tokens[1]);
             break;
         case CMD_SET_CURRENT_MODEL:
-            execute_command_set_current_model(shell_state, tokens, num_args);
+            execute_set_current_model_command(shell_state, tokens, num_args);
             break;
         case CMD_PRINT_MODEL:
-            execute_command_print_model(shell_state, tokens, num_args);
+            execute_print_model_command(shell_state, tokens, num_args);
             break;
     }
 
 
     dealloc_vars:
     {
-        for(int i = 0; i < token_count; i++) {
+        /*for(int i = 0; i < token_count; i++) {
             sdsfree(tokens[i]);
         }
         arrfree(tokens);
+        */
+        if(tokens)
+            sdsfreesplitres(tokens, token_count);
         return false;
     }
 
-
+/*
     for(int i = 0; i < token_count; i++) {
         sdsfree(tokens[i]);
     }
 
     arrfree(tokens);
-
+*/
+    sdsfreesplitres(tokens, token_count);
     return false;
 
 }
@@ -936,7 +940,6 @@ int main(int argc, char **argv) {
 
     setup_ctrl_c_handler();
 
-    sds command;
     char *line;
 
     //if CTRL+C is pressed, we print a new line
@@ -947,15 +950,11 @@ int main(int argc, char **argv) {
     bool quit;
 
     while ((line = readline(PROMPT)) != 0) {
-        if(*line) {
-            strip_extra_spaces(line);
-            command = sdsnew(line);
-            command = sdstrim(command, "\n ");
-            add_history(command);
-            quit = parse_and_execute_command(command, &shell_state);
-            sdsfree(command);
-            if(quit) break;
-        }
+
+        if(!line[0] || line[0] == '#' || line[0] == '\n') continue;
+        add_history(line);
+        quit = parse_and_execute_command(line, &shell_state);
+        if(quit) break;
     }
 
     clean_and_exit(&shell_state);
