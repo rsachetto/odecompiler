@@ -2,6 +2,7 @@
 #define __STRING_UTILS_H 
 
 #include <stdbool.h>
+#include <string.h>
 #include "string/sds.h"
 
 #define STR_EQUALS(s1, s2) (strcmp((s1), (s2)) == 0)
