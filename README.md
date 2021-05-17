@@ -7,7 +7,7 @@ possible to use the interactive shell to load, solve and plot the ODEs.
 
 # Using
 
-Below, we have the SIR (**S**usceptible, **I**nfectious, or **R**ecovered) epidemiological model written using the ode language:
+Below, we have the SIR (**S**usceptible, **I**nfectious, or **R**ecovered) epidemiological model written using the ode language (more examples can be found in the [examples](https://github.com/rsachetto/odecompiler/tree/master/examples) folder):
 
 ```
 global n = 1000
@@ -74,4 +74,11 @@ ode_shell> exit
 ```
 ![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode3.png)
 
+## Running commands stored in a file:
 
+It is possible to run commands stored in a text file (one command per line):
+
+```sh
+$ cd examples
+$ ./bin/ode_shell examples/run_examples.od
+```
