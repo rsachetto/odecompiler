@@ -1,3 +1,4 @@
+cd examples
 load sird.ode
 load sir.ode
 solve sird 100
