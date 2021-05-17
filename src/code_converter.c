@@ -61,7 +61,6 @@ static const char *builtin_functions[] = {"acos",
                                     "trunc"};
 
 static int indentation_level = 0;
-static char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
 
 static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope);
 

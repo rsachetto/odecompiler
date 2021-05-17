@@ -98,7 +98,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error - invalid implementation %s. Available options: cvode, euler. Default: euler\n", arguments.solver_impl);
     }
 
-    //TODO: command line switch to choose the solver
     convert_to_c(program, outfile, solver_type);
     fclose(outfile);
 }

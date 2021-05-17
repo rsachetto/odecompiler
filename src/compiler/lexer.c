@@ -44,81 +44,60 @@ char peek_char(lexer *l) {
 
 char *read_identifier(lexer *l) {
 	int position = l->position;
-
-	int count = 0;
-
 	while(isalpha(l->ch) || isdigit(l->ch) || l->ch == '_' || l->ch == '\'') {
-		count++;
 		read_char(l);
 	}
 
-	return strndup(&(l->input[position]), count);
+	return strndup(&(l->input[position]), l->position - position);
 }
 
 char *read_string(lexer *l) {
+	
 	int position = l->position+1;
 
-	int count = 0;
-
 	while(true) {
-		count++;
 		read_char(l);
 		if (l->ch == '\"' || l->ch == '\0' ) {
 			break;
 		}
 	}
 
-	return strndup(&(l->input[position]), count-1);
+	return strndup(&(l->input[position]), l->position - position);
 }
 
 char *read_number(lexer *l) {
 
 	int position = l->position;
 
-	int count = 0;
-
 	while (isdigit(l->ch)) {
 		read_char(l);
-		count++;
 	}
 
 	if (l->ch == '.') {
-
 		read_char(l);
-		count++;
+	}
+	
+	while(isdigit(l->ch)) {
+		read_char(l);
+	}
 
-		if (!isdigit(l->ch)) {
-			fprintf(stderr, "Illegal character in number.");
-			return NULL;
+	if (l->ch == 'e' || l->ch == 'E') {
+		read_char(l);
+		
+		if (l->ch == '-' || l->ch == '+') {
+			read_char(l);
 		}
 
-		while (isdigit(l->ch) || l->ch == 'e' ) {
-
-			if(l->ch == 'e') {
-				read_char(l);
-				count++;
-
-				if(l->ch != '+' && l->ch != '-') {
-					fprintf(stderr, "Illegal character %c in number.", peek_char(l));
-					return NULL;
-				}
-
-				read_char(l);
-				count++;
-
-				while (isdigit(l->ch)) {
-					read_char(l);
-					count++;
-				}
-			}
-			else {
-				read_char(l);
-				count++;
-			}
+		while(isdigit(l->ch)) {
+			read_char(l);
 		}
 	}
 
-	return strndup(&(l->input[position]), count);
+	if(l->ch == 'd' || l->ch == 'D' || l->ch == 'F' || l->ch == 'f') {
+		read_char(l);
+	}
+
+	return strndup(&(l->input[position]), l->position - position);
 }
 
 void skip_whitespace(lexer *l) {

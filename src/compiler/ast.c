@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static int indentation_level = 0;
+
 char *token_literal(ast *ast) {
     return ast->token.literal;
 }
@@ -117,7 +119,7 @@ static sds return_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%s ", token_literal(a));
+    buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level],  token_literal(a));
 
     if(a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
@@ -136,10 +138,14 @@ static sds assignement_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    if(a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt)
-        buf = sdscatfmt(buf, "%s ", token_literal(a));
+    if(a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
+        buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
+        buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
+    }
+    else {
+        buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value);
+    }
 
-    buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
     buf = sdscat(buf, " = ");
 
 
@@ -152,7 +158,7 @@ static sds assignement_stmt_to_str(ast *a) {
 
 static sds number_literal_to_str(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "%lf", a->num_literal.value);
+    buf = sdscatprintf(buf, "%s", token_literal(a));
     return buf;
 }
 
@@ -205,26 +211,32 @@ static sds if_expr_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, "if");
+    buf = sdscatfmt(buf, "%sif", indent_spaces[indentation_level]);
     buf = sdscatfmt(buf, "%s {\n", ast_to_string(a->if_expr.condition));
+
+    indentation_level++;
 
     int n = arrlen(a->if_expr.consequence);
     for(int i = 0; i < n; i++) {
-        buf = sdscatfmt(buf, "    %s\n", ast_to_string(a->if_expr.consequence[i]));
+        buf = sdscatfmt(buf, "%s\n", ast_to_string(a->if_expr.consequence[i]));
     }
+    indentation_level--;
 
-    buf = sdscat(buf, "}");
+    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
 
     n = arrlen(a->if_expr.alternative);
 
     if(n) {
-        buf = sdscat(buf, "else {\n");
-        for(int i = 0; i < n; i++) {
-            buf = sdscatfmt(buf, "    %s\n", ast_to_string(a->if_expr.alternative[i]));
-        }
-        buf = sdscat(buf, "}");
-    }
 
+        indentation_level++;
+        buf = sdscat(buf, " else {\n");
+        for(int i = 0; i < n; i++) {
+            buf = sdscatfmt(buf, "%s\n",ast_to_string(a->if_expr.alternative[i]));
+        }
+        indentation_level--;
+
+        buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    }
 
     return buf;
 
@@ -239,12 +251,13 @@ static sds while_stmt_to_str(ast *a) {
 
     buf = sdscat(buf, "{");
 
+	indentation_level++;
     int n = arrlen(a->while_stmt.body);
     for(int i = 0; i < n; i++) {
-        buf = sdscatfmt(buf, "    %s\n", ast_to_string(a->while_stmt.body[i]));
+        buf = sdscatfmt(buf, "%s\n", ast_to_string(a->while_stmt.body[i]));
     }
-
-    buf = sdscat(buf, "}");
+	indentation_level--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
     return buf;
 
 }
@@ -273,10 +286,16 @@ static sds function_stmt_to_str(ast *a) {
 
     n = arrlen(a->function_stmt.body);
     buf = sdscat(buf, "{\n");
+
+	indentation_level++;
     for(int i = 0; i < n; i++) {
-        buf = sdscatfmt(buf, "    %s\n", ast_to_string(a->function_stmt.body[i]));
+        buf = sdscatfmt(buf, "%s\n", ast_to_string(a->function_stmt.body[i]));
     }
+	indentation_level--;
+
     buf = sdscat(buf, "}\n");
+
+
     return buf;
 }
 
@@ -403,6 +422,8 @@ sds ast_to_string(ast *a) {
 }
 
 sds * program_to_string(program p) {
+
+    indentation_level = 0;
 
     int n_stmt = arrlen(p);
     sds *return_str = NULL;
@@ -581,6 +602,9 @@ void free_ast(ast *src) {
 
     switch(src->tag) {
 
+        case ast_number_literal:
+        case ast_boolean_literal:
+            break;
         case ast_identifier:
             free(src->identifier.value);
             break;

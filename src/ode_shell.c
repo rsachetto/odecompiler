@@ -764,8 +764,6 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
     
     int  num_args, token_count;
     
-    bool error;
-    
     sds *tokens = sdssplitargs(line, &token_count);
     
     if(!tokens) {

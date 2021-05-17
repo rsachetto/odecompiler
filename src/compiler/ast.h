@@ -5,6 +5,18 @@
 #include "token.h"
 #include <stdbool.h>
 
+//For printing
+#define NO_SPACES  ""
+#define _4SPACES   "    "
+#define _8SPACES  _4SPACES _4SPACES
+#define _12SPACES _8SPACES _4SPACES
+#define _16SPACES _12SPACES _4SPACES
+#define _20SPACES _16SPACES _4SPACES
+#define _24SPACES _20SPACES _4SPACES
+#define _28SPACES _24SPACES _4SPACES
+
+static char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
+
 typedef struct assignement_statement_t {
     struct ast_t *name;
     struct ast_t *value;
@@ -77,7 +89,7 @@ typedef enum ast_tag_t {
     ast_identifier,
     ast_assignment_stmt,
     ast_grouped_assignment_stmt,
-	ast_function_statement,
+    ast_function_statement,
     ast_ode_stmt,
     ast_initial_stmt,
     ast_global_stmt,
@@ -97,7 +109,6 @@ typedef enum ast_tag_t {
 typedef struct ast_t {
 
     token token;
-
     ast_tag tag;
 
     union {

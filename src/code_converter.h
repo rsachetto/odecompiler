@@ -4,15 +4,6 @@
 #include <stdio.h>
 #include "compiler/parser.h"
 
-#define NO_SPACES  ""
-#define _4SPACES   "    "
-#define _8SPACES  _4SPACES _4SPACES
-#define _12SPACES _8SPACES _4SPACES
-#define _16SPACES _12SPACES _4SPACES
-#define _20SPACES _16SPACES _4SPACES
-#define _24SPACES _20SPACES _4SPACES
-#define _28SPACES _24SPACES _4SPACES
-
 typedef struct declared_variable_entry_t {
     char *key;
     int value;

@@ -1,14 +1,11 @@
 TODO: add imported functions to their own namespace: common.stim
 TODO: add a python src code generator and a monoalg3d generator (and more)
-TODO: put CVODE in 3rd_part/ folder and ship it with the program
 TODO: we do not know the value of function types
 TODO: check if a variable was already declared in the global scope.
 TODO: initial conditions can only be assigned with numerical expressions or global variables (error if this is not happening)
 TODO: add indentation level on ast_to_str
-TODO: quit from command file does not work
 
 //Maybes
-TODO: maybe change the model name when reloading the model after a variable change to preserve the original model (allowing multiple plotting)
 TODO: maybe implement auto model reloading when the model is changed externally
 TODO: maybe add an option to change the initial time
 TODO: consider \r maybe on skip comment function (lexer.c)
