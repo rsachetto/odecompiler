@@ -5,7 +5,9 @@ possible to use the interactive shell to load, solve and plot the ODEs.
 
 **This software is in constant development. Keep it updated to have access to newer commands!**
 
-Below is the SIR model using the ode language:
+# Using
+
+Below, we have the SIR (**S**usceptible, **I**nfectious, or **R**ecovered) epidemiological model written using the ode language:
 
 ```
 global n = 1000
@@ -39,7 +41,6 @@ $ cd odecompiler
 $ git pull
 $ make
 ```
-
 
 ## Using the interactive shell (needs gnuplot in path for the plot command):
 
