@@ -75,7 +75,8 @@ void initialize_commands() {
     add_cmd("getodevalues",     CMD_GET_ODE_VALUES,     0, 1, "Prints the values of all model's ODEs. If no argurments are provided, the command is executed using the last loaded model. E.g., getodevalues sir");
     add_cmd("saveplot",         CMD_SAVEPLOT,           1, 2, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
     add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
-    add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g print sir");
+    add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g printmodel sir");
+    add_cmd("editmodel",        CMD_EDIT_MODEL,         0, 1, "Open the file containing the model ode code. If no argurments are provided, the command is executed using the last loaded model. E.g editmodel sir");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }

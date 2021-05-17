@@ -530,7 +530,7 @@ void print_path_contents(const char *path) {
     {
         sprintf(buf, "%s/%s", path, myfile->d_name);
         stat(buf, &mystat);
-        if(strcmp(myfile->d_name, ".") != 0 && strcmp(myfile->d_name, "..") != 0) {
+        if(myfile->d_name[0] != '.' && strcmp(myfile->d_name, ".") != 0 && strcmp(myfile->d_name, "..") != 0) {
             printf("%s\n", myfile->d_name);
         }
     }

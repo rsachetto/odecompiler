@@ -43,6 +43,7 @@ typedef enum commmand_type_t {
     CMD_SAVEPLOT,
     CMD_SET_CURRENT_MODEL,
     CMD_PRINT_MODEL,
+    CMD_EDIT_MODEL
 } command_type;
 
 typedef struct command_t {

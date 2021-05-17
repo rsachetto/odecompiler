@@ -200,7 +200,7 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
     
 }
 
-static char * get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
+static char *get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
     int len = shlen(var_indexes);
     
     for(int i = 0; i < len; i++) {
@@ -758,6 +758,22 @@ void execute_print_model_command(struct shell_variables *shell_state, sds *token
     
 }
 
+void execute_edit_model_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
+
+    if(!model_config) return;
+
+    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode", model_config->model_name);
+
+    FILE *f = popen(cmd, "r");
+    if(!f) {
+        printf("Error - xdg-open is not in your path or is not installed\n");
+    }
+    pclose(f);
+
+}
+
 void execute_unload_model_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
     
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
@@ -799,105 +815,109 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
     
     switch(c_type) {
         case CMD_INVALID:
-        //should never happens as we return on invalid command
-        break;
+            //should never happens as we return on invalid command
+            break;
         case CMD_QUIT:
-        //Exit is handled by the main loop
-        return true;
+            //Exit is handled by the main loop
+            return true;
         case CMD_LOAD:
-        execute_load_command(shell_state, tokens[1], NULL);
-        break;
+            execute_load_command(shell_state, tokens[1], NULL);
+            break;
         case CMD_UNLOAD:
-        execute_unload_model_command(shell_state, tokens, num_args);
-        break;
+            execute_unload_model_command(shell_state, tokens, num_args);
+            break;
         case CMD_SOLVE:
-        execute_solve_command(shell_state, tokens, num_args);
-        break;
+            execute_solve_command(shell_state, tokens, num_args);
+            break;
         case CMD_SOLVE_PLOT:
-        execute_solve_plot_command(shell_state, tokens, num_args, c_type);
-        break;
+            execute_solve_plot_command(shell_state, tokens, num_args, c_type);
+            break;
         case CMD_PLOT:
         case CMD_REPLOT:
         case CMD_PLOT_FILE:
         case CMD_REPLOT_FILE:
-        execute_plot_command(shell_state, tokens, c_type, num_args);
-        break;
+            execute_plot_command(shell_state, tokens, c_type, num_args);
+            break;
         case CMD_LIST:
-        execute_list_command(shell_state);
-        break;
+            execute_list_command(shell_state);
+            break;
         case CMD_VARS:
-        execute_vars_command(shell_state, tokens, num_args);
-        break;
+            execute_vars_command(shell_state, tokens, num_args);
+            break;
         case CMD_PLOT_SET_X:
         case CMD_PLOT_SET_Y:
         case CMD_PLOT_SET_X_LABEL:
         case CMD_PLOT_SET_Y_LABEL:
         case CMD_PLOT_SET_TITLE:
-        execute_setplot_command(shell_state,  tokens, c_type, num_args);
-        break;
+            execute_setplot_command(shell_state,  tokens, c_type, num_args);
+            break;
         case CMD_CD:
-        execute_cd_command(tokens[1]);
-        break;
+            execute_cd_command(tokens[1]);
+            break;
         case CMD_PWD:
-        print_current_dir();
-        break;
+            print_current_dir();
+            break;
         case CMD_LOAD_CMDS:
-        run_commands_from_file(tokens[1], shell_state);
-        break;
+            run_commands_from_file(tokens[1], shell_state);
+            break;
         case CMD_LS:
-        execute_ls_command(tokens[1], num_args);
-        break;
+            execute_ls_command(tokens[1], num_args);
+            break;
         case CMD_HELP:
-        execute_help_command(tokens, num_args);
-        break;
+            execute_help_command(tokens, num_args);
+            break;
         case CMD_GET_PLOT_CONFIG:
-        execute_getplotconfig_command(shell_state, tokens, num_args);
-        break;
+            execute_getplotconfig_command(shell_state, tokens, num_args);
+            break;
         case CMD_SET_INITIAL_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, true);
+            break;
         case CMD_GET_INITIAL_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_initial_stmt, false);
+            break;
         case CMD_SET_PARAM_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, true);
+            break;
         case CMD_GET_PARAM_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_assignment_stmt, false);
+            break;
         case CMD_SET_GLOBAL_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, true);
+            break;
         case CMD_GET_GLOBAL_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_global_stmt, false);
+            break;
         case CMD_GET_INITIAL_VALUES:
-        execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
-        break;
+            execute_get_values_command(shell_state, tokens, num_args, ast_initial_stmt);
+            break;
         case CMD_GET_PARAM_VALUES:
-        execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
-        break;
+            execute_get_values_command(shell_state, tokens, num_args, ast_assignment_stmt);
+            break;
         case CMD_GET_GLOBAL_VALUES:
-        execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
-        break;
+            execute_get_values_command(shell_state, tokens, num_args, ast_global_stmt);
+            break;
         case CMD_SET_ODE_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, true);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, true);
+            break;
         case CMD_GET_ODE_VALUE:
-        execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
-        break;
+            execute_set_or_get_value_command(shell_state, tokens, num_args, ast_ode_stmt, false);
+            break;
         case CMD_GET_ODE_VALUES:
-        execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
-        break;
+            execute_get_values_command(shell_state, tokens, num_args, ast_ode_stmt);
+            break;
         case CMD_SAVEPLOT:
-        execute_save_plot_command(tokens[0], shell_state, tokens[1]);
-        break;
+            execute_save_plot_command(tokens[0], shell_state, tokens[1]);
+            break;
         case CMD_SET_CURRENT_MODEL:
-        execute_set_current_model_command(shell_state, tokens, num_args);
-        break;
+            execute_set_current_model_command(shell_state, tokens, num_args);
+            break;
         case CMD_PRINT_MODEL:
-        execute_print_model_command(shell_state, tokens, num_args);
-        break;
+            execute_print_model_command(shell_state, tokens, num_args);
+            break;
+        case CMD_EDIT_MODEL:
+            execute_edit_model_command(shell_state, tokens, num_args);
+            break;
+
     }
     
     
