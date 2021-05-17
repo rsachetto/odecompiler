@@ -305,7 +305,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
     FILE *fp = popen(compiler_command, "r");
     error = check_and_print_execution_errors(fp);
     
-    //unlink(compiled_file);
+    unlink(compiled_file);
     
     //Clean
     pclose(fp);
