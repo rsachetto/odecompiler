@@ -12,4 +12,6 @@ int string_cmp(const void *a, const void *b);
 double string_to_double(char *string);
 long string_to_long(char *string, bool *error);
 string_array parse_input(sds line, bool *error);
+void strip_extra_spaces(char* str);
+
 #endif /* __STRING_UTILS_H */

@@ -10,3 +10,6 @@ examples/*.txt
 examples/*.pdf
 examples/*.png
 run.od
+.anjuta/
+.anjuta_sym_db.db
+odecompiler.anjuta

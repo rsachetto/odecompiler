@@ -12,6 +12,7 @@ typedef enum commmand_type_t {
     CMD_LIST,
     CMD_LOAD_CMDS,
     CMD_LOAD,
+    CMD_UNLOAD,
     CMD_LS,
     CMD_PLOT,
     CMD_REPLOT,

@@ -5,6 +5,7 @@
 
 #include <readline/readline.h>
 
+
 command *commands = NULL;
 string_array commands_sorted = NULL;
 
@@ -43,7 +44,8 @@ void initialize_commands() {
     add_cmd("help",             CMD_HELP,               0, 1, "Prints all available commands or the help for a specific command, e.g., help run");
     add_cmd("list",             CMD_LIST,               0, 0, "Lists all loaded models");
     add_cmd("loadcmds",         CMD_LOAD_CMDS,          1, 1, "Loads a list of command from a file and execute them, e.g., loadcmds file.os");
-    add_cmd("load",             CMD_LOAD,               1, 1, "Loads a model from a ode file. The model has to be located in the current directory, e.g, load sir.ode");
+    add_cmd("load",             CMD_LOAD,               1, 1, "Loads a model from a ode file. The model source file has to be located in the current directory, e.g, load sir.ode");
+    add_cmd("unload",           CMD_UNLOAD,             1, 1, "Unloads previously loaded model, e.g, unload sir.ode");
     add_cmd("ls",               CMD_LS,                 0, 1, "Lists the content of a given directory.");
     add_cmd("plot",             CMD_PLOT,               0, 1, "Plots the output of a model execution (one variable). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
     add_cmd("replot",           CMD_REPLOT,             0, 1, "Adds the output of a model execution (one variable) in to an existing plot. If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir" );
@@ -56,7 +58,7 @@ void initialize_commands() {
     add_cmd("setplottitle",     CMD_PLOT_SET_TITLE,     1, 2, "Sets the current plot title. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplottitle sir title1 or setplottitle title1");
     add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
     add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
-    add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 1, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
+    add_cmd("solveplot",        CMD_SOLVE_PLOT,         0, 1, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
     add_cmd("vars",             CMD_VARS,               0, 1, "List all variables available for plotting in a loaded model. If no argurments are provided, the command is executed using the last loaded model. E.g vars sir");
     add_cmd("getplotconfig",    CMD_GET_PLOT_CONFIG,    0, 1, "Prints the current plot configuration of a model. If no argurment are provided, the command is executed using the last loaded model. E.g., getplotconfig sir");
     add_cmd("setinitialvalue",  CMD_SET_INITIAL_VALUE,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setinitialvalue sir I 10");

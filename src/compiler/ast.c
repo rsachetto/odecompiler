@@ -564,3 +564,77 @@ program copy_program(program src_program) {
     return dst_program;
 
 }
+
+void free_program(program src_program) {
+
+    int p_len = arrlen(src_program);
+
+    for(int i = 0; i < p_len; i++) {
+        free_ast(src_program[i]);
+    }
+
+    arrfree(src_program);
+
+}
+
+void free_ast(ast *src) {
+
+    switch(src->tag) {
+
+        case ast_identifier:
+            free(src->identifier.value);
+            break;
+        case ast_string_literal:
+            free(src->str_literal.value);
+            break;
+        case ast_assignment_stmt:
+        case ast_ode_stmt:
+        case ast_global_stmt:
+        case ast_initial_stmt:
+            free_ast(src->assignement_stmt.name);
+            free_ast(src->assignement_stmt.value);
+            break;
+        case ast_grouped_assignment_stmt:
+            free_program(src->grouped_assignement_stmt.names);
+            break;
+        case ast_function_statement:
+            free_program(src->function_stmt.parameters);
+            free_program(src->function_stmt.body);
+            break;
+        case ast_return_stmt:
+            free_program(src->return_stmt.return_values);
+            break;
+        case ast_expression_stmt:
+            free_ast(src->expr_stmt);
+            break;
+        case ast_while_stmt:
+            free_program(src->while_stmt.body);
+            break;
+        case ast_import_stmt:
+            free_ast(src->import_stmt.filename);
+            break;
+        case ast_prefix_expression:
+            free(src->prefix_expr.op);
+            free_ast(src->prefix_expr.right);
+            break;
+        case ast_infix_expression:
+            free_ast(src->infix_expr.left);
+            free(src->infix_expr.op);
+            free_ast(src->infix_expr.right);
+            break;
+        case ast_if_expr:
+            free_program(src->if_expr.consequence);
+            free_program(src->if_expr.alternative);
+            break;
+        case ast_call_expression:
+            free_ast(src->call_expr.function_identifier);
+            free_program(src->call_expr.arguments);
+            break;
+
+    }
+
+    free(src);
+}
+
+
+

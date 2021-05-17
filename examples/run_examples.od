@@ -18,4 +18,3 @@ setploty I
 plottofile  "sir_I.pdf"
 setploty sird R
 plottofile "sir_R.pdf"
-

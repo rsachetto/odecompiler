@@ -189,7 +189,6 @@ static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variab
 
             }
 
-            //TODO: create a function?
             //Converting the function call here
             ast *b = a->grouped_assignement_stmt.call_expr;
 

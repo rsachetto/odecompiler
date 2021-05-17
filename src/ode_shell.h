@@ -6,6 +6,7 @@
 #define ODECOMPILER_ODE_SHELL_H
 
 #include "compiler/parser.h"
+
 #include <stdio.h>
 
 struct var_index_hash_entry {
@@ -29,16 +30,16 @@ struct model_config {
     int version;
     program program;
     struct var_index_hash_entry *var_indexes;
-    struct model_config *parent_model;
     struct plot_config plot_config;
 };
 
 struct shell_variables {
     struct model_hash_entry *loaded_models;
     struct model_config *current_model;
-
+    
     FILE *gnuplot_handle;
     const char *default_gnuplot_term;
+
 };
 
 struct model_hash_entry {
