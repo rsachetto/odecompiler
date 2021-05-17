@@ -487,12 +487,13 @@ void generate_initial_conditions_values(program p, program odes, FILE *file, dec
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
+
         if(!shget(result, a->assignement_stmt.name->identifier.value)) {
             shput(result, a->assignement_stmt.name->identifier.value, true);
-        }
-        else {
+        } else {
             printf("Warning on line %d of file %s. Duplicate initialization ode variable %s\n", a->token.line_number, a->token.file_name, a->assignement_stmt.name->identifier.value);
         }
+
         int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
         fprintf(file, "    values[%d] = %s; //%s\n", position-1, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope), a->assignement_stmt.name->identifier.value);
     }
@@ -507,7 +508,7 @@ void generate_initial_conditions_values(program p, program odes, FILE *file, dec
             shdel(result, tmp);
         }
         else {
-                    arrput(non_initialized_edos, tmp);
+            arrput(non_initialized_edos, tmp);
         }
     }
 
@@ -522,8 +523,8 @@ void generate_initial_conditions_values(program p, program odes, FILE *file, dec
         free(non_initialized_edos[i]);
     }
 
-            arrfree(non_initialized_edos);
-            shfree(result);
+    arrfree(non_initialized_edos);
+    shfree(result);
 
 }
 

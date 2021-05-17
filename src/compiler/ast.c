@@ -445,8 +445,8 @@ ast *copy_ast(ast *src) {
     ast *a = (ast*)malloc(sizeof(ast));
     a->tag = src->tag;
 
-    //TODO: deep copy?
-    a->token = src->token;
+    a->token          = src->token;
+    a->token.literal = strdup(src->token.literal);
 
     switch(src->tag) {
 

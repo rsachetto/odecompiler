@@ -3,7 +3,6 @@ TODO: add a python src code generator and a monoalg3d generator (and more)
 TODO: we do not know the value of function types
 TODO: check if a variable was already declared in the global scope.
 TODO: initial conditions can only be assigned with numerical expressions or global variables (error if this is not happening)
-TODO: add indentation level on ast_to_str
 
 //Maybes
 TODO: maybe implement auto model reloading when the model is changed externally

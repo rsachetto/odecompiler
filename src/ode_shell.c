@@ -29,6 +29,34 @@ static void ctrl_c_handler(int sig) {
 }
 
 //TODO: put in a separate module?
+struct model_config *new_config_from_parent(struct model_config *parent_model_config) {
+
+    parent_model_config->version++;
+
+    sds new_model_name = sdsnew(parent_model_config->model_name);
+    new_model_name     = sdscatfmt(new_model_name, "_v%i", parent_model_config->version);
+
+    struct model_config *model_config = calloc(1, sizeof(struct model_config));
+    model_config->model_name = strdup(new_model_name);
+    model_config->model_file = parent_model_config->model_file;
+
+    model_config->plot_config.xindex = parent_model_config->plot_config.xindex;
+    model_config->plot_config.yindex = parent_model_config->plot_config.yindex;
+
+    model_config->plot_config.xlabel = strdup(parent_model_config->plot_config.xlabel);
+    model_config->plot_config.ylabel = strdup(parent_model_config->plot_config.ylabel);
+    model_config->plot_config.title = strdup(parent_model_config->plot_config.title);
+
+    model_config->program = copy_program(parent_model_config->program);
+
+    int n = shlen(parent_model_config->var_indexes);
+
+    for(int i = 0; i < n; i++) {
+        shput(model_config->var_indexes,parent_model_config->var_indexes[i].key, parent_model_config->var_indexes[i].value);
+    }
+
+    return model_config;
+}
 
 void free_model_config(struct model_config *model_config) {
     
@@ -77,10 +105,9 @@ static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_start(ap, cmd);
     vfprintf(handle, cmd, ap);
     va_end(ap);
-    
+
     fputs("\n", handle);
     fflush(handle);
-    
 }
 
 static void reset_terminal(FILE *handle, const char *default_term) {
@@ -278,7 +305,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
     FILE *fp = popen(compiler_command, "r");
     error = check_and_print_execution_errors(fp);
     
-    unlink(compiled_file);
+    //unlink(compiled_file);
     
     //Clean
     pclose(fp);
@@ -595,22 +622,9 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     
     if(!parent_model_config) return;
     
-    parent_model_config->version++;
-    
-    sds new_model_name = sdsnew(parent_model_config->model_name);
-    new_model_name     = sdscatfmt(new_model_name, "_v%i", parent_model_config->version);
-    
-    struct model_config *model_config = calloc(1, sizeof(struct model_config));
-    model_config->model_name = strdup(new_model_name);
-    model_config->model_file = parent_model_config->model_file;
-    
-    model_config->plot_config.xindex = parent_model_config->plot_config.xindex;
-    model_config->plot_config.yindex = parent_model_config->plot_config.yindex;
-    
-    model_config->plot_config.xlabel = strdup(parent_model_config->plot_config.xlabel);
-    model_config->plot_config.ylabel = strdup(parent_model_config->plot_config.ylabel);
-    
-    model_config->program = copy_program(parent_model_config->program);
+
+    struct model_config *model_config = new_config_from_parent(parent_model_config);
+
     
     int n = arrlen(model_config->program);
     
