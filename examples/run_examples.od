@@ -16,6 +16,6 @@ saveplot sird.pdf
 solve 100
 plottofile "sir_S.pdf"
 setploty I
-plottofile  "sir_I.pdf"
-setploty sird R
+plottofile "sir_I.pdf"
+setploty R
 plottofile "sir_R.pdf"

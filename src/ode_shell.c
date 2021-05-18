@@ -151,17 +151,6 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
     
 }
 
-//TODO: put it in model_config.c
-static char *get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
-    int len = shlen(var_indexes);
-    
-    for(int i = 0; i < len; i++) {
-        if(var_indexes[i].value == index)
-            return var_indexes[i].key;
-    }
-    return NULL;
-}
-
 static void run_commands_from_file(char *file_name, struct shell_variables *shell_state) {
     
     bool quit = false;
@@ -224,27 +213,30 @@ static void execute_load_command(struct shell_variables *shell_state, const char
         model_config->plot_config.yindex = 2;
         
         if(!model_config->plot_config.xlabel) {
-            model_config->plot_config.xlabel = strdup(get_var_name_from_index(model_config->var_indexes, 1));
+            model_config->plot_config.xlabel = strdup(get_var_name(model_config, 1));
         }
-        
+
         if(!model_config->plot_config.ylabel) {
-            model_config->plot_config.ylabel = strdup(get_var_name_from_index(model_config->var_indexes, 2));
+            model_config->plot_config.ylabel = strdup(get_var_name(model_config, 2));
         }
-        
+
         if(!model_config->plot_config.title) {
             model_config->plot_config.title = strdup(model_config->plot_config.ylabel);
         }
         
     }
-    
-    sds compiled_model_name = sdscatfmt(sdsempty(), "%s_auto_compiled_model_tmp_file", model_config->model_name);
+
+    sds modified_model_name = sdsnew(model_config->model_name);
+    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
+
+    sds compiled_model_name = sdscatfmt(sdsempty(), "/tmp/%s_auto_compiled_model_tmp_file", modified_model_name);
     model_config->model_command = strdup(compiled_model_name);
     
     shput(shell_state->loaded_models, model_config->model_name, model_config);
     shell_state->current_model = model_config;
     
-    sds compiled_file = sdsnew(model_config->model_name);
-    compiled_file = sdscat(compiled_file, "_XXXXXX.c");
+    sds compiled_file;
+    compiled_file = sdscatfmt(sdsempty(), "/tmp/%s_XXXXXX.c", modified_model_name);
     
     int fd = mkstemps(compiled_file, 2);
     
@@ -265,6 +257,7 @@ static void execute_load_command(struct shell_variables *shell_state, const char
     sdsfree(compiled_file);
     sdsfree(compiled_model_name);
     sdsfree(compiler_command);
+    sdsfree(modified_model_name);
     
 }
 
@@ -289,12 +282,14 @@ static bool execute_solve_command(struct shell_variables *shell_state, sds *toke
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
     
     if(!model_config) return false;
-    
-    sds model_out_file = sdscatfmt(sdsempty(), "%s_out.txt", model_config->model_command);
+
+    sds modified_model_name = sdsnew(model_config->model_name);
+    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
+
+    sds model_out_file = sdscatfmt(sdsempty(), "/tmp/%s_out.txt", modified_model_name);
     model_config->output_file = strdup(model_out_file);
     
-    sds model_command = sdsnew("./");
-    model_command = sdscat(model_command, model_config->model_command);
+    sds model_command = sdscat(sdsempty(), model_config->model_command);
     
     model_command = sdscatprintf(model_command, " %lf %s", simulation_steps, model_config->output_file);
     
@@ -375,36 +370,25 @@ static void execute_setplot_command(struct shell_variables *shell_state, sds *to
     
     if(!model_config) return;
     
-    char *cmd_param;
-    
-    if(num_args == 1) {
-        cmd_param = tokens[1];
-    }
-    else {
-        cmd_param = tokens[2];
-    }
-    
+    char *cmd_param = tokens[num_args];
+
     if(c_type == CMD_PLOT_SET_X || c_type == CMD_PLOT_SET_Y) {
         
         bool index_as_str;
         int index = (int)string_to_long(cmd_param, &index_as_str);
-        
+        char *var_name = NULL;
+
         if(index_as_str) {
             //string was passed, try to get the index from the var_indexes on model_config
             index = shget(model_config->var_indexes, cmd_param);
-            
+
             if(index == -1) {
                 printf ("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n", command, cmd_param, model_config->model_name);
                 return;
             }
-        }
-        
-        char *var_name = NULL;
-        
-        if(!index_as_str) {
-            
-            var_name = get_var_name_from_index(model_config->var_indexes, index);
-            
+        } else {
+            var_name = get_var_name(model_config, index);
+
             if(!var_name) {
                 printf ("Error parsing command %s. Invalid index: %d. You can list model variable name using vars %s\n", command, index, model_config->model_name);
                 return;
@@ -525,8 +509,8 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
     
     if(!model_config) return;
     
-    char *xname = get_var_name_from_index(model_config->var_indexes, model_config->plot_config.xindex);
-    char *yname = get_var_name_from_index(model_config->var_indexes, model_config->plot_config.yindex);
+    char *xname = get_var_name(model_config, model_config->plot_config.xindex);
+    char *yname = get_var_name(model_config, model_config->plot_config.yindex);
     
     printf("Plot configuration for model %s\n\n", model_config->model_name);
     

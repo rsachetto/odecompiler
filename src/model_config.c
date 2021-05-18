@@ -50,3 +50,18 @@ void free_model_config(struct model_config *model_config) {
     free_program(model_config->program);
     shfree(model_config->var_indexes);
 }
+
+char *get_var_name(struct model_config *model_config, int index) {
+
+    struct var_index_hash_entry *var_indexes = model_config->var_indexes;
+
+    int len = shlen(var_indexes);
+
+    for(int i = 0; i < len; i++) {
+        if(var_indexes[i].value == index)
+            return var_indexes[i].key;
+    }
+
+    return NULL;
+
+}

@@ -28,6 +28,7 @@ struct model_config {
 };
 
 struct model_config *new_config_from_parent(struct model_config *parent_model_config);
+char *get_var_name(struct model_config *model_config, int index);
 void free_model_config(struct model_config *model_config);
 
 #endif /* __MODEL_CONFIG_H */
