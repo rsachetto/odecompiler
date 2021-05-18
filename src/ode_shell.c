@@ -28,54 +28,6 @@ static void ctrl_c_handler(int sig) {
     siglongjmp(env, 42);
 }
 
-//TODO: put in a separate module?
-struct model_config *new_config_from_parent(struct model_config *parent_model_config) {
-
-    parent_model_config->version++;
-
-    sds new_model_name = sdsnew(parent_model_config->model_name);
-    new_model_name     = sdscatfmt(new_model_name, "_v%i", parent_model_config->version);
-
-    struct model_config *model_config = calloc(1, sizeof(struct model_config));
-    model_config->model_name = strdup(new_model_name);
-    model_config->model_file = parent_model_config->model_file;
-
-    model_config->plot_config.xindex = parent_model_config->plot_config.xindex;
-    model_config->plot_config.yindex = parent_model_config->plot_config.yindex;
-
-    model_config->plot_config.xlabel = strdup(parent_model_config->plot_config.xlabel);
-    model_config->plot_config.ylabel = strdup(parent_model_config->plot_config.ylabel);
-    model_config->plot_config.title = strdup(parent_model_config->plot_config.title);
-
-    model_config->program = copy_program(parent_model_config->program);
-
-    int n = shlen(parent_model_config->var_indexes);
-
-    for(int i = 0; i < n; i++) {
-        shput(model_config->var_indexes,parent_model_config->var_indexes[i].key, parent_model_config->var_indexes[i].value);
-    }
-
-    return model_config;
-}
-
-void free_model_config(struct model_config *model_config) {
-    
-    if(model_config->output_file) {
-        unlink(model_config->output_file);
-    }
-    
-    if(model_config->model_command) {
-        unlink(model_config->model_command);
-    }
-    
-    free(model_config->model_name);
-    free(model_config->model_file);
-    free(model_config->model_command);
-    free(model_config->output_file);
-    free_program(model_config->program);
-    shfree(model_config->var_indexes);
-}
-
 static void clean_and_exit(struct shell_variables *shell_state) {
     
     sds history_path = sdsnew(get_home_dir());
@@ -97,7 +49,6 @@ static void clean_and_exit(struct shell_variables *shell_state) {
     exit(0);
     
 }
-
 
 static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_list ap;
@@ -200,6 +151,7 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
     
 }
 
+//TODO: put it in model_config.c
 static char *get_var_name_from_index(struct var_index_hash_entry *var_indexes, int index) {
     int len = shlen(var_indexes);
     
@@ -240,12 +192,13 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
             }
             
             fclose(f);
-            if (line)
+            if (line) {
                 free(line);
+            }
             
             
             if(quit) {
-                sleep(2);
+                sleep(1);
                 clean_and_exit(shell_state);
             }
             
@@ -919,8 +872,7 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             break;
 
     }
-    
-    
+
     dealloc_vars:
     {
         if(tokens)

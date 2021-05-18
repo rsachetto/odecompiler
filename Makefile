@@ -22,7 +22,6 @@ release_set:
 debug_set:
 	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow)
 
-
 AST=src/compiler/ast.h src/compiler/ast.c
 PARSER=src/compiler/parser.c src/compiler/parser.h
 LEXER=src/compiler/lexer.c src/compiler/lexer.h
@@ -31,10 +30,11 @@ SDS=src/string/sds.c src/string/sds.h
 COMMANDS=src/commands.c src/commands.h
 STR_UTILS=src/string_utils.c src/string_utils.h
 FILE_UTILS=src/file_utils/file_utils.c src/file_utils/file_utils.h
+MODEL_CONFIG=src/model_config.c src/model_config.h
 C_CONVERTER=src/code_converter.c src/code_converter.h
 
-ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o commands.o string_utils.o
-	gcc ${OPT_FLAGS} src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o build/string_utils.o build/commands.o -o bin/ode_shell -lreadline
+ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o commands.o string_utils.o model_config.o
+	gcc ${OPT_FLAGS} src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o build/string_utils.o build/commands.o build/model_config.o -o bin/ode_shell -lreadline
 
 ode_compiler: src/ode_compiler.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
 	gcc ${OPT_FLAGS} src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec
@@ -66,6 +66,8 @@ commands.o: ${COMMANDS}
 string_utils.o: ${STR_UTILS}
 	gcc ${OPT_FLAGS} -c  src/string_utils.c -o  build/string_utils.o
 
+model_config.o: ${MODEL_CONFIG}
+	gcc ${OPT_FLAGS} -c  src/model_config.c -o  build/model_config.o
 
 clean:
 	rm bin/* build/*.o

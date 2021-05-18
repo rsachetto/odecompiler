@@ -1,0 +1,10 @@
+a = 0.7
+b = 0.8
+tau = 12.5
+I = 0.5
+
+initial v = 1
+initial w = 0
+
+ode v' = v - pow(v, 3)/3 - w + I
+ode w' = (v + a - b*w)/tau

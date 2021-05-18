@@ -1,10 +1,10 @@
-TODO: add imported functions to their own namespace: common.stim
+TODO: maybe auto model reloading when the model is changed externally
 TODO: add a python src code generator and a monoalg3d generator (and more)
-TODO: we do not know the value of function types
 TODO: check if a variable was already declared in the global scope.
 TODO: initial conditions can only be assigned with numerical expressions or global variables (error if this is not happening)
 
 //Maybes
-TODO: maybe implement auto model reloading when the model is changed externally
 TODO: maybe add an option to change the initial time
 TODO: consider \r maybe on skip comment function (lexer.c)
+TODO: add imported functions to their own namespace: common.stim
+TODO: we do not know the value of function types
