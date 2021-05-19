@@ -31,10 +31,11 @@ COMMANDS=src/commands.c src/commands.h
 STR_UTILS=src/string_utils.c src/string_utils.h
 FILE_UTILS=src/file_utils/file_utils.c src/file_utils/file_utils.h
 MODEL_CONFIG=src/model_config.c src/model_config.h
+INOTIFY_HELPER=src/inotify_helpers.c src/inotify_helpers.h
 C_CONVERTER=src/code_converter.c src/code_converter.h
 
-ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o commands.o string_utils.o model_config.o
-	gcc ${OPT_FLAGS} src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o build/string_utils.o build/commands.o build/model_config.o -o bin/ode_shell -lreadline
+ode_shell: src/ode_shell.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o commands.o string_utils.o model_config.o inotify_helpers.o
+	gcc ${OPT_FLAGS} src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o build/string_utils.o build/commands.o build/model_config.o build/inotify_helpers.o -o bin/ode_shell -lreadline -lpthread
 
 ode_compiler: src/ode_compiler.c code_converter.o parser.o lexer.o ast.o token.o file_utils.o sds.o
 	gcc ${OPT_FLAGS} src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec
@@ -64,10 +65,13 @@ commands.o: ${COMMANDS}
 	gcc ${OPT_FLAGS} -c  src/commands.c -o  build/commands.o
 
 string_utils.o: ${STR_UTILS}
-	gcc ${OPT_FLAGS} -c  src/string_utils.c -o  build/string_utils.o
+	gcc ${OPT_FLAGS} -c  src/string_utils.c -o build/string_utils.o
 
 model_config.o: ${MODEL_CONFIG}
-	gcc ${OPT_FLAGS} -c  src/model_config.c -o  build/model_config.o
+	gcc ${OPT_FLAGS} -c  src/model_config.c -o build/model_config.o
+
+inotify_helpers.o: ${INOTIFY_HELPER}
+	gcc ${OPT_FLAGS} -c  src/inotify_helpers.c -o build/inotify_helpers.o
 
 clean:
 	rm bin/* build/*.o

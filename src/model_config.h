@@ -25,10 +25,14 @@ struct model_config {
     program program;
     struct var_index_hash_entry *var_indexes;
     struct plot_config plot_config;
+    bool is_derived;
+    bool should_reload;
+    bool auto_reload;
 };
 
 struct model_config *new_config_from_parent(struct model_config *parent_model_config);
 char *get_var_name(struct model_config *model_config, int index);
 void free_model_config(struct model_config *model_config);
+bool generate_model_program(struct model_config *model);
 
 #endif /* __MODEL_CONFIG_H */

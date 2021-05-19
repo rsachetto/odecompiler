@@ -3,7 +3,50 @@
 #include <string.h>
 #include <unistd.h>
 #include "stb/stb_ds.h"
+#include "file_utils/file_utils.h"
 
+bool generate_model_program(struct model_config *model) {
+
+    char *file_name = model->model_file;
+
+    if(!file_exists(file_name)) {
+        printf("Error: file %s does not exist!\n", file_name);
+        return true;
+    }
+
+    size_t file_size;
+    const char *source = read_entire_file_with_mmap(file_name, &file_size);
+
+    lexer *l = new_lexer(source, file_name);
+    parser *p = new_parser(l);
+    program program = parse_program(p);
+
+    bool error = check_parser_errors(p, false);
+
+    if(!error) {
+        sh_new_arena(model->var_indexes);
+        shdefault(model->var_indexes, -1);
+
+        int n_stmt = arrlen(program);
+
+        shput(model->var_indexes, "t", 1);
+
+        int ode_count = 2;
+        for(int i = 0; i < n_stmt; i++) {
+            ast *a = program[i];
+            if(a->tag == ast_ode_stmt) {
+                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+                shput(model->var_indexes, var_name, ode_count);
+                ode_count++;
+
+            }
+        }
+        model->program = program;
+    }
+
+    return error;
+
+}
 struct model_config *new_config_from_parent(struct model_config *parent_model_config) {
 
     parent_model_config->version++;

@@ -77,6 +77,10 @@ void initialize_commands() {
     add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
     add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g printmodel sir");
     add_cmd("editmodel",        CMD_EDIT_MODEL,         0, 1, "Open the file containing the model ode code. If no argurments are provided, the command is executed using the last loaded model. E.g editmodel sir");
+    add_cmd("setautolreload",   CMD_SET_AUTO_RELOAD,    1, 2, "Enable/disable auto reload value of a model. If no argurments are provided, the command is executed using the last loaded model. E.g setautolreload sir 1 or setautolreload sir 0");
+    add_cmd("setshouldreload",  CMD_SET_RELOAD,         1, 2, "Enable/disable reloading when changed for a model. If no argurments are provided, the command is executed using the last loaded model. E.g setreload sir 1 or setreload sir 0");
+    add_cmd("setglobalreload",  CMD_SET_GLOBAL_RELOAD,  1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
+
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }

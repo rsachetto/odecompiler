@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include<sys/inotify.h>
 
 #include "code_converter.h"
 #include "file_utils/file_utils.h"
@@ -17,6 +18,7 @@
 #include "string_utils.h"
 #include "ode_shell.h"
 #include "commands.h"
+#include "inotify_helpers.h"
 
 extern command *commands;
 extern string_array commands_sorted;
@@ -73,49 +75,6 @@ static bool check_and_print_execution_errors(FILE *fp) {
     while (fgets(msg, PATH_MAX, fp) != NULL) {
         printf("%s", msg);
         if(!error) error = true;
-    }
-    
-    return error;
-    
-}
-
-static bool generate_program(struct model_config *model) {
-    
-    char *file_name = model->model_file;
-    
-    if(!file_exists(file_name)) {
-        printf("Error: file %s does not exist!\n", file_name);
-        return true;
-    }
-    
-    size_t file_size;
-    const char *source = read_entire_file_with_mmap(file_name, &file_size);
-    
-    lexer *l = new_lexer(source, file_name);
-    parser *p = new_parser(l);
-    program program = parse_program(p);
-    
-    bool error = check_parser_errors(p, false);
-    
-    if(!error) {
-        sh_new_arena(model->var_indexes);
-        shdefault(model->var_indexes, -1);
-        
-        int n_stmt = arrlen(program);
-        
-        shput(model->var_indexes, "t", 1);
-        
-        int ode_count = 2;
-        for(int i = 0; i < n_stmt; i++) {
-            ast *a = program[i];
-            if(a->tag == ast_ode_stmt) {
-                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
-                shput(model->var_indexes, var_name, ode_count);
-                ode_count++;
-                
-            }
-        }
-        model->program = program;
     }
     
     return error;
@@ -195,17 +154,113 @@ static void run_commands_from_file(char *file_name, struct shell_variables *shel
     }
 }
 
+static bool compile_model(struct model_config *model_config) {
+    sds modified_model_name = sdsnew(model_config->model_name);
+    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
+
+    sds compiled_model_name = sdscatfmt(sdsempty(), "/tmp/%s_auto_compiled_model_tmp_file", modified_model_name);
+    model_config->model_command = strdup(compiled_model_name);
+
+    sds compiled_file;
+    compiled_file = sdscatfmt(sdsempty(), "/tmp/%s_XXXXXX.c", modified_model_name);
+
+    int fd = mkstemps(compiled_file, 2);
+
+    FILE *outfile = fdopen(fd, "w");
+    convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
+    fclose(outfile);
+
+    sds compiler_command = sdsnew("gcc");
+    compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, model_config->model_command);
+
+    FILE *fp = popen(compiler_command, "r");
+    bool error = check_and_print_execution_errors(fp);
+
+    pclose(fp);
+    unlink(compiled_file);
+
+    //Clean
+    sdsfree(compiled_file);
+    sdsfree(compiled_model_name);
+    sdsfree(compiler_command);
+    sdsfree(modified_model_name);
+
+    return error;
+}
+
+void maybe_reload_from_file_change(struct shell_variables *shell_state, int wd) {
+
+    if(shell_state->never_reload) return;
+
+    pthread_mutex_lock(&shell_state->lock);
+    struct model_config *model_config = hmget(shell_state->notify_entries, wd);
+
+    if(!model_config->should_reload) {
+        pthread_mutex_unlock(&shell_state->lock);
+        return;
+    }
+
+    if(model_config && !model_config->is_derived) {
+
+        char answer = 0;
+
+        if(!model_config->auto_reload) {
+            printf("\nModel %s was modified externally. Would you like to reload it? [y]: ", model_config->model_name);
+            answer = getchar();
+        }
+
+        if(model_config->auto_reload || answer == 'Y' || answer == 'y' || answer == '\r') {
+            printf("\nReloading model %s", model_config->model_name);
+            fflush(stdout);
+            free_program(model_config->program);
+            bool error = generate_model_program(model_config);
+
+            if(!error) {
+                error = compile_model(model_config);
+            }
+            else {
+                printf("Error compiling model %s", model_config->model_name);
+            }
+        }
+
+    }
+
+    printf("\n%s", PROMPT);
+    fflush(stdout);
+
+    pthread_mutex_unlock(&shell_state->lock);
+
+}
+
 static void execute_load_command(struct shell_variables *shell_state, const char *model_file, struct model_config *model_config) {
-    
+
     bool error = false;
-    
-    if(model_config == NULL) {
+    bool new_model = (model_config == NULL);
+
+    if(new_model) {
         model_config = calloc(1, sizeof(struct model_config));
+
+        model_config->should_reload = true;
+        model_config->auto_reload   = false;
+
+
         char *model_name = get_filename_without_ext(model_file);
         model_config->model_name = strdup(model_name);
-        model_config->model_file = strdup(model_file);
-        
-        error = generate_program(model_config);
+
+        sds full_model_file_path;
+
+        if(model_file[0] != '/') {
+            full_model_file_path = sdsnew(shell_state->current_dir);
+        }
+        else {
+            full_model_file_path = sdsempty();
+        }
+
+        full_model_file_path = sdscatfmt(full_model_file_path, "%s", model_file);
+        model_config->model_file = strdup(full_model_file_path);
+        sdsfree(full_model_file_path);
+
+        error = generate_model_program(model_config);
         
         if(error) return;
         
@@ -223,42 +278,20 @@ static void execute_load_command(struct shell_variables *shell_state, const char
         if(!model_config->plot_config.title) {
             model_config->plot_config.title = strdup(model_config->plot_config.ylabel);
         }
-        
     }
 
-    sds modified_model_name = sdsnew(model_config->model_name);
-    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
+    model_config->is_derived = !new_model;
 
-    sds compiled_model_name = sdscatfmt(sdsempty(), "/tmp/%s_auto_compiled_model_tmp_file", modified_model_name);
-    model_config->model_command = strdup(compiled_model_name);
-    
+    //TODO: handle errors
+    error = compile_model(model_config);
+
     shput(shell_state->loaded_models, model_config->model_name, model_config);
     shell_state->current_model = model_config;
-    
-    sds compiled_file;
-    compiled_file = sdscatfmt(sdsempty(), "/tmp/%s_XXXXXX.c", modified_model_name);
-    
-    int fd = mkstemps(compiled_file, 2);
-    
-    FILE *outfile = fdopen(fd, "w");
-    convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
-    fclose(outfile);
-    
-    sds compiler_command = sdsnew("gcc");
-    compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, model_config->model_command);
-    
-    FILE *fp = popen(compiler_command, "r");
-    error = check_and_print_execution_errors(fp);
-    
-    unlink(compiled_file);
-    
-    //Clean
-    pclose(fp);
-    sdsfree(compiled_file);
-    sdsfree(compiled_model_name);
-    sdsfree(compiler_command);
-    sdsfree(modified_model_name);
-    
+
+    if(new_model) {
+        add_dir_watch(shell_state, shell_state->current_dir);
+    }
+
 }
 
 static bool execute_solve_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
@@ -458,13 +491,15 @@ static void execute_vars_command(struct shell_variables *shell_state, sds *token
     
 }
 
-static void execute_cd_command(const char *path) {
-    
+static void execute_cd_command(struct shell_variables *shell_state,  const char *path) {
+
     int ret = chdir(path);
     if(ret == -1) {
         printf("Error changing working directory to %s\n", path);
     }
     else {
+        free(shell_state->current_dir);
+        shell_state->current_dir = get_current_directory();
         print_current_dir();
     }
 }
@@ -534,37 +569,29 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     struct model_config *parent_model_config;
     
     if(set) {
-        if(num_args == 2) {
-            var_name = tokens[1];
-            new_value = tokens[2];
-        }
-        else {
-            var_name = tokens[2];
-            new_value = tokens[3];
-        }
-        
+        var_name = tokens[num_args - 1];
+        new_value = tokens[num_args];
         parent_model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 2);
         
     } else {
-        if(num_args == 1) {
-            var_name = tokens[1];
-        }
-        else {
-            var_name = tokens[2];
-        }
-        
+        var_name = tokens[num_args];
         parent_model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
-        
     }
     
     if(!parent_model_config) return;
-    
 
-    struct model_config *model_config = new_config_from_parent(parent_model_config);
+    struct model_config *model_config;
 
-    
+
+    if(set) {
+        model_config = new_config_from_parent(parent_model_config);
+    }
+    else {
+        model_config = parent_model_config;
+    }
+
     int n = arrlen(model_config->program);
-    
+
     int i;
     for(i = 0; i < n; i++) {
         ast *a = model_config->program[i];
@@ -602,7 +629,6 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
             execute_load_command(shell_state, NULL, model_config);
         }
     }
-    
 }
 
 static void execute_get_values_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag) {
@@ -727,6 +753,45 @@ void execute_unload_model_command(struct shell_variables *shell_state, sds *toke
     }
 }
 
+void execute_set_reload_command(struct shell_variables *shell_state, sds *tokens, int num_args, command_type cmd_type) {
+
+    char *command = tokens[0];
+    char *arg = tokens[1];
+    bool is_zero;
+
+    if(STR_EQUALS(tokens[1], "0")) {
+        is_zero = true;
+    }
+    else if(STR_EQUALS(tokens[1], "1")) {
+        is_zero = false;
+    }
+    else {
+        printf("Error - Invalid value %s for command %s. Valid values are 0 or 1\n", tokens[1], tokens[0]);
+        return;
+    }
+
+    struct model_config *model_config;
+
+    if(cmd_type == CMD_SET_GLOBAL_RELOAD) {
+        shell_state->never_reload = is_zero;
+    }
+    else {
+        model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
+
+        if(cmd_type == CMD_SET_RELOAD) {
+            model_config->should_reload = !is_zero;
+        }
+        else if(cmd_type == CMD_SET_AUTO_RELOAD) {
+            model_config->auto_reload = !is_zero;
+
+            if(!is_zero) {
+               model_config->should_reload = true;
+            }
+        }
+    }
+
+}
+
 static bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
     
     int  num_args, token_count;
@@ -749,7 +814,9 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
     }
     
     CHECK_2_ARGS(command.key, command.accept[0], command.accept[1], num_args);
-    
+
+    pthread_mutex_lock(&shell_state->lock);
+
     switch(c_type) {
         case CMD_INVALID:
             //should never happens as we return on invalid command
@@ -789,7 +856,7 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
             execute_setplot_command(shell_state,  tokens, c_type, num_args);
             break;
         case CMD_CD:
-            execute_cd_command(tokens[1]);
+            execute_cd_command(shell_state, tokens[1]);
             break;
         case CMD_PWD:
             print_current_dir();
@@ -854,16 +921,23 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
         case CMD_EDIT_MODEL:
             execute_edit_model_command(shell_state, tokens, num_args);
             break;
-
+        case CMD_SET_GLOBAL_RELOAD:
+        case CMD_SET_RELOAD:
+        case CMD_SET_AUTO_RELOAD:
+            execute_set_reload_command(shell_state, tokens, num_args, c_type);
     }
 
     dealloc_vars:
     {
         if(tokens)
             sdsfreesplitres(tokens, token_count);
+
+        pthread_mutex_unlock(&shell_state->lock);
+
         return false;
     }
 
+    pthread_mutex_unlock(&shell_state->lock);
     sdsfreesplitres(tokens, token_count);
     return false;
     
@@ -911,12 +985,27 @@ int main(int argc, char **argv) {
     rl_attempted_completion_function = command_completion;
     
     struct shell_variables shell_state = {0};
-    
+
+    shell_state.current_dir = get_current_directory();
+    shell_state.never_reload = false;
+
     shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
-    
+
     get_default_gnuplot_terminal(&shell_state);
-    
+
+    //Setting up inotify
+    shell_state.fd_notify = inotify_init();
+
+    pthread_t inotify_thread;
+
+    if (pthread_mutex_init(&shell_state.lock, NULL) != 0) {
+        printf("\n mutex init has failed\n");
+        return EXIT_FAILURE;
+    }
+
+    pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void*)&shell_state);
+
     if(argc == 2) {
         run_commands_from_file(argv[1], &shell_state);
     }
