@@ -337,15 +337,17 @@ static bool execute_solve_command(struct shell_variables *shell_state, sds *toke
     
 }
 
+
+//TODO: refactor this function. maybe break it in to two separate functions
 static void execute_plot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
     
     const char *command = tokens[0];
     struct model_config *model_config = NULL;
     
-    if(c_type == CMD_PLOT || c_type == CMD_REPLOT) {
+    if(c_type == CMD_PLOT || c_type == CMD_REPLOT || c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
         model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 0);
     }
-    else {
+    else if(c_type == CMD_PLOT_FILE || c_type == CMD_REPLOT_FILE) {
         model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
     }
     
@@ -372,27 +374,39 @@ static void execute_plot_command(struct shell_variables *shell_state, sds *token
         else {
             command = "replot";
         }
-        
+
         const char *file_name = tokens[num_args];
-        
+
         const char *ext = get_filename_ext(file_name);
-        
+
         if(!FILE_HAS_EXTENSION(ext, "pdf") && !FILE_HAS_EXTENSION(ext, "png")) {
             printf("Error executing command %s. Only .pdf and .png outputs are supported\n", command);
             return;
         }
-        
+
         gnuplot_cmd(shell_state->gnuplot_handle, "set terminal %s", ext);
         gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
     }
-    
+
+    if(c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
+        if(c_type == CMD_PLOT_TERM) {
+            command = "plot";
+        }
+        else {
+            command = "replot";
+        }
+        gnuplot_cmd(shell_state->gnuplot_handle, "set term dumb");
+    }
+
     gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->plot_config.xlabel);
     gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->plot_config.ylabel);
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2", command, model_config->output_file, model_config->plot_config.xindex, model_config->plot_config.yindex, model_config->plot_config.title);
-    
-    
-    reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
-    
+
+
+    if(c_type == CMD_PLOT_FILE || c_type == CMD_REPLOT_FILE || c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
+        reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
+    }
+
 }
 
 static void execute_setplot_command(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
@@ -526,6 +540,8 @@ static void execute_help_command(sds *tokens, int num_args) {
         for(int i = 0; i < nc; i++) {
             printf("%s\n", commands_sorted[i]);
         }
+
+        printf("type 'help command' for more information about a specific command\n");
     } else {
         command command = shgets(commands, tokens[1]);
         if(command.help) {
@@ -840,6 +856,8 @@ static bool parse_and_execute_command(sds line, struct shell_variables *shell_st
         case CMD_REPLOT:
         case CMD_PLOT_FILE:
         case CMD_REPLOT_FILE:
+        case CMD_PLOT_TERM:
+        case CMD_REPLOT_TERM:
             execute_plot_command(shell_state, tokens, c_type, num_args);
             break;
         case CMD_LIST:

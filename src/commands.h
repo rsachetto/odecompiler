@@ -18,6 +18,8 @@ typedef enum commmand_type_t {
     CMD_REPLOT,
     CMD_PLOT_FILE,
     CMD_REPLOT_FILE,
+    CMD_PLOT_TERM,
+    CMD_REPLOT_TERM,
     CMD_PLOT_SET_X,
     CMD_PLOT_SET_Y,
     CMD_PLOT_SET_X_LABEL,
