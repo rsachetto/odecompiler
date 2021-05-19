@@ -18,6 +18,51 @@
 #include <unistd.h>
 #include <pwd.h>
 
+bool can_run_command(const char *cmd) {
+
+    if(strchr(cmd, '/')) {
+        // if cmd includes a slash, no path search must be performed,
+        // go straight to checking if it's executable
+        return access(cmd, X_OK)==0;
+    }
+
+    const char *path = getenv("PATH");
+    if(!path) return false;
+
+    char *buf = malloc(strlen(path)+strlen(cmd)+3);
+
+    for(; *path; ++path) {
+
+        // start from the beginning of the buffer
+        char *p = buf;
+
+        // copy in buf the current path element
+        for(; *path && *path != ':' ; ++path,++p) {
+            *p = *path;
+        }
+
+        // empty path entries are treated like "."
+        if(p==buf) *p++='.';
+
+        // slash and command name
+        if(p[-1] != '/') *p++='/';
+        strcpy(p, cmd);
+
+        // check if we can execute it
+        if(access(buf, X_OK)==0) {
+            free(buf);
+            return true;
+        }
+
+        // quit at last cycle
+        if(!*path) break;
+    }
+
+    // not found
+    free(buf);
+    return false;
+}
+
 FILE *open_file_or_exit(char *filename, char *mode) {
 
     FILE *f = fopen(filename, mode);

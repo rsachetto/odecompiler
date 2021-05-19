@@ -23,6 +23,7 @@ struct path_information {
     char *dir_name;
 };
 
+bool can_run_command(const char *cmd);
 char *get_current_directory();
 const char *get_filename_ext(const char *filename);
 int cp_file(const char *to, const char *from);
