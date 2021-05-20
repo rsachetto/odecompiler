@@ -517,12 +517,10 @@ void create_dir(char *out_dir) {
 
             printf("%s does not exist! Creating!\n", dir_to_create);
 
-            if(mkdir(dir_to_create, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
-                if(!dir_exists(dir_to_create)) { // HACK: this can avoid MPI or batch simulation problems...
-                    fprintf(stderr, "Error creating directory %s Exiting!\n", dir_to_create);
-                    exit(EXIT_FAILURE);
-                }
-            }
+			if(mkdir(dir_to_create, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+				fprintf(stderr, "Error creating directory %s Exiting!\n", dir_to_create);
+				exit(EXIT_FAILURE);
+			}
         }
 
         slash = strchr(slash + 1, '/');

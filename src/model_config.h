@@ -2,6 +2,7 @@
 #define __MODEL_CONFIG_H 
 
 #include "compiler/parser.h"
+#include "hash/meow_hash_x64_aesni.h"
 
 struct var_index_hash_entry {
     char *key;
@@ -28,6 +29,7 @@ struct model_config {
     bool is_derived;
     bool should_reload;
     bool auto_reload;
+	meow_u128 hash;
 };
 
 struct model_config *new_config_from_parent(struct model_config *parent_model_config);

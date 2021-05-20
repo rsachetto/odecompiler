@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include "string/sds.h"
+#include "ode_shell.h"
+#include "inotify_helpers.h"
 
 typedef enum commmand_type_t {
     CMD_INVALID,
@@ -79,7 +82,9 @@ typedef struct command_t {
 
 void initialize_commands();
 char **command_completion(const char *text, int start, int end);
-bool check_command_number_argument(const char *command, int expected_args, int num_args);
-
+bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
+void clean_and_exit(struct shell_variables *shell_state);
+void maybe_reload_from_file_change(struct shell_variables *shell_state, struct inotify_event *event);
+void run_commands_from_file(char *file_name, struct shell_variables *shell_state);
 
 #endif /* __COMMMANDS_H */

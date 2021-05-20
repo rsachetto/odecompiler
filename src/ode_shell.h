@@ -12,7 +12,7 @@
 
 struct watch_entry {
     int key;
-    struct model_config *value;
+    struct model_config **value;
 };
 
 struct shell_variables {
@@ -35,7 +35,5 @@ struct model_hash_entry {
 
 #define PROMPT "ode_shell> "
 #define HISTORY_FILE ".ode_history"
-
-void maybe_reload_from_file_change(struct shell_variables *, int);
 
 #endif//ODECOMPILER_ODE_SHELL_H

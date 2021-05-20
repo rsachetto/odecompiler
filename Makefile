@@ -17,10 +17,10 @@ debug: debug_set common
 release: release_set common
 
 release_set:
-	$(eval OPT_FLAGS=-O2 -Wno-stringop-overflow)
+	$(eval OPT_FLAGS=-O2 -Wno-stringop-overflow -mavx -maes)
 
 debug_set:
-	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow)
+	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow -mavx -maes)
 
 AST=src/compiler/ast.h src/compiler/ast.c
 PARSER=src/compiler/parser.c src/compiler/parser.h

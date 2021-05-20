@@ -15,7 +15,10 @@ bool generate_model_program(struct model_config *model) {
     }
 
     size_t file_size;
-    const char *source = read_entire_file_with_mmap(file_name, &file_size);
+    char *source = read_entire_file_with_mmap(file_name, &file_size);
+
+	//TODO: maybe we can try to avoid this
+	model->hash = MeowHash(MeowDefaultSeed, file_size, source);
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
@@ -43,6 +46,8 @@ bool generate_model_program(struct model_config *model) {
         }
         model->program = program;
     }
+
+	munmap(source, file_size);
 
     return error;
 
