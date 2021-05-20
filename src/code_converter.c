@@ -324,7 +324,7 @@ static sds if_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_sc
         }
         indentation_level--;
 
-        buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+        buf = sdscatfmt(buf, "%s}\n", indent_spaces[indentation_level]);
 
     }
 
@@ -560,7 +560,7 @@ sds out_file_header(program p) {
     return ret;
 }
 
-void write_variables(program p, FILE *file, declared_variable_hash *declared_variables, declared_variable_hash global_scope) {
+void write_variables_or_body(program p, FILE *file, declared_variable_hash *declared_variables, declared_variable_hash global_scope) {
 
     int n_stmt = arrlen(p);
     for(int i = 0; i < n_stmt; i++) {
@@ -763,7 +763,7 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
 }
 
-void write_cvode_solver(FILE *file, program initial, program globals, program odes, program functions, program variables, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
+void write_cvode_solver(FILE *file, program initial, program globals, program odes, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
     fprintf(file,"#include <cvode/cvode.h>\n"
                  "#include <math.h>\n"
                  "#include <nvector/nvector_serial.h>\n"
@@ -779,7 +779,7 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef realtype real;\n");
 
-    write_variables(globals, file, &variables_and_odes_scope, global_scope);
+    write_variables_or_body(globals, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\n");
 
     write_functions(functions, file, global_scope);
@@ -798,7 +798,7 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "    //Parameters\n");
 
     indentation_level++;
-    write_variables(variables, file, &variables_and_odes_scope, global_scope);
+    write_variables_or_body(main_body, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
 
     write_odes(odes, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
@@ -915,7 +915,7 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
                   "}");
 }
 
-void write_adpt_euler_solver(FILE *file, program initial, program globals, program odes, program functions, program variables, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
+void write_adpt_euler_solver(FILE *file, program initial, program globals, program odes, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
     fprintf(file,"#include <math.h>\n"
                  "#include <stdbool.h>\n"
                  "#include <stdio.h>\n"
@@ -925,7 +925,7 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef double real;\n");
 
-    write_variables(globals, file, &variables_and_odes_scope, global_scope);
+    write_variables_or_body(globals, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\n");
 
     write_functions(functions, file, global_scope);
@@ -944,7 +944,7 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "    //Parameters\n");
 
     indentation_level++;
-    write_variables(variables, file, &variables_and_odes_scope, global_scope);
+    write_variables_or_body(main_body, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
 
     write_odes(odes, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
@@ -1090,7 +1090,7 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     program odes = NULL;
-    program variables = NULL;
+    program main_body = NULL;
     program functions = NULL;
     program initial = NULL;
     program globals = NULL;
@@ -1100,9 +1100,7 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = prog[i];
-        if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt) {
-            arrput(variables, a);
-        } else if(a->tag == ast_function_statement) {
+        if(a->tag == ast_function_statement) {
             arrput(functions, a);
         } else if(a->tag == ast_ode_stmt) {
             arrput(odes, a);
@@ -1112,6 +1110,9 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
             arrput(globals, a);
         } else if(a->tag == ast_import_stmt) {
             arrput(imports, a);
+        }
+        else {
+            arrput(main_body, a);
         }
     }
 
@@ -1126,15 +1127,15 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
 
     process_imports(imports, &functions);
 
-    declared_variable_hash variables_and_odes_scope = create_variables_scope(odes, variables);
+    declared_variable_hash variables_and_odes_scope = create_variables_scope(odes, main_body);
     declared_variable_hash global_scope = create_functions_and_global_scope(functions, globals);
 
     switch (solver) {
         case CVODE_SOLVER:
-            write_cvode_solver(file, initial, globals, odes, functions, variables, out_header, variables_and_odes_scope, global_scope);
+            write_cvode_solver(file, initial, globals, odes, functions, main_body, out_header, variables_and_odes_scope, global_scope);
             break;
         case EULER_ADPT_SOLVER:
-            write_adpt_euler_solver(file, initial, globals, odes, functions, variables, out_header, variables_and_odes_scope, global_scope);
+            write_adpt_euler_solver(file, initial, globals, odes, functions, main_body, out_header, variables_and_odes_scope, global_scope);
             break;
         default:
             fprintf(stderr, "Error: invalid solver type!\n");

@@ -1,3 +1,5 @@
+TODO: load models without extension (check for extension and add it automatically)
+
 TODO: add a python src code generator and a monoalg3d generator (and more)
 TODO: check if a variable was already declared in the global scope.
 TODO: initial conditions can only be assigned with numerical expressions or global variables (error if this is not happening)
