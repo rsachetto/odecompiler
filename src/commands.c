@@ -561,16 +561,14 @@ static void execute_getplotconfig_command(struct shell_variables *shell_state, s
     char *xname = get_var_name(model_config, model_config->plot_config.xindex);
     char *yname = get_var_name(model_config, model_config->plot_config.yindex);
 
-    printf("Plot configuration for model %s\n\n", model_config->model_name);
+    printf("\nPlot configuration for model %s\n\n", model_config->model_name);
 
     printf("Var on X: %s (%d)\n", xname, model_config->plot_config.xindex);
     printf("Var on Y: %s (%d)\n", yname, model_config->plot_config.yindex);
 
     printf("Label X: %s\n", model_config->plot_config.xlabel);
     printf("Label Y: %s\n", model_config->plot_config.ylabel);
-
-
-    return;
+	printf("Title (appears on plot legend): %s\n\n", model_config->plot_config.title);
 }
 
 static void execute_set_or_get_value_command(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag, bool set) {
@@ -594,7 +592,6 @@ static void execute_set_or_get_value_command(struct shell_variables *shell_state
     if (!parent_model_config) return;
 
     struct model_config *model_config;
-
 
     if (set) {
         model_config = new_config_from_parent(parent_model_config);

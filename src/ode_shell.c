@@ -1,5 +1,3 @@
-#include <linux/limits.h>
-#include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <setjmp.h>
@@ -7,9 +5,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/inotify.h>
-#include <unistd.h>
 
 #include "code_converter.h"
 #include "commands.h"
@@ -45,12 +40,14 @@ static void check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         return;
     }
 
+	const int BUF_MAX = 1024;
+
     FILE *f = popen("gnuplot -e \"show t\" 2>&1", "r");
-    char msg[PATH_MAX];
+    char msg[BUF_MAX];
 
     sds tmp = NULL;
 
-    while (fgets(msg, PATH_MAX, f) != NULL) {
+    while (fgets(msg, BUF_MAX, f) != NULL) {
         int n = strlen(msg);
         if (n > 5) {
             tmp = sdsnew(msg);
