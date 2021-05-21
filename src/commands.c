@@ -134,6 +134,10 @@ static void add_cmd(char *cmd, command_type type, int accept_min, int accept_max
 
 void initialize_commands() {
 
+	#define NO_ARGS  "If no arguments are provided, the command is executed using the last loaded model"
+	#define ONE_ARG  "If only one argurment is provided, the command is executed using the last loaded model"
+	#define TWO_ARGS "If only two argurments are provided, the command is executed using the last loaded model"
+
     command def;
     def.key = strdup("invalid");
     def.value = CMD_INVALID;
@@ -143,51 +147,50 @@ void initialize_commands() {
 
     arrsetcap(commands_sorted, 32);
 
-    add_cmd("cd", CMD_CD, 1, 1, "Changes the current directory, e.g., cd examples");
-    add_cmd("quit", CMD_QUIT, 0, 0, "Quits the shell (CTRL+d also quits).");
-    add_cmd("help", CMD_HELP, 0, 1, "Prints all available commands or the help for a specific command, e.g., help run");
-    add_cmd("list", CMD_LIST, 0, 0, "Lists all loaded models");
-    add_cmd("loadcmds", CMD_LOAD_CMDS, 1, 1, "Loads a list of command from a file and execute them, e.g., loadcmds file.os");
-    add_cmd("load", CMD_LOAD, 1, 1, "Loads a model from a ode file. The model source file has to be located in the current directory, e.g, load sir.ode");
-    add_cmd("unload", CMD_UNLOAD, 1, 1, "Unloads previously loaded model, e.g, unload sir.ode");
-    add_cmd("ls", CMD_LS, 0, 1, "Lists the content of a given directory.");
-    add_cmd("plot", CMD_PLOT, 0, 1, "Plots the output of a model execution (one variable). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir");
-    add_cmd("replot", CMD_REPLOT, 0, 1, "Adds the output of a model execution (one variable) in to an existing plot. If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir");
-    add_cmd("plottofile", CMD_PLOT_FILE, 1, 2, "Plots the output of a model execution (one variable) in the specified file (pdf or png). If no argurments are provided, the command is executed using the last loaded model. E.g., plot sir");
-    add_cmd("replottofile", CMD_REPLOT_FILE, 1, 2, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). If no argurments are provided, the command is executed using the last loaded model. E.g., replottofile sir");
-    add_cmd("plottoterm", CMD_PLOT_TERM, 0, 1, "Plots the output of a model execution (one variable) using the terminal (text). If no argurments are provided, the command is executed using the last loaded model. E.g., plottoterm sir");
-    add_cmd("replottoterm", CMD_REPLOT_TERM, 0, 1, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). If no argurments are provided, the command is executed using the last loaded model. E.g., replototerm sir");
-
-    add_cmd("setplotx", CMD_PLOT_SET_X, 1, 2, "Sets the variable to be plotted along the x axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir t or setplotx t");
-    add_cmd("setploty", CMD_PLOT_SET_Y, 1, 2, "Sets the variable to be plotted along the y axis. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotx sir R or setplotx R");
-    add_cmd("setplotxlabel", CMD_PLOT_SET_X_LABEL, 1, 2, "Sets x axis label. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotxlabel sir Pop or setplotxlabel Pop");
-    add_cmd("setplotylabel", CMD_PLOT_SET_Y_LABEL, 1, 2, "Sets y axis label. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplotylabel sir days or setplotylabel days");
-    add_cmd("setplottitle", CMD_PLOT_SET_TITLE, 1, 2, "Sets the current plot title. If only one argurment is provided, the command is executed using the last loaded model. E.g., setplottitle sir title1 or setplottitle title1");
-    add_cmd("pwd", CMD_PWD, 0, 0, "Shows the current directory");
-    add_cmd("solve", CMD_SOLVE, 1, 2, "Solves the ODE(s) of a loaded model for x steps. If only one argurment is provided, the command is executed using the last loaded model. E.g., run sir 100");
-    add_cmd("solveplot", CMD_SOLVE_PLOT, 0, 1, "Solves the ODE(s) of a loaded model for x steps and plot it. If only one argurment is provided, the command is executed using the last loaded model. E.g., runplot sir 100");
-    add_cmd("vars", CMD_VARS, 0, 1, "List all variables available for plotting in a loaded model. If no argurments are provided, the command is executed using the last loaded model. E.g vars sir");
-    add_cmd("getplotconfig", CMD_GET_PLOT_CONFIG, 0, 1, "Prints the current plot configuration of a model. If no argurment are provided, the command is executed using the last loaded model. E.g., getplotconfig sir");
-    add_cmd("setinitialvalue", CMD_SET_INITIAL_VALUE, 2, 3, "Changes the initial value of a model's ODE variable and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setinitialvalue sir I 10");
-    add_cmd("getinitialvalue", CMD_GET_INITIAL_VALUE, 1, 2, "Prints the initial value of a model's ODE variable. If only one argurment is provided, the command is executed using the last loaded model. E.g., getinitialvalue sir R");
-    add_cmd("getinitialvalues", CMD_GET_INITIAL_VALUES, 0, 1, "Prints the initial values of all model's ODE variables. If no argurments are provided, the command is executed using the last loaded model. E.g., getinitialvalues sir");
-    add_cmd("setparamvalue", CMD_SET_PARAM_VALUE, 2, 3, "Changes the value of a model's parameter and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setparamvalue sir gamma 10");
-    add_cmd("getparamvalue", CMD_GET_PARAM_VALUE, 1, 2, "Prints the value of a model's parameter. If only one argurment is provided, the command is executed using the last loaded model. E.g., getparamvalue sir gamma");
-    add_cmd("getparamvalues", CMD_GET_PARAM_VALUES, 0, 1, "Prints the values of all model's parameters. If no argurments are provided, the command is executed using the last loaded model. E.g., getparamvalues sir");
-    add_cmd("setglobalvalue", CMD_SET_GLOBAL_VALUE, 2, 3, "Changes the value of a model's global variable and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g setglobalalue sir n 2000");
-    add_cmd("getglobalvalue", CMD_GET_GLOBAL_VALUE, 1, 2, "Prints the value of a model's global variable. If only one argurment is provided, the command is executed using the last loaded model. E.g., getglobalalue sir n");
-    add_cmd("getglobalvalues", CMD_GET_GLOBAL_VALUES, 0, 1, "Prints the values of all model's global variables. If no argurments are provided, the command is executed using the last loaded model. E.g., getglobalalues sir");
-    add_cmd("setodevalue", CMD_SET_ODE_VALUE, 2, 3, "Changes the value of a model's ODE and reloads the model. If only two argurments are provided, the command is executed using the last loaded model. E.g seodevalue sir S gama*beta");
-    add_cmd("getodevalue", CMD_GET_ODE_VALUE, 1, 2, "Prints the value of a model's ODE. If only one argurment is provided, the command is executed using the last loaded model. E.g., getodevalue sir S");
-    add_cmd("getodevalues", CMD_GET_ODE_VALUES, 0, 1, "Prints the values of all model's ODEs. If no argurments are provided, the command is executed using the last loaded model. E.g., getodevalues sir");
-    add_cmd("saveplot", CMD_SAVEPLOT, 1, 2, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
-    add_cmd("setcurrentmodel", CMD_SET_CURRENT_MODEL, 1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
-    add_cmd("printmodel", CMD_PRINT_MODEL, 0, 1, "Print a model on the screen. If no argurments are provided, the command is executed using the last loaded model. E.g printmodel sir");
-    add_cmd("editmodel", CMD_EDIT_MODEL, 0, 1, "Open the file containing the model ode code. If no argurments are provided, the command is executed using the last loaded model. E.g editmodel sir");
-    add_cmd("setautolreload", CMD_SET_AUTO_RELOAD, 1, 2, "Enable/disable auto reload value of a model. If no argurments are provided, the command is executed using the last loaded model. E.g setautolreload sir 1 or setautolreload sir 0");
-    add_cmd("setshouldreload", CMD_SET_RELOAD, 1, 2, "Enable/disable reloading when changed for a model. If no argurments are provided, the command is executed using the last loaded model. E.g setreload sir 1 or setreload sir 0");
-    add_cmd("setglobalreload", CMD_SET_GLOBAL_RELOAD, 1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
-
+    add_cmd("cd",               CMD_CD,                 1, 1, "Changes the current directory, e.g., cd examples");
+    add_cmd("quit",             CMD_QUIT,               0, 0, "Quits the shell (CTRL+d also quits).");
+    add_cmd("help",             CMD_HELP,               0, 1, "Prints all available commands or the help for a specific command, e.g., help run");
+    add_cmd("list",             CMD_LIST,               0, 0, "Lists all loaded models");
+    add_cmd("loadcmds",         CMD_LOAD_CMDS,          1, 1, "Loads a list of command from a file and execute them, e.g., loadcmds file.os");
+    add_cmd("load",             CMD_LOAD,               1, 1, "Loads a model from a ode file, e.g, load sir.ode");
+    add_cmd("unload",           CMD_UNLOAD,             1, 1, "Unloads previously loaded model, e.g, unload sir.ode");
+    add_cmd("ls",               CMD_LS,                 0, 1, "Lists the content of a given directory.");
+    add_cmd("plot",             CMD_PLOT,               0, 1, "Plots the output of a model execution (one variable). "NO_ARGS". E.g., plot sir");
+    add_cmd("replot",           CMD_REPLOT,             0, 1, "Adds the output of a model execution (one variable) in to an existing plot. "NO_ARGS". E.g., plot sir");
+    add_cmd("plottofile",       CMD_PLOT_FILE,          1, 2, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "ONE_ARG". E.g., plot sir");
+    add_cmd("replottofile",     CMD_REPLOT_FILE,        1, 2, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "ONE_ARG". E.g., replottofile sir");
+    add_cmd("plottoterm",       CMD_PLOT_TERM,          0, 1, "Plots the output of a model execution (one variable) using the terminal (text). "NO_ARGS". E.g., plottoterm sir");
+    add_cmd("replottoterm",     CMD_REPLOT_TERM,        0, 1, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "NO_ARGS". E.g., replototerm sir");
+    add_cmd("setplotx",         CMD_PLOT_SET_X,         1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG". E.g., setplotx sir t or setplotx t");
+    add_cmd("setploty",         CMD_PLOT_SET_Y,         1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG". E.g., setplotx sir R or setplotx R");
+    add_cmd("setplotxlabel",    CMD_PLOT_SET_X_LABEL,   1, 2, "Sets x axis label. "ONE_ARG". E.g., setplotxlabel sir Pop or setplotxlabel Pop");
+    add_cmd("setplotylabel",    CMD_PLOT_SET_Y_LABEL,   1, 2, "Sets y axis label. "ONE_ARG". E.g., setplotylabel sir days or setplotylabel days");
+    add_cmd("setplottitle",     CMD_PLOT_SET_TITLE,     1, 2, "Sets the current plot title. "ONE_ARG". E.g., setplottitle sir title1 or setplottitle title1");
+    add_cmd("pwd",              CMD_PWD,                0, 0, "Shows the current directory");
+    add_cmd("solve",            CMD_SOLVE,              1, 2, "Solves the ODE(s) of a loaded model for x steps. "ONE_ARG". E.g., run sir 100");
+    add_cmd("solveplot",        CMD_SOLVE_PLOT,         1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. "ONE_ARG". E.g., solveplot sir 100");
+    add_cmd("vars",             CMD_VARS,               0, 1, "List all variables available for plotting in a loaded model. "NO_ARGS". E.g vars sir");
+    add_cmd("getplotconfig",    CMD_GET_PLOT_CONFIG,    0, 1, "Prints the current plot configuration of a model. "NO_ARGS". E.g., getplotconfig sir");
+    add_cmd("setinitialvalue",  CMD_SET_INITIAL_VALUE,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. "TWO_ARGS". E.g setinitialvalue sir I 10");
+    add_cmd("getinitialvalue",  CMD_GET_INITIAL_VALUE,  1, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG". E.g., getinitialvalue sir R");
+    add_cmd("getinitialvalues", CMD_GET_INITIAL_VALUES, 0, 1, "Prints the initial values of all model's ODE variables. "NO_ARGS". E.g., getinitialvalues sir");
+    add_cmd("setparamvalue",    CMD_SET_PARAM_VALUE,    2, 3, "Changes the value of a model's parameter and reloads the model. "TWO_ARGS". E.g setparamvalue sir gamma 10");
+    add_cmd("getparamvalue",    CMD_GET_PARAM_VALUE,    1, 2, "Prints the value of a model's parameter. "ONE_ARG". E.g., getparamvalue sir gamma");
+    add_cmd("getparamvalues",   CMD_GET_PARAM_VALUES,   0, 1, "Prints the values of all model's parameters. "NO_ARGS". E.g., getparamvalues sir");
+    add_cmd("setglobalvalue",   CMD_SET_GLOBAL_VALUE,   2, 3, "Changes the value of a model's global variable and reloads the model. "TWO_ARGS". E.g setglobalalue sir n 2000");
+    add_cmd("getglobalvalue",   CMD_GET_GLOBAL_VALUE,   1, 2, "Prints the value of a model's global variable. "ONE_ARG". E.g., getglobalalue sir n");
+    add_cmd("getglobalvalues",  CMD_GET_GLOBAL_VALUES,  0, 1, "Prints the values of all model's global variables. "NO_ARGS". E.g., getglobalalues sir");
+    add_cmd("setodevalue",      CMD_SET_ODE_VALUE,      2, 3, "Changes the value of a model's ODE and reloads the model. "TWO_ARGS". E.g seodevalue sir S gama*beta");
+    add_cmd("getodevalue",      CMD_GET_ODE_VALUE,      1, 2, "Prints the value of a model's ODE. "ONE_ARG". E.g., getodevalue sir S");
+    add_cmd("getodevalues",     CMD_GET_ODE_VALUES,     0, 1, "Prints the values of all model's ODEs. "NO_ARGS". E.g., getodevalues sir");
+    add_cmd("saveplot",         CMD_SAVEPLOT,           1, 1, "Saves the current plot to a pdf file, e.g., saveplot plot.pdf");
+    add_cmd("setcurrentmodel",  CMD_SET_CURRENT_MODEL,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
+    add_cmd("printmodel",       CMD_PRINT_MODEL,        0, 1, "Print a model on the screen. "NO_ARGS". E.g printmodel sir");
+    add_cmd("editmodel",        CMD_EDIT_MODEL,         0, 1, "Open the file containing the model ode code. "NO_ARGS". E.g editmodel sir");
+    add_cmd("setautolreload",   CMD_SET_AUTO_RELOAD,    1, 2, "Enable/disable auto reload value of a model. "ONE_ARG". E.g setautolreload sir 1 or setautolreload sir 0");
+    add_cmd("setshouldreload",  CMD_SET_RELOAD,         1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG". E.g setreload sir 1 or setreload sir 0");
+    add_cmd("setglobalreload",  CMD_SET_GLOBAL_RELOAD,  1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
+	add_cmd("savemodeloutput",  CMD_SAVE_OUTPUT,        1, 2, "Saves the model output to a file. "ONE_ARG". E.g. savemodeloutput sir output_sir.txt");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }
@@ -795,6 +798,29 @@ static void execute_set_reload_command(struct shell_variables *shell_state, sds 
     }
 }
 
+static void execute_save_output_command(struct shell_variables *shell_state, sds *tokens, int num_args) {
+
+    const char *command = tokens[0];
+    struct model_config *model_config = NULL;
+
+    model_config = load_model_config_or_print_error(shell_state, tokens, num_args, 1);
+
+    if (!model_config) return;
+
+	if (!model_config->output_file) {
+        printf("Error executing command %s. Model %s was not executed. Run then model first using \"solve %s\" or list loaded models using \"list\"\n", command, model_config->model_name, model_config->model_name);
+        return;
+    }
+
+	const char *file_name = tokens[num_args];
+
+	if(cp_file(file_name, model_config->output_file, true) == -1) {
+		printf("Error executing command %s. Could not copy %s to %s\n", command, model_config->output_file, file_name);
+		return;
+	}
+
+}
+
 void run_commands_from_file(char *file_name, struct shell_variables *shell_state) {
 
     bool quit = false;
@@ -994,6 +1020,10 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         case CMD_SET_RELOAD:
         case CMD_SET_AUTO_RELOAD:
             execute_set_reload_command(shell_state, tokens, num_args, c_type);
+			break;
+		case CMD_SAVE_OUTPUT:
+			execute_save_output_command(shell_state, tokens, num_args);
+			break;
     }
 
 dealloc_vars : {

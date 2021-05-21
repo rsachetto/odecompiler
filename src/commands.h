@@ -51,7 +51,8 @@ typedef enum commmand_type_t {
     CMD_EDIT_MODEL,
     CMD_SET_RELOAD,
     CMD_SET_AUTO_RELOAD,
-    CMD_SET_GLOBAL_RELOAD
+    CMD_SET_GLOBAL_RELOAD,
+	CMD_SAVE_OUTPUT
 } command_type;
 
 typedef struct command_t {

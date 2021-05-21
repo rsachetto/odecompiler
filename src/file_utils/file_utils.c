@@ -133,7 +133,7 @@ char *get_filename_without_ext(const char *filename) {
     return file;
 }
 
-int cp_file(const char *to, const char *from) {
+int cp_file(const char *to, const char *from, bool overwrite) {
     int fd_to, fd_from;
     char buf[4096];
     int nread;
@@ -143,7 +143,13 @@ int cp_file(const char *to, const char *from) {
     if(fd_from < 0)
         return -1;
 
-    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if(!overwrite) {
+    	fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	}
+	else {
+    	fd_to = open(to, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	}
+
     if(fd_to < 0)
         goto out_error;
 

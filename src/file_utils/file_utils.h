@@ -26,7 +26,7 @@ struct path_information {
 bool can_run_command(const char *cmd);
 char *get_current_directory();
 const char *get_filename_ext(const char *filename);
-int cp_file(const char *to, const char *from);
+int cp_file(const char *to, const char *from, bool overwrite);
 char *read_entire_file(const char *filename, size_t *size);
 char *read_entire_file_with_mmap(const char *filename, size_t *size);
 string_array list_files_from_dir(const char *dir, const char *prefix, const char *extension, string_array ignore_extensions, bool sort);
