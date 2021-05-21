@@ -134,9 +134,10 @@ static void add_cmd(char *cmd, command_type type, int accept_min, int accept_max
 
 void initialize_commands() {
 
-	#define NO_ARGS  "If no arguments are provided, the command is executed using the last loaded model"
-	#define ONE_ARG  "If only one argurment is provided, the command is executed using the last loaded model"
-	#define TWO_ARGS "If only two argurments are provided, the command is executed using the last loaded model"
+	#define DEFAULT_MSG "the command is executed using the last loaded model"
+	#define NO_ARGS     "If no arguments are provided, " DEFAULT_MSG
+	#define ONE_ARG     "If only one argurment is provided, " DEFAULT_MSG
+	#define TWO_ARGS    "If only two argurments are provided, " DEFAULT_MSG
 
     command def;
     def.key = strdup("invalid");
@@ -852,7 +853,6 @@ void run_commands_from_file(char *file_name, struct shell_variables *shell_state
                 free(line);
             }
 
-
             if (quit) {
                 sleep(1);
                 clean_and_exit(shell_state);
@@ -954,6 +954,8 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
             print_current_dir();
             break;
         case CMD_LOAD_CMDS:
+			//here we have call this function again, so we need to unlock the mutex
+			pthread_mutex_unlock(&shell_state->lock);
             run_commands_from_file(tokens[1], shell_state);
             break;
         case CMD_LS:

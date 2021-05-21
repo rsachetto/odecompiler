@@ -140,8 +140,10 @@ int cp_file(const char *to, const char *from, bool overwrite) {
     int saved_errno;
 
     fd_from = open(from, O_RDONLY);
-    if(fd_from < 0)
+
+	if(fd_from < 0) {
         return -1;
+	}
 
 	if(!overwrite) {
     	fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
