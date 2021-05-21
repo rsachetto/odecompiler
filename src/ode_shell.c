@@ -20,9 +20,6 @@
 #include "string/sds.h"
 #include "string_utils.h"
 
-extern command *commands;
-extern string_array commands_sorted;
-
 static sigjmp_buf env;
 static void ctrl_c_handler(int sig) {
     siglongjmp(env, 42);

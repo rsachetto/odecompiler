@@ -759,7 +759,7 @@ static void execute_unload_model_command(struct shell_variables *shell_state, sd
     shdel(shell_state->loaded_models, tokens[1]);
 
     if (shell_state->loaded_models != 0 && is_current) {
-        //TODO: do we want to know the real current model??
+        //TODO: do we want to know the last loaded model??
         shell_state->current_model = shell_state->loaded_models[0].value;
     }
 }
@@ -1046,33 +1046,33 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
 
     pthread_mutex_lock(&shell_state->lock);
 
-	struct model_config **model_configs = hmget(shell_state->notify_entries, event->wd);
-	struct model_config *model_config;
+    struct model_config **model_configs = hmget(shell_state->notify_entries, event->wd);
+    struct model_config *model_config;
 
-	for(int i = 0; i < arrlen(model_configs); i++) {
-		char *file_name = get_file_from_path(model_configs[i]->model_file);
-		if(STR_EQUALS(file_name, event->name)) {
-			model_config = model_configs[i];
-			break;
-		}
-	}
+    for (int i = 0; i < arrlen(model_configs); i++) {
+        char *file_name = get_file_from_path(model_configs[i]->model_file);
+        if (STR_EQUALS(file_name, event->name)) {
+            model_config = model_configs[i];
+            break;
+        }
+    }
 
     if (!model_config->should_reload) {
         pthread_mutex_unlock(&shell_state->lock);
         return;
     }
 
-	size_t file_size;
-	char *source = read_entire_file_with_mmap(model_config->model_file, &file_size);
-	meow_u128 hash = MeowHash(MeowDefaultSeed, file_size, source);
-	munmap(source, file_size);
+    size_t file_size;
+    char *source = read_entire_file_with_mmap(model_config->model_file, &file_size);
+    meow_u128 hash = MeowHash(MeowDefaultSeed, file_size, source);
+    munmap(source, file_size);
 
-	int file_equals = MeowHashesAreEqual(hash, model_config->hash);
+    int file_equals = MeowHashesAreEqual(hash, model_config->hash);
 
-	if(file_equals) {
-		pthread_mutex_unlock(&shell_state->lock);
+    if (file_equals) {
+        pthread_mutex_unlock(&shell_state->lock);
         return;
-	}
+    }
 
     if (model_config && !model_config->is_derived) {
 
