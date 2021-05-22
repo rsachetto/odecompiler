@@ -75,7 +75,6 @@ int main(int argc, char **argv) {
 
     print_current_dir();
 
-    rl_attempted_completion_function = command_completion;
 
     struct shell_variables shell_state = {0};
 

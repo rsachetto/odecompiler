@@ -70,19 +70,18 @@ typedef struct command_t {
     } while (0)
 
 
-#define CHECK_2_ARGS(command, accept0, accept1, num_args)                                                                          \
+#define CHECK_N_ARGS(command, accept0, accept1, num_args)                                                                          \
     do {                                                                                                                           \
         if (accept0 == accept1) {                                                                                                  \
             CHECK_ARGS(command, accept0, num_args);                                                                                \
         }                                                                                                                          \
-        if (num_args != accept0 && num_args != accept1) {                                                                          \
-            printf("Error: command %s accept %d or %d argument(s). %d argument(s) given!\n", command, accept0, accept1, num_args); \
+		else if (num_args < accept0 || num_args > accept1) {                                                                       \
+            printf("Error: command %s accepts from %d to %d argument(s). %d argument(s) given!\n", command, accept0, accept1, num_args); \
             goto dealloc_vars;                                                                                                     \
         }                                                                                                                          \
     } while (0)
 
 void initialize_commands();
-char **command_completion(const char *text, int start, int end);
 bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 void clean_and_exit(struct shell_variables *shell_state);
 void maybe_reload_from_file_change(struct shell_variables *shell_state, struct inotify_event *event);
