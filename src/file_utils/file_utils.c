@@ -563,7 +563,7 @@ const char *get_home_dir() {
 void print_current_dir() {
     char buf[PATH_MAX];
     if(!getcwd(buf, PATH_MAX)) {
-        printf("Error calling getcwd\n");
+        fprintf(stderr, "Error calling getcwd\n");
     }
     else {
         printf("Current directory %s\n", buf);
@@ -577,6 +577,12 @@ void print_path_contents(const char *path) {
 
     char buf[PATH_MAX];
     mydir = opendir(path);
+
+    if(!mydir) {
+        fprintf(stderr, "Error - %s does not exist or is not a directory!\n", path);
+        return;
+    }
+
     while((myfile = readdir(mydir)) != NULL)
     {
         sprintf(buf, "%s/%s", path, myfile->d_name);

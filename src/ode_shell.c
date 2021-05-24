@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void *) &shell_state);
 
     if (argc == 2) {
-        run_commands_from_file(argv[1], &shell_state);
+        run_commands_from_file(&shell_state, argv[1]);
     }
 
     sds history_path = sdsnew(get_home_dir());

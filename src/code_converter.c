@@ -2,63 +2,65 @@
 #include "code_converter.h"
 #include "stb/stb_ds.h"
 
-static const char *builtin_functions[] = {"acos",
-                                    "asin",
-                                    "atan",
-                                    "atan2",
-                                    "ceil",
-                                    "cos",
-                                    "cosh",
-                                    "exp",
-                                    "fabs",
-                                    "floor",
-                                    "fmod",
-                                    "frexp",
-                                    "ldexp",
-                                    "log",
-                                    "log10",
-                                    "modf",
-                                    "pow",
-                                    "sin",
-                                    "sinh",
-                                    "sqrt",
-                                    "tan",
-                                    "tanh",
-                                    "cosh",
-                                    "asinh",
-                                    "atanh",
-                                    "cbrt",
-                                    "copysign",
-                                    "erf",
-                                    "erfc",
-                                    "exp2",
-                                    "expm1",
-                                    "fdim",
-                                    "fma",
-                                    "fmax",
-                                    "fmin",
-                                    "hypot",
-                                    "ilogb",
-                                    "lgamma",
-                                    "llrint",
-                                    "lrint",
-                                    "llround",
-                                    "lround",
-                                    "log1p",
-                                    "log2",
-                                    "logb",
-                                    "nan",
-                                    "nearbyint",
-                                    "nextafter",
-                                    "nexttoward",
-                                    "remainder",
-                                    "remquo",
-                                    "rint",
-                                    "round",
-                                    "scalbln",
-                                    "scalbn",
-                                    "tgamma",
-                                    "trunc"};
+static const char *builtin_functions[] = {
+    "acos",
+    "asin",
+    "atan",
+    "atan2",
+    "ceil",
+    "cos",
+    "cosh",
+    "exp",
+    "fabs",
+    "floor",
+    "fmod",
+    "frexp",
+    "ldexp",
+    "log",
+    "log10",
+    "modf",
+    "pow",
+    "sin",
+    "sinh",
+    "sqrt",
+    "tan",
+    "tanh",
+    "cosh",
+    "asinh",
+    "atanh",
+    "cbrt",
+    "copysign",
+    "erf",
+    "erfc",
+    "exp2",
+    "expm1",
+    "fdim",
+    "fma",
+    "fmax",
+    "fmin",
+    "hypot",
+    "ilogb",
+    "lgamma",
+    "llrint",
+    "lrint",
+    "llround",
+    "lround",
+    "log1p",
+    "log2",
+    "logb",
+    "nan",
+    "nearbyint",
+    "nextafter",
+    "nexttoward",
+    "remainder",
+    "remquo",
+    "rint",
+    "round",
+    "scalbln",
+    "scalbn",
+    "tgamma",
+    "trunc"
+};
 
 static int indentation_level = 0;
 
@@ -724,20 +726,20 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
         tmp.num_args = 1;
 
         if(strcmp(builtin_functions[i], "pow") == 0       ||
-           strcmp(builtin_functions[i], "modf") == 0      ||
-           strcmp(builtin_functions[i], "copysign") == 0  ||
-           strcmp(builtin_functions[i], "exp2") == 0      ||
-           strcmp(builtin_functions[i], "expm1") == 0     ||
-           strcmp(builtin_functions[i], "fdim") == 0      ||
-           strcmp(builtin_functions[i], "fmax") == 0      ||
-           strcmp(builtin_functions[i], "fmin") == 0      ||
-           strcmp(builtin_functions[i], "hypot") == 0     ||
-           strcmp(builtin_functions[i], "nextafter") == 0 ||
-           strcmp(builtin_functions[i], "nexttoward") == 0||
-           strcmp(builtin_functions[i], "scalbln") == 0   ||
-           strcmp(builtin_functions[i], "scalbn") == 0)   {
-                tmp.num_args = 2;
-            }
+                strcmp(builtin_functions[i], "modf") == 0      ||
+                strcmp(builtin_functions[i], "copysign") == 0  ||
+                strcmp(builtin_functions[i], "exp2") == 0      ||
+                strcmp(builtin_functions[i], "expm1") == 0     ||
+                strcmp(builtin_functions[i], "fdim") == 0      ||
+                strcmp(builtin_functions[i], "fmax") == 0      ||
+                strcmp(builtin_functions[i], "fmin") == 0      ||
+                strcmp(builtin_functions[i], "hypot") == 0     ||
+                strcmp(builtin_functions[i], "nextafter") == 0 ||
+                strcmp(builtin_functions[i], "nexttoward") == 0||
+                strcmp(builtin_functions[i], "scalbln") == 0   ||
+                strcmp(builtin_functions[i], "scalbn") == 0)   {
+            tmp.num_args = 2;
+        }
 
         else if(strcmp(builtin_functions[i], "fma") == 0 || strcmp(builtin_functions[i], "remquo") == 0) {
             tmp.num_args = 3;
@@ -745,7 +747,7 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
         shputs(declared_variables, tmp);
     }
-    
+
     //Ading function identifiers to scope.
     for(int i = 0; i < arrlen(functions); i++) {
         declared_variable_entry tmp;
@@ -765,16 +767,16 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
 void write_cvode_solver(FILE *file, program initial, program globals, program odes, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
     fprintf(file,"#include <cvode/cvode.h>\n"
-                 "#include <math.h>\n"
-                 "#include <nvector/nvector_serial.h>\n"
-                 "#include <stdbool.h>\n"
-                 "#include <stdio.h>\n"
-                 "#include <stdlib.h>\n"
-                 "#include <sundials/sundials_dense.h>\n"
-                 "#include <sundials/sundials_types.h>\n"
-                 "#include <sunlinsol/sunlinsol_dense.h> \n"
-                 "#include <sunmatrix/sunmatrix_dense.h>"
-                 " \n\n");
+            "#include <math.h>\n"
+            "#include <nvector/nvector_serial.h>\n"
+            "#include <stdbool.h>\n"
+            "#include <stdio.h>\n"
+            "#include <stdlib.h>\n"
+            "#include <sundials/sundials_dense.h>\n"
+            "#include <sundials/sundials_types.h>\n"
+            "#include <sunlinsol/sunlinsol_dense.h> \n"
+            "#include <sunmatrix/sunmatrix_dense.h>"
+            " \n\n");
 
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef realtype real;\n");
@@ -806,121 +808,121 @@ void write_cvode_solver(FILE *file, program initial, program globals, program od
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
     fprintf(file, "static int check_flag(void *flagvalue, const char *funcname, int opt) {\n"
-                  "\n"
-                  "    int *errflag;\n"
-                  "\n"
-                  "    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */\n"
-                  "    if(opt == 0 && flagvalue == NULL) {\n"
-                  "\n"
-                  "        fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
-                  "        return (1);\n"
-                  "    }\n"
-                  "\n"
-                  "    /* Check if flag < 0 */\n"
-                  "    else if(opt == 1) {\n"
-                  "        errflag = (int *)flagvalue;\n"
-                  "        if(*errflag < 0) {\n"
-                  "            fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed with flag = %%d\\n\\n\", funcname, *errflag);\n"
-                  "            return (1);\n"
-                  "        }\n"
-                  "    }\n"
-                  "\n"
-                  "    /* Check if function returned NULL pointer - no memory allocated */\n"
-                  "    else if(opt == 2 && flagvalue == NULL) {\n"
-                  "        fprintf(stderr, \"\\nMEMORY_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
-                  "        return (1);\n"
-                  "    }\n"
-                  "\n"
-                  "    return (0);\n"
-                  "}\n");
+            "\n"
+            "    int *errflag;\n"
+            "\n"
+            "    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */\n"
+            "    if(opt == 0 && flagvalue == NULL) {\n"
+            "\n"
+            "        fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
+            "        return (1);\n"
+            "    }\n"
+            "\n"
+            "    /* Check if flag < 0 */\n"
+            "    else if(opt == 1) {\n"
+            "        errflag = (int *)flagvalue;\n"
+            "        if(*errflag < 0) {\n"
+            "            fprintf(stderr, \"\\nSUNDIALS_ERROR: %%s() failed with flag = %%d\\n\\n\", funcname, *errflag);\n"
+            "            return (1);\n"
+            "        }\n"
+            "    }\n"
+            "\n"
+            "    /* Check if function returned NULL pointer - no memory allocated */\n"
+            "    else if(opt == 2 && flagvalue == NULL) {\n"
+            "        fprintf(stderr, \"\\nMEMORY_ERROR: %%s() failed - returned NULL pointer\\n\\n\", funcname);\n"
+            "        return (1);\n"
+            "    }\n"
+            "\n"
+            "    return (0);\n"
+            "}\n");
 
     fprintf(file, "void solve_ode(N_Vector y, float final_t, char *file_name) {\n"
-                  "\n"
-                  "    void *cvode_mem = NULL;\n"
-                  "    int flag;\n"
-                  "\n"
-                  "    // Set up solver\n"
-                  "    cvode_mem = CVodeCreate(CV_BDF);\n"
-                  "\n"
-                  "    if(cvode_mem == 0) {\n"
-                  "        fprintf(stderr, \"Error in CVodeMalloc: could not allocate\\n\");\n"
-                  "        return;\n"
-                  "    }\n"
-                  "\n"
-                  "    flag = CVodeInit(cvode_mem, %s, 0, y);\n"
-                  "    if(check_flag(&flag, \"CVodeInit\", 1))\n"
-                  "        return;\n"
-                  "\n"
-                  "    flag = CVodeSStolerances(cvode_mem, 1.49012e-6, 1.49012e-6);\n"
-                  "    if(check_flag(&flag, \"CVodeSStolerances\", 1))\n"
-                  "        return;\n"
-                  "\n"
-                  "    // Create dense SUNMatrix for use in linear solver\n"
-                  "    SUNMatrix A = SUNDenseMatrix(NEQ, NEQ);\n"
-                  "    if(check_flag((void *)A, \"SUNDenseMatrix\", 0))\n"
-                  "        return;\n"
-                  "\n"
-                  "    // Create dense linear solver for use by CVode\n"
-                  "    SUNLinearSolver LS = SUNLinSol_Dense(y, A);\n"
-                  "    if(check_flag((void *)LS, \"SUNLinSol_Dense\", 0))\n"
-                  "        return;\n"
-                  "\n"
-                  "    // Attach the linear solver and matrix to CVode by calling CVodeSetLinearSolver\n"
-                  "    flag = CVodeSetLinearSolver(cvode_mem, LS, A);\n"
-                  "    if(check_flag((void *)&flag, \"CVodeSetLinearSolver\", 1))\n"
-                  "        return;\n"
-                  "\n"
-                  "    realtype dt=0.01;\n"
-                  "    realtype tout = dt;\n"
-                  "    int retval;\n"
-                  "    realtype t;\n"
-                  "\n"
-                  "    FILE *f = fopen(file_name, \"w\");\n"
-                  "    fprintf(f, %s);\n"
-                  "    while(tout < final_t) {\n"
-                  "\n"
-                  "        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
-                  "\n"
-                  "        if(retval == CV_SUCCESS) {"
-                  "            fprintf(f, \"%%lf \", t);\n"
-                  "            for(int i = 0; i < NEQ; i++) {\n"
-                  "                fprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
-                  "            }\n"
-                  "\n"
-                  "            fprintf(f, \"\\n\");\n"
-                  "\n"
-                  "            tout+=dt;\n"
-                  "        }\n"
-                  "\n"
-                  "    }\n"
-                  "\n"
-                  "    // Free the linear solver memory\n"
-                  "    SUNLinSolFree(LS);\n"
-                  "    SUNMatDestroy(A);\n"
-                  "    CVodeFree(&cvode_mem);\n"
-                  "}\n", "solve_model", out_header);
+            "\n"
+            "    void *cvode_mem = NULL;\n"
+            "    int flag;\n"
+            "\n"
+            "    // Set up solver\n"
+            "    cvode_mem = CVodeCreate(CV_BDF);\n"
+            "\n"
+            "    if(cvode_mem == 0) {\n"
+            "        fprintf(stderr, \"Error in CVodeMalloc: could not allocate\\n\");\n"
+            "        return;\n"
+            "    }\n"
+            "\n"
+            "    flag = CVodeInit(cvode_mem, %s, 0, y);\n"
+            "    if(check_flag(&flag, \"CVodeInit\", 1))\n"
+            "        return;\n"
+            "\n"
+            "    flag = CVodeSStolerances(cvode_mem, 1.49012e-6, 1.49012e-6);\n"
+            "    if(check_flag(&flag, \"CVodeSStolerances\", 1))\n"
+            "        return;\n"
+            "\n"
+            "    // Create dense SUNMatrix for use in linear solver\n"
+            "    SUNMatrix A = SUNDenseMatrix(NEQ, NEQ);\n"
+            "    if(check_flag((void *)A, \"SUNDenseMatrix\", 0))\n"
+            "        return;\n"
+            "\n"
+            "    // Create dense linear solver for use by CVode\n"
+            "    SUNLinearSolver LS = SUNLinSol_Dense(y, A);\n"
+            "    if(check_flag((void *)LS, \"SUNLinSol_Dense\", 0))\n"
+            "        return;\n"
+            "\n"
+            "    // Attach the linear solver and matrix to CVode by calling CVodeSetLinearSolver\n"
+            "    flag = CVodeSetLinearSolver(cvode_mem, LS, A);\n"
+            "    if(check_flag((void *)&flag, \"CVodeSetLinearSolver\", 1))\n"
+            "        return;\n"
+            "\n"
+            "    realtype dt=0.01;\n"
+            "    realtype tout = dt;\n"
+            "    int retval;\n"
+            "    realtype t;\n"
+            "\n"
+            "    FILE *f = fopen(file_name, \"w\");\n"
+            "    fprintf(f, %s);\n"
+            "    while(tout < final_t) {\n"
+            "\n"
+            "        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
+            "\n"
+            "        if(retval == CV_SUCCESS) {"
+            "            fprintf(f, \"%%lf \", t);\n"
+            "            for(int i = 0; i < NEQ; i++) {\n"
+            "                fprintf(f, \"%%lf \", NV_Ith_S(y,i));\n"
+            "            }\n"
+            "\n"
+            "            fprintf(f, \"\\n\");\n"
+            "\n"
+            "            tout+=dt;\n"
+            "        }\n"
+            "\n"
+            "    }\n"
+            "\n"
+            "    // Free the linear solver memory\n"
+            "    SUNLinSolFree(LS);\n"
+            "    SUNMatDestroy(A);\n"
+            "    CVodeFree(&cvode_mem);\n"
+            "}\n", "solve_model", out_header);
 
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
-                  "\n"
-                  "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
-                  "\n");
+            "\n"
+            "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
+            "\n");
     generate_initial_conditions_values(initial, odes, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\tset_initial_conditions(x0, values);\n"
-                  "\n"
-                  "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
-                  "\n"
-                  "\n"
-                  "\treturn (0);\n"
-                  "}");
+            "\n"
+            "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
+            "\n"
+            "\n"
+            "\treturn (0);\n"
+            "}");
 }
 
 void write_adpt_euler_solver(FILE *file, program initial, program globals, program odes, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
     fprintf(file,"#include <math.h>\n"
-                 "#include <stdbool.h>\n"
-                 "#include <stdio.h>\n"
-                 "#include <stdlib.h>\n"
-                 " \n\n");
+            "#include <stdbool.h>\n"
+            "#include <stdio.h>\n"
+            "#include <stdlib.h>\n"
+            " \n\n");
 
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef double real;\n");
@@ -952,140 +954,140 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
     fprintf(file, "void solve_ode(real *sv, float final_time, char *file_name) {\n"
-                          "\n"
-                          "    real rDY[NEQ];\n"
-                          "\n"
-                          "    real reltol = 1e-5;\n"
-                          "    real abstol = 1e-5;\n"
-                          "    real _tolerances_[NEQ];\n"
-                          "    real _aux_tol = 0.0;\n"
-                          "    //initializes the variables\n"
-                          "    real dt = 0.000001;\n"
-                          "    real time_new = 0.0;\n"
-                          "    real previous_dt = dt;\n"
-                          "\n"
-                          "    real edos_old_aux_[NEQ];\n"
-                          "    real edos_new_euler_[NEQ];\n"
-                          "    real *_k1__ = (real*) malloc(sizeof(real)*NEQ);\n"
-                          "    real *_k2__ = (real*) malloc(sizeof(real)*NEQ);\n"
-                          "    real *_k_aux__;\n"
-                          "\n"
-                          "    const real _beta_safety_ = 0.8;\n"
-                          "\n"
-                          "    const real __tiny_ = pow(abstol, 2.0f);\n"
-                          "\n"
-                          "    if(time_new + dt > final_time) {\n"
-                          "       dt = final_time - time_new;\n"
-                          "    }\n"
-                          "\n"
-                          "    solve_model(time_new, sv, rDY);\n"
-                          "    time_new += dt;\n"
-                          "\n"
-                          "    for(int i = 0; i < NEQ; i++){\n"
-                          "        _k1__[i] = rDY[i];\n"
-                          "    }\n"
-                          "\n"
-                          "    FILE *f = fopen(file_name, \"w\");\n"
-                          "    fprintf(f, %s);\n"
-                          "    while(1) {\n"
-                          "\n"
-                          "        for(int i = 0; i < NEQ; i++) {\n"
-                          "            //stores the old variables in a vector\n"
-                          "            edos_old_aux_[i] = sv[i];\n"
-                          "            //computes euler method\n"
-                          "            edos_new_euler_[i] = _k1__[i] * dt + edos_old_aux_[i];\n"
-                          "            //steps ahead to compute the rk2 method\n"
-                          "            sv[i] = edos_new_euler_[i];\n"
-                          "        }\n"
-                          "\n"
-                          "        time_new += dt;\n"
-                          "        solve_model(time_new, sv, rDY);\n"
-                          "        time_new -= dt;//step back\n"
-                          "\n"
-                          "        double greatestError = 0.0, auxError = 0.0;\n"
-                          "        for(int i = 0; i < NEQ; i++) {\n"
-                          "            // stores the new evaluation\n"
-                          "            _k2__[i] = rDY[i];\n"
-                          "            _aux_tol = fabs(edos_new_euler_[i]) * reltol;\n"
-                          "            _tolerances_[i] = (abstol > _aux_tol) ? abstol : _aux_tol;\n"
-                          "\n"
-                          "            // finds the greatest error between  the steps\n"
-                          "            auxError = fabs(((dt / 2.0) * (_k1__[i] - _k2__[i])) / _tolerances_[i]);\n"
-                          "\n"
-                          "            greatestError = (auxError > greatestError) ? auxError : greatestError;\n"
-                          "        }\n"
-                          "        ///adapt the time step\n"
-                          "        greatestError += __tiny_;\n"
-                          "        previous_dt = dt;\n"
-                          "        ///adapt the time step\n"
-                          "        dt = _beta_safety_ * dt * sqrt(1.0f/greatestError);\n"
-                          "\n"
-                          "        if (time_new + dt > final_time) {\n"
-                          "            dt = final_time - time_new;\n"
-                          "        }\n"
-                          "\n"
-                          "        //it doesn't accept the solution\n"
-                          "        if ((greatestError >= 1.0f) && dt > 0.00000001) {\n"
-                          "            //restore the old values to do it again\n"
-                          "            for(int i = 0;  i < NEQ; i++) {\n"
-                          "                sv[i] = edos_old_aux_[i];\n"
-                          "            }\n"
-                          "            //throw the results away and compute again\n"
-                          "        } else{//it accepts the solutions\n"
-                          "\n"
-                          "            if (time_new + dt > final_time) {\n"
-                          "                dt = final_time - time_new;\n"
-                          "            }\n"
-                          "\n"
-                          "            _k_aux__ = _k2__;\n"
-                          "            _k2__\t= _k1__;\n"
-                          "            _k1__\t= _k_aux__;\n"
-                          "\n"
-                          "            //it steps the method ahead, with euler solution\n"
-                          "            for(int i = 0; i < NEQ; i++){\n"
-                          "                sv[i] = edos_new_euler_[i];\n"
-                          "            }\n"
+            "\n"
+            "    real rDY[NEQ];\n"
+            "\n"
+            "    real reltol = 1e-5;\n"
+            "    real abstol = 1e-5;\n"
+            "    real _tolerances_[NEQ];\n"
+            "    real _aux_tol = 0.0;\n"
+            "    //initializes the variables\n"
+            "    real dt = 0.000001;\n"
+            "    real time_new = 0.0;\n"
+            "    real previous_dt = dt;\n"
+            "\n"
+            "    real edos_old_aux_[NEQ];\n"
+            "    real edos_new_euler_[NEQ];\n"
+            "    real *_k1__ = (real*) malloc(sizeof(real)*NEQ);\n"
+            "    real *_k2__ = (real*) malloc(sizeof(real)*NEQ);\n"
+            "    real *_k_aux__;\n"
+            "\n"
+            "    const real _beta_safety_ = 0.8;\n"
+            "\n"
+            "    const real __tiny_ = pow(abstol, 2.0f);\n"
+            "\n"
+            "    if(time_new + dt > final_time) {\n"
+            "       dt = final_time - time_new;\n"
+            "    }\n"
+            "\n"
+            "    solve_model(time_new, sv, rDY);\n"
+            "    time_new += dt;\n"
+            "\n"
+            "    for(int i = 0; i < NEQ; i++){\n"
+            "        _k1__[i] = rDY[i];\n"
+            "    }\n"
+            "\n"
+            "    FILE *f = fopen(file_name, \"w\");\n"
+            "    fprintf(f, %s);\n"
+            "    while(1) {\n"
+            "\n"
+            "        for(int i = 0; i < NEQ; i++) {\n"
+            "            //stores the old variables in a vector\n"
+            "            edos_old_aux_[i] = sv[i];\n"
+            "            //computes euler method\n"
+            "            edos_new_euler_[i] = _k1__[i] * dt + edos_old_aux_[i];\n"
+            "            //steps ahead to compute the rk2 method\n"
+            "            sv[i] = edos_new_euler_[i];\n"
+            "        }\n"
+            "\n"
+            "        time_new += dt;\n"
+            "        solve_model(time_new, sv, rDY);\n"
+            "        time_new -= dt;//step back\n"
+            "\n"
+            "        double greatestError = 0.0, auxError = 0.0;\n"
+            "        for(int i = 0; i < NEQ; i++) {\n"
+            "            // stores the new evaluation\n"
+            "            _k2__[i] = rDY[i];\n"
+            "            _aux_tol = fabs(edos_new_euler_[i]) * reltol;\n"
+            "            _tolerances_[i] = (abstol > _aux_tol) ? abstol : _aux_tol;\n"
+            "\n"
+            "            // finds the greatest error between  the steps\n"
+            "            auxError = fabs(((dt / 2.0) * (_k1__[i] - _k2__[i])) / _tolerances_[i]);\n"
+            "\n"
+            "            greatestError = (auxError > greatestError) ? auxError : greatestError;\n"
+            "        }\n"
+            "        ///adapt the time step\n"
+            "        greatestError += __tiny_;\n"
+            "        previous_dt = dt;\n"
+            "        ///adapt the time step\n"
+            "        dt = _beta_safety_ * dt * sqrt(1.0f/greatestError);\n"
+            "\n"
+            "        if (time_new + dt > final_time) {\n"
+            "            dt = final_time - time_new;\n"
+            "        }\n"
+            "\n"
+            "        //it doesn't accept the solution\n"
+            "        if ((greatestError >= 1.0f) && dt > 0.00000001) {\n"
+            "            //restore the old values to do it again\n"
+            "            for(int i = 0;  i < NEQ; i++) {\n"
+            "                sv[i] = edos_old_aux_[i];\n"
+            "            }\n"
+            "            //throw the results away and compute again\n"
+            "        } else{//it accepts the solutions\n"
+            "\n"
+            "            if (time_new + dt > final_time) {\n"
+            "                dt = final_time - time_new;\n"
+            "            }\n"
+            "\n"
+            "            _k_aux__ = _k2__;\n"
+            "            _k2__\t= _k1__;\n"
+            "            _k1__\t= _k_aux__;\n"
+            "\n"
+            "            //it steps the method ahead, with euler solution\n"
+            "            for(int i = 0; i < NEQ; i++){\n"
+            "                sv[i] = edos_new_euler_[i];\n"
+            "            }\n"
 
-                          "            fprintf(f, \"%%lf \", time_new);\n"
-                          "            for(int i = 0; i < NEQ; i++) {\n"
-                          "                fprintf(f, \"%%lf \", sv[i]);\n"
-                          "            }\n"
-                          "\n"
-                          "            fprintf(f, \"\\n\");\n"
+            "            fprintf(f, \"%%lf \", time_new);\n"
+            "            for(int i = 0; i < NEQ; i++) {\n"
+            "                fprintf(f, \"%%lf \", sv[i]);\n"
+            "            }\n"
+            "\n"
+            "            fprintf(f, \"\\n\");\n"
 
-                          "\n"
-                          "            if(time_new + previous_dt >= final_time) {\n"
-                          "                if(final_time == time_new) {\n"
-                          "                    break;\n"
-                          "                } else if(time_new < final_time) {\n"
-                          "                    dt = previous_dt = final_time - time_new;\n"
-                          "                    time_new += previous_dt;\n"
-                          "                    break;\n"
-                          "                }\n"
-                          "            } else {\n"
-                          "                time_new += previous_dt;\n"
-                          "            }\n"
-                          "\n"
-                          "        }\n"
-                          "    }\n"
-                          "\n"
-                          "    free(_k1__);\n"
-                          "    free(_k2__);\n"
-                          "}",  out_header);
+            "\n"
+            "            if(time_new + previous_dt >= final_time) {\n"
+            "                if(final_time == time_new) {\n"
+            "                    break;\n"
+            "                } else if(time_new < final_time) {\n"
+            "                    dt = previous_dt = final_time - time_new;\n"
+            "                    time_new += previous_dt;\n"
+            "                    break;\n"
+            "                }\n"
+            "            } else {\n"
+            "                time_new += previous_dt;\n"
+            "            }\n"
+            "\n"
+            "        }\n"
+            "    }\n"
+            "\n"
+            "    free(_k1__);\n"
+            "    free(_k2__);\n"
+            "}",  out_header);
 
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
-                  "\n"
-                  "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
-                  "\n");
+            "\n"
+            "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
+            "\n");
     generate_initial_conditions_values(initial, odes, file, &variables_and_odes_scope, global_scope);
     fprintf(file,"\tset_initial_conditions(x0, values);\n"
-                  "\n"
-                  "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
-                  "\n"
-                  "\n"
-                  "\treturn (0);\n"
-                  "}");
+            "\n"
+            "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
+            "\n"
+            "\n"
+            "\treturn (0);\n"
+            "}");
 }
 void convert_to_c(program prog, FILE *file, solver_type solver) {
 
