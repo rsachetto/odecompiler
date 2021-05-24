@@ -15,6 +15,8 @@
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
 
+#define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command);
+
 static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_list ap;
 
@@ -42,7 +44,7 @@ static bool have_gnuplot(struct shell_variables *shell_state) {
 static struct model_config *load_model_config_or_print_error(struct shell_variables *shell_state, const char *command, const char *model_name) {
 
     if (shlen(shell_state->loaded_models) == 0) {
-        printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command);
+        PRINT_NO_MODELS_LOADED_ERROR(command);
         return NULL;
     }
 
@@ -157,7 +159,10 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
     struct model_config *model_config = NULL;
 
     if(num_args == min_args) {
-        if(!shell_state->current_model) return NULL;
+        if(!shell_state->current_model) {
+            PRINT_NO_MODELS_LOADED_ERROR(tokens[0]);
+            return NULL;
+        }
         model_config = shell_state->current_model;
         *run_number = model_config->num_runs;
     }
@@ -166,6 +171,11 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
 
         if(!error) {
             //the first argument is run number, so the model is the default
+            if(!shell_state->current_model) {
+                PRINT_NO_MODELS_LOADED_ERROR(tokens[0]);
+                return NULL;
+            }
+
             model_config = shell_state->current_model;
         }
         else {
@@ -179,7 +189,6 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
         model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
 
         if(!model_config) return NULL;
-
         *run_number = string_to_long(tokens[2], &error);
 
         if(error) {
@@ -192,6 +201,7 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
 
         if(model_config->num_runs == 0) {
             printf("Error executing command %s. Model %s was not executed. Run then model first using \"solve %s\" or list loaded models using \"list\"\n", tokens[0], model_config->model_name, model_config->model_name);
+            return NULL;
         }
         else if(*run_number > model_config->num_runs) {
             printf("Error running command %s. The model was executed %u time(s), but it was requested to plor run %u!\n", tokens[0], model_config->num_runs, *run_number);

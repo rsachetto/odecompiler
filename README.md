@@ -53,7 +53,7 @@ ode_shell> solve
 ode_shell> plot
 ```
 
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode.png)
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode.png)
 
 ```
 ode_shell> vars
@@ -65,14 +65,14 @@ R, 4
 ode_shell> setploty I
 ode_shell> replot
 ```
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode2.png)
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode2.png)
 
 ```
 ode_shell> setploty R
 ode_shell> replot
 ode_shell> exit
 ```
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/examples/imgs/sir_ode3.png)
+![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode3.png)
 
 ## Running commands stored in a file:
 
