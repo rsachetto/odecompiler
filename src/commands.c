@@ -1112,7 +1112,9 @@ COMMAND_FUNCTION(odestolatex) {
     sds *odes = odes_to_latex(model_config->program);
 
     for(int i = 0; i < arrlen(odes); i++) {
-        printf("%s\n", odes[i]);
+        char *first_paren = strchr(odes[i], '(');
+        printf("%.*s ", (int)(first_paren - &odes[i][0]), odes[i]);
+        printf("%.*s\n", (int)strlen(first_paren+1) - 1, first_paren + 1);
     }
 
     return true;
@@ -1325,7 +1327,7 @@ void initialize_commands() {
     ADD_CMD(setcurrentmodel,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
     ADD_CMD(printmodel,       0, 1, "Print a model on the screen. "NO_ARGS". E.g printmodel sir");
     ADD_CMD(editmodel,        0, 1, "Open the file containing the model ode code. "NO_ARGS". E.g editmodel sir");
-    ADD_CMD(odestolatex,      2, 1, "Print the latex code for the model ODEs. "NO_ARGS". E.g odestolatex sir");
+    ADD_CMD(odestolatex,      0, 1, "Print the latex code for the model ODEs. "NO_ARGS". E.g odestolatex sir");
     ADD_CMD(setautolreload,   1, 2, "Enable/disable auto reload value of a model. "ONE_ARG". E.g setautolreload sir 1 or setautolreload sir 0");
     ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG". E.g setshouldreload sir 1 or setshouldreload sir 0");
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
