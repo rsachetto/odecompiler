@@ -3,6 +3,7 @@
 #include "model_config.h"
 #include "stb/stb_ds.h"
 #include "code_converter.h"
+#include "to_latex.h"
 
 #include <linux/limits.h>
 #include <readline/readline.h>
@@ -658,13 +659,13 @@ COMMAND_FUNCTION(getplotconfig) {
 static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag, bool set) {
 
     const char *command = tokens[0];
-    char *var_name;
+    sds var_name;
     char *new_value;
 
     struct model_config *parent_model_config = NULL;
 
     if (set) {
-        var_name = tokens[num_args - 1];
+        var_name = sdsnew(tokens[num_args - 1]);
         new_value = tokens[num_args];
 
         if(num_args == 2) {
@@ -675,7 +676,11 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
         }
 
     } else {
-        var_name = tokens[num_args];
+        var_name = sdsnew(tokens[num_args]);
+
+        if(tag == ast_ode_stmt) {
+            var_name = sdscat(var_name, "'");
+        }
 
         if(num_args == 1) {
             parent_model_config = shell_state->current_model;
@@ -733,6 +738,8 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
             load_model(shell_state, NULL, model_config);
         }
     }
+
+    sdsfree(var_name);
 
     return true;
 
@@ -1089,6 +1096,29 @@ COMMAND_FUNCTION(pwd) {
     return true;
 }
 
+COMMAND_FUNCTION(odestolatex) {
+
+    struct model_config *model_config = NULL;
+
+    if(num_args == 0) {
+        model_config = shell_state->current_model;
+    }
+    else {
+        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
+    }
+
+    if (!model_config) return false;
+
+    sds *odes = odes_to_latex(model_config->program);
+
+    for(int i = 0; i < arrlen(odes); i++) {
+        printf("%s\n", odes[i]);
+    }
+
+    return true;
+
+}
+
 void clean_and_exit(struct shell_variables *shell_state) {
 
     sds history_path = sdsnew(get_home_dir());
@@ -1280,7 +1310,7 @@ void initialize_commands() {
     ADD_CMD(vars,             0, 1, "List all variables available for plotting in a loaded model. "NO_ARGS". E.g vars sir");
     ADD_CMD(getplotconfig,    0, 1, "Prints the current plot configuration of a model. "NO_ARGS". E.g., getplotconfig sir");
     ADD_CMD(setinitialvalue,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. "TWO_ARGS". E.g setinitialvalue sir I 10");
-    ADD_CMD(getinitialvalue,  1, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG". E.g., getinitialvalue sir R");
+    ADD_CMD(getinitialvalue,  2, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG". E.g., getinitialvalue sir R");
     ADD_CMD(getinitialvalues, 0, 1, "Prints the initial values of all model's ODE variables. "NO_ARGS". E.g., getinitialvalues sir");
     ADD_CMD(setparamvalue,    2, 3, "Changes the value of a model's parameter and reloads the model. "TWO_ARGS". E.g setparamvalue sir gamma 10");
     ADD_CMD(getparamvalue,    1, 2, "Prints the value of a model's parameter. "ONE_ARG". E.g., getparamvalue sir gamma");
@@ -1295,6 +1325,7 @@ void initialize_commands() {
     ADD_CMD(setcurrentmodel,  1, 1, "Set the current model to be used as default parameters in several commands , e.g., setcurrentmodel sir");
     ADD_CMD(printmodel,       0, 1, "Print a model on the screen. "NO_ARGS". E.g printmodel sir");
     ADD_CMD(editmodel,        0, 1, "Open the file containing the model ode code. "NO_ARGS". E.g editmodel sir");
+    ADD_CMD(odestolatex,      2, 1, "Print the latex code for the model ODEs. "NO_ARGS". E.g odestolatex sir");
     ADD_CMD(setautolreload,   1, 2, "Enable/disable auto reload value of a model. "ONE_ARG". E.g setautolreload sir 1 or setautolreload sir 0");
     ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG". E.g setshouldreload sir 1 or setshouldreload sir 0");
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
