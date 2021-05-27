@@ -1129,13 +1129,7 @@ void clean_and_exit(struct shell_variables *shell_state) {
     int n_models = shlen(shell_state->loaded_models);
     for (int i = 0; i < n_models; i++) {
         struct model_config *config = shell_state->loaded_models[i].value;
-        if (config->num_runs > 0) {
-            //TODO: remove all output files
-            //unlink(config->output_file);
-        }
-        if (config->model_command) {
-            unlink(config->model_command);
-        }
+        free_model_config(config);
     }
 
     printf("\n");
@@ -1271,9 +1265,12 @@ static void add_cmd(command_fn *function, char *cmd,  int accept_min, int accept
 void initialize_commands() {
 
 #define DEFAULT_MSG "the command is executed using the last loaded model"
-#define NO_ARGS     "If no arguments are provided, " DEFAULT_MSG
-#define ONE_ARG     "If only one argurment is provided, " DEFAULT_MSG
-#define TWO_ARGS    "If only two argurments are provided, " DEFAULT_MSG
+#define DEFAULT_MSG_PLOT "the command is executed using the last loaded model and the output of the last execution. The execution number can be passed to the command to plot/save a specific output."
+#define NO_ARGS "If no arguments are provided, " DEFAULT_MSG
+#define ONE_ARG "If only one argurment is provided, " DEFAULT_MSG
+#define TWO_ARGS "If only two argurments are provided, " DEFAULT_MSG
+#define PLOT_ARGS "If no arguments are provided, " DEFAULT_MSG_PLOT
+#define PLOTFILE_ARGS "If only the filename is provided, " DEFAULT_MSG_PLOT
 
     rl_attempted_completion_function = command_completion;
 
@@ -1295,12 +1292,12 @@ void initialize_commands() {
     ADD_CMD(load,             1, 1, "Loads a model from a ode file, e.g, load sir.ode");
     ADD_CMD(unload,           1, 1, "Unloads previously loaded model, e.g, unload sir.ode");
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
-    ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "NO_ARGS". E.g., plot sir");
-    ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "NO_ARGS". E.g., plot sir");
-    ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "ONE_ARG". E.g., plot sir");
-    ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "ONE_ARG". E.g., replottofile sir");
-    ADD_CMD(plottoterm,       0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "NO_ARGS". E.g., plottoterm sir");
-    ADD_CMD(replottoterm,     0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "NO_ARGS". E.g., replototerm sir");
+    ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS". E.g., plot sir");
+    ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS". E.g., replot sir");
+    ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS". E.g., plottofile sir output.pdf 2");
+    ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS". E.g., replottofile sir 2");
+    ADD_CMD(plottoterm,       0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "PLOT_ARGS". E.g., plottoterm sir");
+    ADD_CMD(replottoterm,     0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "PLOT_ARGS". E.g., replototerm sir 2");
     ADD_CMD(setplotx,         1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG". E.g., setplotx sir t or setplotx t");
     ADD_CMD(setploty,         1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG". E.g., setplotx sir R or setplotx R");
     ADD_CMD(setplotxlabel,    1, 2, "Sets x axis label. "ONE_ARG". E.g., setplotxlabel sir Pop or setplotxlabel Pop");
@@ -1331,7 +1328,7 @@ void initialize_commands() {
     ADD_CMD(setautolreload,   1, 2, "Enable/disable auto reload value of a model. "ONE_ARG". E.g setautolreload sir 1 or setautolreload sir 0");
     ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG". E.g setshouldreload sir 1 or setshouldreload sir 0");
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models. E.g setglobalreload 1 or setglobalreload 0");
-    ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "ONE_ARG". E.g. savemodeloutput sir output_sir.txt");
+    ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "PLOTFILE_ARGS". E.g. savemodeloutput sir output_sir.txt");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }

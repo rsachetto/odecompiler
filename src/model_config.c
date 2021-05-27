@@ -9,11 +9,10 @@
 
 sds get_model_output_file(struct model_config *model_config, uint run_number) {
 
-	//TODO: add this to the model?
 	sds modified_model_name = sdsnew(model_config->model_name);
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
-    sds model_out_file = sdscatfmt(sdsempty(), "/tmp/%s_%i_out.txt", modified_model_name, run_number);
+    sds model_out_file = sdscatfmt(sdsempty(), MODEL_OUTPUT_TEMPLATE, modified_model_name, run_number);
 	return model_out_file;
 }
 
@@ -95,9 +94,10 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
 
 void free_model_config(struct model_config *model_config) {
 
-    if(model_config->num_runs > 0) {
-		//TODO: unlink all files
-        //unlink(model_config->output_file);
+    for(int r = 0; r < model_config->num_runs; r++) {
+        sds out = get_model_output_file(model_config, r);
+        unlink(out);
+        sdsfree(out);
     }
 
     if(model_config->model_command) {

@@ -2,7 +2,6 @@
 #include "to_latex.h"
 #include "stb/stb_ds.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 const char *latex_symbols[] = {
     "alpha",

@@ -2,7 +2,7 @@
 #define __INOTIFY_HELPERS_H 
 
 #include "ode_shell.h"
-#include<sys/inotify.h>
+#include <sys/inotify.h>
 
 #define MAX_EVENTS 1024  /* Maximum number of events to process*/
 #define LEN_NAME 1024  /* Assuming that the length of the filename won't exceed 1024 bytes*/

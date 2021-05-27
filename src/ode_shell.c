@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "code_converter.h"
 #include "commands.h"
 #include "file_utils/file_utils.h"
 #include "inotify_helpers.h"

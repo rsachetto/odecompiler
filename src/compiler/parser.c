@@ -523,7 +523,6 @@ ast *parse_function_statement(parser *p) {
         count_return(stmt->function_stmt.body[i], &return_stmts);
     }
 
-    //TODO: I think we always need a return stmt
     len = arrlen(return_stmts);
 
     if(len) {

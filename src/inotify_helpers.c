@@ -1,9 +1,5 @@
 #include "stb/stb_ds.h"
-#include <dirent.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "commands.h"

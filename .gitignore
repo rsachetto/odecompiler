@@ -13,3 +13,5 @@ run.od
 .anjuta/
 .anjuta_sym_db.db
 odecompiler.anjuta
+/compile_commands.json
+/.cache/
