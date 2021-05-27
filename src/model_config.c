@@ -72,7 +72,7 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
 
     struct model_config *model_config = calloc(1, sizeof(struct model_config));
     model_config->model_name = strdup(new_model_name);
-    model_config->model_file = parent_model_config->model_file;
+    model_config->model_file = strdup(parent_model_config->model_file);
 
     model_config->plot_config.xindex = parent_model_config->plot_config.xindex;
     model_config->plot_config.yindex = parent_model_config->plot_config.yindex;
@@ -106,6 +106,7 @@ void free_model_config(struct model_config *model_config) {
 
     free(model_config->model_name);
     free(model_config->model_file);
+
     free(model_config->model_command);
     free_program(model_config->program);
     shfree(model_config->var_indexes);
