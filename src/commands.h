@@ -33,7 +33,9 @@ typedef enum cmd_type_t {
     CMD_SET_PLOT_TITLE,
     CMD_SET_RELOAD,
     CMD_SET_GLOBAL_RELOAD,
-    CMD_SET_AUTO_RELOAD
+    CMD_SET_AUTO_RELOAD,
+    CMD_SET,
+    CMD_GET
 } command_type;
 
 #define CHECK_ARGS(command, expected, received)                                  \

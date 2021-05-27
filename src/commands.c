@@ -656,7 +656,7 @@ COMMAND_FUNCTION(getplotconfig) {
     return true;
 }
 
-static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag, bool set) {
+static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag, command_type action) {
 
     const char *command = tokens[0];
     sds var_name;
@@ -664,7 +664,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
     struct model_config *parent_model_config = NULL;
 
-    if (set) {
+    if (action == CMD_SET) {
         var_name = sdsnew(tokens[num_args - 1]);
         new_value = tokens[num_args];
 
@@ -694,7 +694,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
     struct model_config *model_config;
 
-    if (set) {
+    if (action == CMD_SET) {
         model_config = new_config_from_parent(parent_model_config);
     } else {
         model_config = parent_model_config;
@@ -708,7 +708,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
         if (a->tag == tag) {
             if (STR_EQUALS(a->assignement_stmt.name->identifier.value, var_name)) {
 
-                if (set) {
+                if (action == CMD_SET) {
                     lexer *l = new_lexer(new_value, model_config->model_name);
                     parser *p = new_parser(l);
                     program program = parse_program(p);
@@ -733,7 +733,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
         printf("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n",
                 command, var_name, model_config->model_name);
     } else {
-        if (set) {
+        if (action == CMD_SET) {
             printf("Reloading model %s as %s\n", parent_model_config->model_name, model_config->model_name);
             load_model(shell_state, NULL, model_config);
         }
@@ -746,35 +746,35 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 }
 
 COMMAND_FUNCTION(setinitialvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_initial_stmt, true);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_initial_stmt, CMD_SET);
 }
 
 COMMAND_FUNCTION(getinitialvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_initial_stmt, false);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_initial_stmt, CMD_GET);
 }
 
 COMMAND_FUNCTION(setparamvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_assignment_stmt, true);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_assignment_stmt, CMD_SET);
 }
 
 COMMAND_FUNCTION(getparamvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_assignment_stmt, false);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_assignment_stmt, CMD_GET);
 }
 
 COMMAND_FUNCTION(setglobalvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_global_stmt, true);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_global_stmt, CMD_SET);
 }
 
 COMMAND_FUNCTION(getglobalvalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_global_stmt, false);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_global_stmt, CMD_GET);
 }
 
 COMMAND_FUNCTION(setodevalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_ode_stmt, true);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_ode_stmt, CMD_SET);
 }
 
 COMMAND_FUNCTION(getodevalue) {
-    return set_or_get_value_helper(shell_state, tokens, num_args, ast_ode_stmt, false);
+    return set_or_get_value_helper(shell_state, tokens, num_args, ast_ode_stmt, CMD_GET);
 }
 
 static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, int num_args, ast_tag tag) {
@@ -799,7 +799,15 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
     for (int i = 0; i < n; i++) {
         ast *a = model_config->program[i];
         if (a->tag == tag) {
-            printf("\n%s = %s", a->assignement_stmt.name->identifier.value, ast_to_string(a->assignement_stmt.value));
+            sds ast_string = ast_to_string(a->assignement_stmt.value);
+            char *first_paren = strchr(ast_string, '(');
+            if(first_paren) {
+                printf("\n%s = %.*s", a->assignement_stmt.name->identifier.value, (int)strlen(first_paren+1) - 1, first_paren + 1);
+            }
+            else {
+                printf("\n%s = %s", a->assignement_stmt.name->identifier.value, ast_string);
+            }
+            sdsfree(ast_string);
             empty = false;
         }
     }
@@ -1113,8 +1121,13 @@ COMMAND_FUNCTION(odestolatex) {
 
     for(int i = 0; i < arrlen(odes); i++) {
         char *first_paren = strchr(odes[i], '(');
-        printf("%.*s ", (int)(first_paren - &odes[i][0]), odes[i]);
-        printf("%.*s\n", (int)strlen(first_paren+1) - 1, first_paren + 1);
+        if(first_paren) {
+            printf("%.*s ", (int)(first_paren - &odes[i][0]), odes[i]);
+            printf("%.*s\n", (int)strlen(first_paren+1) - 1, first_paren + 1);
+        }
+        else {
+            printf("%s\n", odes[i]);
+        }
     }
 
     return true;
