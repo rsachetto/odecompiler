@@ -391,6 +391,11 @@ ast *parse_if_expression(parser *p) {
         exp->if_expr.alternative = parse_block_statement(p);
     }
 
+    else if (peek_token_is(p, ELIF)) {
+        advance_token(p);
+        exp->if_expr.elif_alternative = parse_if_expression(p);
+    }
+
     return exp;
 }
 

@@ -71,6 +71,7 @@ typedef struct if_expresssion_t {
     struct ast_t *condition;
     struct ast_t **consequence;
     struct ast_t **alternative;
+    struct ast_t *elif_alternative;
 } if_expression;
 
 typedef struct function_statement_t {

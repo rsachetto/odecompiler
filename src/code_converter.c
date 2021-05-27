@@ -329,6 +329,9 @@ static sds if_expr_to_c(ast *a, declared_variable_hash *declared_variables_in_sc
         buf = sdscatfmt(buf, "%s}\n", indent_spaces[indentation_level]);
 
     }
+    else if(a->if_expr.elif_alternative) {
+        buf = sdscatfmt(buf, " else %s", ast_to_c(a->if_expr.elif_alternative, declared_variables_in_scope, global_scope));
+    }
 
     return buf;
 

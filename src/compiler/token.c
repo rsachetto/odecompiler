@@ -35,6 +35,9 @@ token_type lookup_ident(char *ident) {
 	if(STRING_EQUALS(ident, "else")) {
 	   return ELSE;
 	}
+    if(STRING_EQUALS(ident, "elif")) {
+	   return ELIF;
+	}
 	if(STRING_EQUALS(ident, "return")) {
 	   return RETURN_STMT;
 	}

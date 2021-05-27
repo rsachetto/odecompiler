@@ -45,6 +45,7 @@ typedef enum token_type_t {
     FALSE      , //"FALSE"
     IF         , //"IF"
     ELSE       , //"ELSE"
+    ELIF       , //"ELIF"
     RETURN_STMT, //"RETURN"
     WHILE      , //"WHILE"
     INITIAL    , //"INITIAL"
