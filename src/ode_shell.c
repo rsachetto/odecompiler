@@ -121,9 +121,14 @@ int main(int argc, char **argv) {
     bool quit;
 
     while ((line = readline(PROMPT)) != 0) {
+        //We do not want blank lines in the history
+        if (!line[0] || line[0] == '\n') continue;
 
-        if (!line[0] || line[0] == '#' || line[0] == '\n') continue;
+        //We want commented lines in the history
         add_history(line);
+
+        if (line[0] == '#') continue;
+
         quit = parse_and_execute_command(line, &shell_state);
         if (quit) break;
     }
