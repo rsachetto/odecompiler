@@ -39,7 +39,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         return false;
     }
 
-	const int BUF_MAX = 1024;
+    const int BUF_MAX = 1024;
 
     FILE *f = popen("gnuplot -e \"show t\" 2>&1", "r");
     char msg[BUF_MAX];
@@ -55,16 +55,16 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         }
     }
 
-	if(tmp) {
-		int c;
-		sds *tmp_tokens = sdssplit(tmp, " ", &c);
-		shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
-		sdsfreesplitres(tmp_tokens, c);
-	}
-	else {
-		//I think this will never happen
-		shell_state->default_gnuplot_term = strdup("dummy");
-	}
+    if(tmp) {
+        int c;
+        sds *tmp_tokens = sdssplit(tmp, " ", &c);
+        shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
+        sdsfreesplitres(tmp_tokens, c);
+    }
+    else {
+        //I think this will never happen
+        shell_state->default_gnuplot_term = strdup("dummy");
+    }
     fclose(f);
 
     return true;
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
 
-	hmdefault(shell_state.notify_entries, NULL);
+    hmdefault(shell_state.notify_entries, NULL);
 
     bool add_plot_commands = check_gnuplot_and_get_default_terminal(&shell_state);
 
