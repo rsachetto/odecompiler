@@ -28,15 +28,15 @@ static void setup_ctrl_c_handler() {
     sigaction(SIGINT, &s, NULL);
 }
 
-static void check_gnuplot_and_get_default_terminal(struct shell_variables *shell_state) {
+static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell_state) {
 
     bool gnuplot_installed = can_run_command("gnuplot");
 
     if (!gnuplot_installed) {
-        printf("Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable\n");
-        printf("Plotting commands will not be available\n");
+        printf("Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
+        printf("Plotting commands will not be available!\n");
         shell_state->default_gnuplot_term = NULL;
-        return;
+        return false;
     }
 
 	const int BUF_MAX = 1024;
@@ -66,14 +66,11 @@ static void check_gnuplot_and_get_default_terminal(struct shell_variables *shell
 		shell_state->default_gnuplot_term = strdup("dummy");
 	}
     fclose(f);
+
+    return true;
 }
 
 int main(int argc, char **argv) {
-
-    initialize_commands();
-
-    print_current_dir();
-
 
     struct shell_variables shell_state = {0};
 
@@ -85,7 +82,11 @@ int main(int argc, char **argv) {
 
 	hmdefault(shell_state.notify_entries, NULL);
 
-    check_gnuplot_and_get_default_terminal(&shell_state);
+    bool add_plot_commands = check_gnuplot_and_get_default_terminal(&shell_state);
+
+    initialize_commands(add_plot_commands);
+
+    print_current_dir();
 
     //Setting up inotify
     shell_state.fd_notify = inotify_init();

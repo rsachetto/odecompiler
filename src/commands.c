@@ -1275,7 +1275,7 @@ static void add_cmd(command_fn *function, char *cmd,  int accept_min, int accept
     arrput(commands_sorted, strdup(cmd));
 }
 
-void initialize_commands() {
+void initialize_commands(bool plot_enabled) {
 
 #define DEFAULT_MSG "the command is executed using the last loaded model.\nE.g, "
 #define DEFAULT_MSG_PLOT "the command is executed using the last loaded model and the output of the last execution.\nThe execution number can be passed to the command to plot/save a specific output.\nE.g.,"
@@ -1303,22 +1303,27 @@ void initialize_commands() {
     ADD_CMD(load,             1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
     ADD_CMD(unload,           1, 1, "Unloads previously loaded model.\nE.g, unload sir.ode");
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
-    ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS "plot sir or plot sir 1 or plot 1");
-    ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS" replot sir");
-    ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS"E.g., plottofile sir output.pdf 2");
-    ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS "replottofile sir 2");
-    ADD_CMD(plottoterm,       0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "PLOT_ARGS". E.g., plottoterm sir");
-    ADD_CMD(replottoterm,     0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "PLOT_ARGS" replototerm sir 2");
-    ADD_CMD(setplotx,         1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG" setplotx sir t or setplotx t");
-    ADD_CMD(setploty,         1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG" setplotx sir R or setplotx R");
-    ADD_CMD(setplotxlabel,    1, 2, "Sets x axis label. "ONE_ARG" setplotxlabel sir Pop or setplotxlabel Pop");
-    ADD_CMD(setplotylabel,    1, 2, "Sets y axis label. "ONE_ARG" setplotylabel sir days or setplotylabel days");
-    ADD_CMD(setplottitle,     1, 2, "Sets the current plot title. "ONE_ARG" setplottitle sir title1 or setplottitle title1");
+
+    if(plot_enabled) {
+        ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS "plot sir or plot sir 1 or plot 1");
+        ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS" replot sir");
+        ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS"E.g., plottofile sir output.pdf 2");
+        ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS "replottofile sir 2");
+        ADD_CMD(plottoterm,       0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "PLOT_ARGS". E.g., plottoterm sir");
+        ADD_CMD(replottoterm,     0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "PLOT_ARGS" replototerm sir 2");
+        ADD_CMD(setplotx,         1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG" setplotx sir t or setplotx t");
+        ADD_CMD(setploty,         1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG" setplotx sir R or setplotx R");
+        ADD_CMD(setplotxlabel,    1, 2, "Sets x axis label. "ONE_ARG" setplotxlabel sir Pop or setplotxlabel Pop");
+        ADD_CMD(setplotylabel,    1, 2, "Sets y axis label. "ONE_ARG" setplotylabel sir days or setplotylabel days");
+        ADD_CMD(setplottitle,     1, 2, "Sets the current plot title. "ONE_ARG" setplottitle sir title1 or setplottitle title1");
+        ADD_CMD(solveplot,        1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. "ONE_ARG" solveplot sir 100");
+        ADD_CMD(saveplot,         1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
+        ADD_CMD(getplotconfig,    0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
+    }
+
     ADD_CMD(pwd,              0, 0, "Shows the current directory");
     ADD_CMD(solve,            1, 2, "Solves the ODE(s) of a loaded model for x steps. "ONE_ARG" run sir 100");
-    ADD_CMD(solveplot,        1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. "ONE_ARG" solveplot sir 100");
     ADD_CMD(vars,             0, 1, "List all variables available for plotting in a loaded model. "NO_ARGS" vars sir");
-    ADD_CMD(getplotconfig,    0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
     ADD_CMD(setinitialvalue,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. "TWO_ARGS"E.g setinitialvalue sir I 10");
     ADD_CMD(getinitialvalue,  2, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG" getinitialvalue sir R");
     ADD_CMD(getinitialvalues, 0, 1, "Prints the initial values of all model's ODE variables. "NO_ARGS" getinitialvalues sir");
@@ -1331,7 +1336,6 @@ void initialize_commands() {
     ADD_CMD(setodevalue,      2, 3, "Changes the value of a model's ODE and reloads the model. "TWO_ARGS" seodevalue sir S gama*beta");
     ADD_CMD(getodevalue,      1, 2, "Prints the value of a model's ODE. "ONE_ARG" getodevalue sir S");
     ADD_CMD(getodevalues,     0, 1, "Prints the values of all model's ODEs. "NO_ARGS" getodevalues sir");
-    ADD_CMD(saveplot,         1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
     ADD_CMD(setcurrentmodel,  1, 1, "Set the current model to be used as default parameters in several commands.\nE.g., setcurrentmodel sir");
     ADD_CMD(printmodel,       0, 1, "Print a model on the screen. "NO_ARGS" printmodel sir");
     ADD_CMD(editmodel,        0, 1, "Open the file containing the model ode code. "NO_ARGS" editmodel sir");
