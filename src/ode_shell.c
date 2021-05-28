@@ -1,10 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "commands.h"
 #include "file_utils/file_utils.h"
