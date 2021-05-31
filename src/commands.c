@@ -1200,7 +1200,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
     pthread_mutex_lock(&shell_state->lock);
 
     struct model_config **model_configs = hmget(shell_state->notify_entries, event->wd);
-    struct model_config *model_config;
+    struct model_config *model_config = NULL;
 
     for (int i = 0; i < arrlen(model_configs); i++) {
         char *file_name = get_file_from_path(model_configs[i]->model_file);
@@ -1210,7 +1210,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
         }
     }
 
-    if (!model_config->should_reload) {
+    if (!model_config || !model_config->should_reload) {
         pthread_mutex_unlock(&shell_state->lock);
         return;
     }
