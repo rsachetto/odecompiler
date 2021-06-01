@@ -935,7 +935,7 @@ COMMAND_FUNCTION(editmodel) {
         return false;
     }
 
-    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode", model_config->model_name);
+    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode 2> /dev/null", model_config->model_name);
 
     FILE *f = popen(cmd, "r");
     pclose(f);
@@ -1203,11 +1203,14 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
     struct model_config *model_config = NULL;
 
     for (int i = 0; i < arrlen(model_configs); i++) {
+
         char *file_name = get_file_from_path(model_configs[i]->model_file);
+
         if (STR_EQUALS(file_name, event->name)) {
             model_config = model_configs[i];
             break;
         }
+
     }
 
     if (!model_config || !model_config->should_reload) {

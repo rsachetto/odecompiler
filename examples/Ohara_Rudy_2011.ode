@@ -97,7 +97,8 @@ bt = 4.750000000000000e+00f;
 vcell = (1.000000000000000e+03*3.140000000000000e+00*rad*rad*L)
 Ageo = ((2.000000000000000e+00*3.140000000000000e+00*rad*rad)+(2.000000000000000e+00*3.140000000000000e+00*rad*L))
 Istim = 0.0;
-if((time_new<=duration)) {
+stim_start = 10
+if(time_new >= stim_start and time_new<=stim_start + duration) {
     Istim = amp
 } else {
     Istim = 0.000000000000000e+00
