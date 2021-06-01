@@ -62,7 +62,7 @@ static const char *builtin_functions[] = {
     "trunc"
 };
 
-solver_type solver = EULER_ADPT_SOLVER;
+static solver_type solver = EULER_ADPT_SOLVER;
 
 static int indentation_level = 0;
 
@@ -74,6 +74,7 @@ static sds expression_stmt_to_c(ast *a, declared_variable_hash *declared_variabl
         return ast_to_c(a->expr_stmt, declared_variables_in_scope, global_scope);
     }
     return sdsempty();
+
 }
 
 static sds return_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
