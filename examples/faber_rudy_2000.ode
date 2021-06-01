@@ -1,5 +1,4 @@
 #Parameters
-time_new = time;
 stim_amplitude = -2.550000000000000e+01f;
 stim_start = 1.000000000000000e+02f;
 stim_end = 9.000000000000000e+06f;
@@ -70,7 +69,7 @@ preplength = 1.000000000000000e-01f;
 radius = 1.100000000000000e-02f;
 
 I_st = 0.0;
-if(((time_new>=stim_start) and (time_new<=stim_end) and (((time_new-stim_start)-(floor(((time_new-stim_start)/stim_period))*stim_period))<=stim_duration))) {
+if(((time>=stim_start) and (time<=stim_end) and (((time-stim_start)-(floor(((time-stim_start)/stim_period))*stim_period))<=stim_duration))) {
     I_st = stim_amplitude
 } else {
     I_st = 0.000000000000000e+00
@@ -153,7 +152,6 @@ sigma = ((1.000000000000000e+00/7.000000000000000e+00)*(exp((Nao/6.7300000000000
 P_ns_Ca = 1.750000e-07
 i_NaCa = ((c1*exp((((gamma-1.000000000000000e+00)*V*F)/(R*T)))*((exp(((V*F)/(R*T)))*pow(Nai,3.000000000000000e+00)*Cao)-(pow(Nao,3.000000000000000e+00)*Cai)))/(1.000000000000000e+00+(c2*exp((((gamma-1.000000000000000e+00)*V*F)/(R*T)))*((exp(((V*F)/(R*T)))*pow(Nai,3.000000000000000e+00)*Cao)+(pow(Nao,3.000000000000000e+00)*Cai)))))
 G_rel_Viswanathan = 0.0;
-
 if((Cainfluxtrack>delta_Ca_ith)) {
     G_rel_Viswanathan = (((G_rel_max*(Cainfluxtrack-delta_Ca_ith))/((K_mrel+Cainfluxtrack)-delta_Ca_ith))*(1.000000000000000e+00-APtrack2)*APtrack2)
 } elif(((Cainfluxtrack<=delta_Ca_ith) and (OVRLDtrack2>0.000000000000000e+00))) {
@@ -238,52 +236,51 @@ ode xs1' = ((xs1_infinity-xs1)/tau_xs1)
 ode xs2' = ((xs2_infinity-xs2)/tau_xs2)
 ode zdv' = ((zdv_ss-zdv)/tau_zdv)
 ode ydv' = ((ydv_ss-ydv)/tau_ydv)
-
-ode APtrack' = 0.0
+ode APtrack' = 0.0;
 if((dVdt>1.500000000000000e+02)) {
-   ode APtrack' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack))-(5.000000000000000e-01*APtrack))
+    ode APtrack' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack))-(5.000000000000000e-01*APtrack))
 } else {
-   ode APtrack' = ((-5.000000000000000e-01)*APtrack)
+    ode APtrack' = ((-5.000000000000000e-01)*APtrack)
 }
 
-ode APtrack2' = 0.0
+ode APtrack2' = 0.0;
 if(((APtrack<2.000000000000000e-01) and (APtrack>1.800000000000000e-01))) {
-   ode APtrack2' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack2))-(5.000000000000000e-01*APtrack2))
+    ode APtrack2' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack2))-(5.000000000000000e-01*APtrack2))
 } else {
-   ode APtrack2' = ((-5.000000000000000e-01)*APtrack2)
+    ode APtrack2' = ((-5.000000000000000e-01)*APtrack2)
 }
 
-ode APtrack3' = 0.0
+ode APtrack3' = 0.0;
 if(((APtrack<2.000000000000000e-01) and (APtrack>1.800000000000000e-01))) {
-   ode APtrack3' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack3))-(5.000000000000000e-01*APtrack3))
+    ode APtrack3' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack3))-(5.000000000000000e-01*APtrack3))
 } else {
-   ode APtrack3' = ((-1.000000000000000e-02)*APtrack3)
+    ode APtrack3' = ((-1.000000000000000e-02)*APtrack3)
 }
 
-ode Cainfluxtrack' = 0.0
+ode Cainfluxtrack' = 0.0;
 if((APtrack>2.000000000000000e-01)) {
     ode Cainfluxtrack' = (((-1.000000000000000e+00)*A_cap*(((i_CaCa+i_Ca_T)-(2.000000000000000e+00*i_NaCa))+i_p_Ca+i_Ca_b))/(2.000000000000000e+00*V_myo*F))
 } elif(((APtrack2>1.000000000000000e-02) and (APtrack<=2.000000000000000e-01))) {
-    ode Cainfluxtrack' = 0.000000000000000e+00
+        ode Cainfluxtrack' = 0.000000000000000e+00
 } else {
     ode Cainfluxtrack' = ((-5.000000000000000e-01)*Cainfluxtrack)
 }
 
-ode OVRLDtrack' = 0.0
+ode OVRLDtrack' = 0.0;
 if((((1.000000000000000e+00/(1.000000000000000e+00+(K_mCSQN/Ca_JSR)))>CSQNthresh) and (OVRLDtrack3<3.700000000000000e-01) and (APtrack3<3.700000000000000e-01))) {
     ode OVRLDtrack' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack))
 } else {
     ode OVRLDtrack' = ((-5.000000000000000e-01)*OVRLDtrack)
 }
 
-ode OVRLDtrack2' = 0.0
+ode OVRLDtrack2' = 0.0;
 if(((OVRLDtrack>Logicthresh) and (OVRLDtrack2<Logicthresh))) {
     ode OVRLDtrack2' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack2))
 } else {
     ode OVRLDtrack2' = ((-5.000000000000000e-01)*OVRLDtrack2)
 }
 
-ode OVRLDtrack3' = 0.0
+ode OVRLDtrack3' = 0.0;
 if(((OVRLDtrack>Logicthresh) and (OVRLDtrack3<Logicthresh))) {
     ode OVRLDtrack3' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack3))
 } else {
