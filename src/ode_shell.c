@@ -65,7 +65,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 
 
 static sigjmp_buf env;
-static void ctrl_c_handler(int sig) {
+static void ctrl_c_handler(__attribute__((unused)) int sig) {
     siglongjmp(env, 42);
 }
 
@@ -97,7 +97,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     sds tmp = NULL;
 
     while (fgets(msg, BUF_MAX, f) != NULL) {
-        int n = strlen(msg);
+        unsigned long n = strlen(msg);
         if (n > 5) {
             tmp = sdsnew(msg);
             tmp = sdstrim(tmp, " \n");

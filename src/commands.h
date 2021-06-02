@@ -48,9 +48,9 @@ typedef enum cmd_type_t {
 
 #define CHECK_N_ARGS(command, accept0, accept1, num_args)                                                                                \
     do {                                                                                                                                 \
-        if (accept0 == accept1) {                                                                                                        \
+        if ((accept0) == (accept1)) {                                                                                                        \
             CHECK_ARGS(command, accept0, num_args);                                                                                      \
-        } else if (num_args < accept0 || num_args > accept1) {                                                                           \
+        } else if ((num_args) < (accept0) || (num_args) > (accept1)) {                                                                           \
             printf("Error: command %s accepts from %d to %d argument(s). %d argument(s) given!\n", command, accept0, accept1, num_args); \
             goto dealloc_vars;                                                                                                           \
         }                                                                                                                                \

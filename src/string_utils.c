@@ -16,7 +16,7 @@ int string_cmp(const void *a, const void *b) {
 double string_to_double(char *string) {
 
     char *endptr = NULL;
-    double result = 0;
+    double result;
 
     /* reset errno to 0 before call */
     errno = 0;

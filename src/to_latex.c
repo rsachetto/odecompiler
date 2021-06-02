@@ -212,16 +212,6 @@ static sds call_expr_to_latex(ast *a) {
     return buf;
 }
 
-static sds import_stmt_to_latex(ast *a) {
-
-    sds buf = sdsempty();
-
-    buf = sdscatfmt(buf, "%s ", token_literal(a));
-    buf = sdscatfmt(buf, "%s", ast_to_latex(a->import_stmt.filename));
-    return buf;
-
-}
-
 static sds grouped_assignement_stmt_to_latex(ast *a) {
     sds buf = sdsnew("[");
 

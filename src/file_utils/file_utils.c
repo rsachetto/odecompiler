@@ -136,7 +136,7 @@ char *get_filename_without_ext(const char *filename) {
 int cp_file(const char *to, const char *from, bool overwrite) {
     int fd_to, fd_from;
     char buf[4096];
-    int nread;
+    long nread;
     int saved_errno;
 
     fd_from = open(from, O_RDONLY);
@@ -157,7 +157,7 @@ int cp_file(const char *to, const char *from, bool overwrite) {
 
     while(nread = read(fd_from, buf, sizeof buf), nread > 0) {
         char *out_ptr = buf;
-        int nwritten;
+        long nwritten;
 
         do {
             nwritten = write(fd_to, out_ptr, nread);
@@ -395,12 +395,14 @@ bool file_exists(const char *path) {
 bool dir_exists(const char *path) {
     struct stat info;
 
-    if(stat(path, &info) != 0)
+    //Checking if file or dir exists
+    if(stat(path, &info) != 0) {
         return false;
-    else if(info.st_mode & S_IFDIR)
+    } else if(info.st_mode & S_IFDIR) { //checks if the path is a directory
         return true;
-    else
-        return false;
+    }
+
+    return false;
 }
 
 void free_path_information(struct path_information *input_info) {
@@ -435,8 +437,6 @@ void get_path_information(const char *path, struct path_information *input_info)
     } else {
         input_info->dir_name = strdup(path);
     }
-
-    return;
 }
 
 int remove_directory(const char *path) {
@@ -445,13 +445,12 @@ int remove_directory(const char *path) {
     int r = -1;
 
     if(d) {
-        struct dirent *p;
 
+        struct dirent *p;
         r = 0;
 
         while(!r && (p = readdir(d))) {
             int r2 = -1;
-            char *buf;
             size_t len;
 
             /* Skip the names "." and ".." as we don't want to recurse on them. */
@@ -460,23 +459,21 @@ int remove_directory(const char *path) {
             }
 
             len = path_len + strlen(p->d_name) + 2;
-            buf = malloc(len);
+            char *buf = malloc(len);
 
-            if(buf) {
-                struct stat statbuf;
+            struct stat statbuf;
 
-                snprintf(buf, len, "%s/%s", path, p->d_name);
+            snprintf(buf, len, "%s/%s", path, p->d_name);
 
-                if(!stat(buf, &statbuf)) {
-                    if(S_ISDIR(statbuf.st_mode)) {
-                        r2 = remove_directory(buf);
-                    } else {
-                        r2 = unlink(buf);
-                    }
+            if(!stat(buf, &statbuf)) {
+                if(S_ISDIR(statbuf.st_mode)) {
+                    r2 = remove_directory(buf);
+                } else {
+                    r2 = unlink(buf);
                 }
-
-                free(buf);
             }
+
+            free(buf);
 
             r = r2;
         }

@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     check_parser_errors(p, true);
 
     FILE *outfile = fopen(arguments.output_file, "w");
-    solver_type solver_type;
+    solver_type solver_type = EULER_ADPT_SOLVER;
 
     if(STR_EQUALS(arguments.solver_impl, "cvode")) {
         solver_type = CVODE_SOLVER;
