@@ -14,6 +14,56 @@
 #include "string/sds.h"
 #include "string_utils.h"
 
+#include <argp.h>
+
+const char *argp_program_version = "odeshell 0.1";
+const char *argp_program_bug_address = "<rsachetto@gmail.com>";
+
+/* Program documentation. */
+static char doc[] = "A simple command line utility to play with Ordinary Differential Equations (ODEs).";
+
+/* A description of the arguments we accept. */
+static char args_doc[] = "FILE - A file with command to be executed.";
+
+/* The options we understand. */
+static struct argp_option options[] = {
+    {"work_dir", 'd', "DIR", 0, "DIR where the shell will start." },
+    { 0 }
+};
+
+/* Used by main to communicate with parse_opt. */
+struct arguments {
+    char *command_file;
+    char *work_dir;
+};
+
+/* Parse a single option. */
+static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'd':
+            arguments->work_dir = arg;
+            break;
+        case ARGP_KEY_ARG:
+            if (state->arg_num >= 1)
+                /* Too many arguments. */
+                argp_usage (state);
+
+            arguments->command_file = arg;
+
+            break;
+        case ARGP_KEY_END:
+            break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+
 static sigjmp_buf env;
 static void ctrl_c_handler(int sig) {
     siglongjmp(env, 42);
@@ -70,7 +120,14 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     return true;
 }
 
+/* Our argp parser. */
+static struct argp argp = { options, parse_opt, args_doc, doc };
+
 int main(int argc, char **argv) {
+
+    struct arguments arguments = {0};
+
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
     struct shell_variables shell_state = {0};
 
@@ -86,7 +143,13 @@ int main(int argc, char **argv) {
 
     initialize_commands(add_plot_commands);
 
-    print_current_dir();
+    if(arguments.work_dir) {
+        sds command = sdscatfmt(sdsempty(), "cd %s\n", arguments.work_dir);
+        parse_and_execute_command(command, &shell_state);
+        sdsfree(command);
+    } else {
+        print_current_dir();
+    }
 
     //Setting up inotify
     shell_state.fd_notify = inotify_init();
@@ -100,8 +163,8 @@ int main(int argc, char **argv) {
 
     pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void *) &shell_state);
 
-    if (argc == 2) {
-        run_commands_from_file(&shell_state, argv[1]);
+    if (arguments.command_file) {
+        run_commands_from_file(&shell_state, arguments.command_file);
     }
 
     sds history_path = sdsnew(get_home_dir());
