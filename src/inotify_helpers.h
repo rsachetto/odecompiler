@@ -10,6 +10,6 @@
 #define BUF_LEN     ( MAX_EVENTS * ( EVENT_SIZE + LEN_NAME )) /*buffer to store the data of events*/
 
 void add_file_watch(struct shell_variables *shell_state, char *path);
-void *check_for_model_file_changes(void *args);
+_Noreturn void *check_for_model_file_changes(void *args);
 
 #endif /* __INOTIFY_HELPERS_H */

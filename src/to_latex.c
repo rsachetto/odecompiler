@@ -56,7 +56,6 @@ static bool is_latex_symbol(char *name) {
     //TODO: hash?
     int n = sizeof(latex_symbols)/sizeof(latex_symbols[0]);
 
-
     for(int i = 0; i < n; i++) {
         if(STRING_EQUALS(name, latex_symbols[i])) {
             return true;

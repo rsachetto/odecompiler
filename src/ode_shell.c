@@ -47,9 +47,10 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             arguments->work_dir = arg;
             break;
         case ARGP_KEY_ARG:
-            if (state->arg_num >= 1)
+            if (state->arg_num >= 1) {
                 /* Too many arguments. */
-                argp_usage (state);
+                argp_usage(state);
+            }
 
             arguments->command_file = arg;
 

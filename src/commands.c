@@ -16,7 +16,7 @@
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
 
-#define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command);
+#define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
 
 static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_list ap;
@@ -195,7 +195,6 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
         if(error) {
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
         }
-
     }
 
     if(model_config) {
@@ -1230,13 +1229,13 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
         return;
     }
 
-    if (model_config && !model_config->is_derived) {
+    if (!model_config->is_derived) {
 
         char answer = 0;
 
         if (!model_config->auto_reload) {
             printf("\nModel %s was modified externally. Would you like to reload it? [y]: ", model_config->model_name);
-            answer = getchar();
+            answer = (char) getchar();
         }
 
         if (model_config->auto_reload || answer == 'Y' || answer == 'y' || answer == '\r') {

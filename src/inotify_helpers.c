@@ -15,7 +15,7 @@ void add_file_watch(struct shell_variables *shell_state, char *path) {
     hmput(shell_state->notify_entries, wd, entries);
 }
 
-void *check_for_model_file_changes(void *args) {
+_Noreturn void *check_for_model_file_changes(void *args) {
 
     pthread_detach(pthread_self());
 
@@ -23,10 +23,10 @@ void *check_for_model_file_changes(void *args) {
 
     while (1) {
 
-        int i = 0, length;
+        size_t i = 0;
         char buffer[BUF_LEN];
 
-        length = read(shell_state->fd_notify, buffer, BUF_LEN);
+        size_t length = read(shell_state->fd_notify, buffer, BUF_LEN);
 
         while (i < length) {
 
