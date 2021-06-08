@@ -113,9 +113,9 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     stmt->assignement_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
 
     if (!expect_peek(p, ASSIGN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "= expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "= expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -191,9 +191,9 @@ ast *parse_while_statement(parser *p) {
     ast *exp = make_while_stmt(p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "( expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "( expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -202,16 +202,16 @@ ast *parse_while_statement(parser *p) {
     exp->while_stmt.condition = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, ") expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, ") expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
     if(!expect_peek(p, LBRACE)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "{ expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "{ expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -277,9 +277,9 @@ ast *parse_grouped_expression(parser *p) {
     ast *exp = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, ") expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, ") expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -318,16 +318,16 @@ ast *parse_grouped_assignment(parser *p) {
     stmt->grouped_assignement_stmt.names = parse_grouped_assignment_names(p);
 
     if (!expect_peek(p, RBRACKET)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "] expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "] expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
     if (!expect_peek(p, ASSIGN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "= expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "= expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -365,16 +365,16 @@ ast *parse_if_expression(parser *p) {
     exp->if_expr.condition = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, ") expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, ") expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
     if(!expect_peek(p, LBRACE)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "{ expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "{ expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -383,9 +383,9 @@ ast *parse_if_expression(parser *p) {
     if (peek_token_is(p, ELSE)) {
         advance_token(p);
         if (!expect_peek(p, LBRACE)) {
-            sds msg = NEW_ERROR_PREFIX;
-            msg = sdscatprintf(msg, "} expected\n");
-            arrput(p->errors, msg);
+            //sds msg = NEW_ERROR_PREFIX;
+            //msg = sdscatprintf(msg, "} expected\n");
+            //arrput(p->errors, msg);
             return NULL;
         }
         exp->if_expr.alternative = parse_block_statement(p);
@@ -421,9 +421,9 @@ ast ** parse_function_parameters(parser *p) {
     }
 
     if (!expect_peek(p, RPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, ") expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, ") expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -493,27 +493,27 @@ ast *parse_function_statement(parser *p) {
     ast * stmt = make_function_statement(p->cur_token);
 
     if(!expect_peek(p, IDENT)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "expected identifier after fn statement\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "expected identifier after fn statement\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
     stmt->function_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
 
     if(!expect_peek(p, LPAREN)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "( expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "( expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
     stmt->function_stmt.parameters = parse_function_parameters(p);
 
     if(!expect_peek(p, LBRACE)) {
-        sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "{ expected\n");
-        arrput(p->errors, msg);
+        //sds msg = NEW_ERROR_PREFIX;
+        //msg = sdscatprintf(msg, "{ expected\n");
+        //arrput(p->errors, msg);
         return NULL;
     }
 
@@ -576,9 +576,9 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
 
     if(with_paren) {
         if (!expect_peek(p, RPAREN)) {
-            sds msg = NEW_ERROR_PREFIX;
-            msg = sdscatprintf(msg, ") expected\n");
-            arrput(p->errors, msg);
+            //sds msg = NEW_ERROR_PREFIX;
+            //msg = sdscatprintf(msg, ") expected\n");
+            //arrput(p->errors, msg);
             return NULL;
         }
     }
@@ -723,7 +723,6 @@ program parse_program(parser *p) {
 
 void peek_error(parser *p, token_type t) {
     sds msg = NEW_ERROR_PREFIX;
-    //msg = sdscatprintf(msg, "expected next token to be %d, got %d instead\n",  t, p->peek_token.type);
     msg = sdscatprintf(msg, "expected next token to be %s, got %s instead\n",  get_string_token_type(t), get_string_token_type(p->peek_token.type));
     arrput(p->errors, msg);
 }
