@@ -16,7 +16,7 @@
 
 #include <argp.h>
 
-const char *argp_program_version = "odeshell 0.1";
+const char *argp_program_version = "ode_shell 0.1";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
 
 /* Program documentation. */
@@ -27,7 +27,7 @@ static char args_doc[] = "FILE - A file with command to be executed.";
 
 /* The options we understand. */
 static struct argp_option options[] = {
-    {"work_dir", 'd', "DIR", 0, "DIR where the shell will start." },
+    {"work_dir", 'w', "DIR", 0, "DIR where the shell will start." },
     { 0 }
 };
 
@@ -43,7 +43,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     struct arguments *arguments = state->input;
 
     switch (key) {
-        case 'd':
+        case 'w':
             arguments->work_dir = arg;
             break;
         case ARGP_KEY_ARG:
