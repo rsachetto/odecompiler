@@ -723,7 +723,8 @@ program parse_program(parser *p) {
 
 void peek_error(parser *p, token_type t) {
     sds msg = NEW_ERROR_PREFIX;
-    msg = sdscatprintf(msg, "expected next token to be %d, got %d instead\n",  t, p->peek_token.type);
+    //msg = sdscatprintf(msg, "expected next token to be %d, got %d instead\n",  t, p->peek_token.type);
+    msg = sdscatprintf(msg, "expected next token to be %s, got %s instead\n",  get_string_token_type(t), get_string_token_type(p->peek_token.type));
     arrput(p->errors, msg);
 }
 

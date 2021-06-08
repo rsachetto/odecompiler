@@ -21,11 +21,11 @@ release_set:
 debug_set:
 	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow -mavx -maes)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o
-	gcc ${OPT_FLAGS} src/ode_shell.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o build/string_utils.o build/commands.o build/model_config.o build/inotify_helpers.o build/to_latex.o -o bin/ode_shell -lreadline -lpthread
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o
+	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
-bin/odec: src/ode_compiler.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o
-	gcc ${OPT_FLAGS} src/ode_compiler.c build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/code_converter.o -o bin/odec
+bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o
+	gcc ${OPT_FLAGS} $^ -o bin/odec
 
 build/token.o: src/compiler/token.c src/compiler/token.h
 	gcc ${OPT_FLAGS} -c  src/compiler/token.c -o  build/token.o
@@ -62,6 +62,9 @@ build/inotify_helpers.o: src/inotify_helpers.c src/inotify_helpers.h
 
 build/to_latex.o: src/to_latex.c src/to_latex.h
 	gcc ${OPT_FLAGS} -c  src/to_latex.c -o build/to_latex.o
+
+build/enum_to_string.o: src/compiler/enum_to_string.c src/compiler/enum_to_string.h
+	gcc ${OPT_FLAGS} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
 
 clean:
 	rm bin/* build/*.o
