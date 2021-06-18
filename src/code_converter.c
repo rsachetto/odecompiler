@@ -68,6 +68,60 @@ static int indentation_level = 0;
 
 static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope);
 
+static bool can_be_in_init(const ast *a, declared_variable_hash global_scope) {
+
+    switch(a->tag) {
+
+        case ast_identifier:
+            return shget(global_scope, a->identifier.value);
+        case ast_number_literal:
+            return true;
+        case ast_boolean_literal:
+            return true;
+        case ast_string_literal:
+            return false;
+        case ast_grouped_assignment_stmt:
+        {
+            bool can = false;
+            int n = arrlen(a->grouped_assignement_stmt.names);
+
+            for(int i = 0; i < n; i++) {
+                can = can_be_in_init(a->grouped_assignement_stmt.names[i], global_scope);
+                if(!can) {
+                    return false;
+                }
+
+            }
+
+            return can;
+        }
+        case ast_expression_stmt:
+            return can_be_in_init(a->expr_stmt, global_scope);
+        case ast_prefix_expression:
+            return can_be_in_init(a->prefix_expr.right, global_scope);
+        case ast_infix_expression:
+            return can_be_in_init(a->infix_expr.left, global_scope);
+            return can_be_in_init(a->infix_expr.right, global_scope);
+        case ast_if_expr:
+            return false;
+
+        case ast_call_expression:
+        {
+            int n = arrlen(a->call_expr.arguments);
+            bool can;
+            for(int i = 0; i < n; i++) {
+                can = can_be_in_init(a->call_expr.arguments[i], global_scope);
+                if(!can) return false;
+            }
+
+            return true;
+        }
+    }
+
+    return a;
+}
+
+
 static sds expression_stmt_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     if (a->expr_stmt != NULL) {
@@ -510,6 +564,10 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
+
+        if(!can_be_in_init(a->assignement_stmt.value, global_scope)) {
+            printf("Error on line %d of file %s. \nODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n", a->token.line_number, a->token.file_name);
+        }
 
         if(!shget(result, a->assignement_stmt.name->identifier.value)) {
             shput(result, a->assignement_stmt.name->identifier.value, true);
