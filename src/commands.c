@@ -18,6 +18,19 @@ static string_array commands_sorted = NULL;
 
 #define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
 
+#define GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, args)                                     \
+    do {                                                                                          \
+        if ((num_args) == args) {                                                                 \
+            (model_config) = load_model_config_or_print_error(shell_state, tokens[0], NULL);      \
+                                                                                                  \
+        } else {                                                                                  \
+            (model_config) = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]); \
+        }                                                                                         \
+        if (!(model_config)) return false;                                                        \
+    } while(0)                                                                                    \
+
+
+
 static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_list ap;
 
@@ -49,14 +62,21 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
         return NULL;
     }
 
-    struct model_config *model_config = shget(shell_state->loaded_models, model_name);
+    if(model_name != NULL) {
 
-    if (!model_config) {
-        printf("Error executing command %s. model %s is not loaded. Load a model first using \"load %s.edo\" or list loaded models using \"list\"\n", command, model_name, model_name);
-        return NULL;
+        struct model_config *model_config = shget(shell_state->loaded_models, model_name);
+
+        if (!model_config) {
+            printf("Error executing command %s. model %s is not loaded. Load a model first using \"load %s.edo\" or list loaded models using \"list\"\n", command, model_name, model_name);
+            return NULL;
+        }
+
+        return model_config;
+
     }
-
-    return model_config;
+    else {
+        return shell_state->current_model;
+    }
 }
 
 
@@ -261,11 +281,12 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         if (!model_config->plot_config.ylabel) {
-            model_config->plot_config.ylabel = strdup(get_var_name(model_config, 2));
+            model_config->plot_config.ylabel = strdup("Variable");
         }
 
         if (!model_config->plot_config.title) {
-            model_config->plot_config.title = strdup(model_config->plot_config.ylabel);
+            //model_config->plot_config.title = strdup(model_config->plot_config.ylabel);
+            model_config->plot_config.title = strdup(get_var_name(model_config, 2));
         }
     }
 
@@ -303,14 +324,7 @@ COMMAND_FUNCTION(solve) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 1) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
 
     model_config->num_runs++;
 
@@ -556,14 +570,7 @@ COMMAND_FUNCTION(vars) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     int len = shlen(model_config->var_indexes);
 
@@ -631,14 +638,7 @@ COMMAND_FUNCTION(getplotconfig) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     char *xname = get_var_name(model_config, model_config->plot_config.xindex);
     char *yname = get_var_name(model_config, model_config->plot_config.yindex);
@@ -668,7 +668,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
         new_value = tokens[num_args];
 
         if(num_args == 2) {
-            parent_model_config = shell_state->current_model;
+            parent_model_config = load_model_config_or_print_error(shell_state, command, NULL);
         }
         else if(num_args == 3) {
             parent_model_config = load_model_config_or_print_error(shell_state, command, tokens[1]);
@@ -781,7 +781,7 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
     struct model_config *model_config = NULL;
 
     if(num_args == 0) {
-        model_config = shell_state->current_model;
+        model_config = load_model_config_or_print_error(shell_state, tokens[0], NULL);
     }
     else {
         model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
@@ -900,14 +900,7 @@ COMMAND_FUNCTION(printmodel) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     printf("\n");
     print_program(model_config->program);
@@ -920,14 +913,7 @@ COMMAND_FUNCTION(editmodel) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     if (!can_run_command("xdg-open")) {
         printf("Error - xdg-open is not in your path or is not installed\n");
@@ -946,14 +932,7 @@ COMMAND_FUNCTION(unload) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     bool is_current = (model_config == shell_state->current_model);
 
@@ -1107,14 +1086,7 @@ COMMAND_FUNCTION(odestolatex) {
 
     struct model_config *model_config = NULL;
 
-    if(num_args == 0) {
-        model_config = shell_state->current_model;
-    }
-    else {
-        model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
-    }
-
-    if (!model_config) return false;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     sds *odes = odes_to_latex(model_config->program);
 
