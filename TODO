@@ -1,5 +1,6 @@
 //Shell
 TODO: add colors to some outputs
+TODO: try to change the tab completion return according to the command in the buffer (availabe in rl_line_buffer)
 
 //Code converter
 TODO: add a python src code generator and a monoalg3d generator (and more)

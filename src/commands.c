@@ -15,6 +15,7 @@
 
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
+static int num_commands = 0;
 
 #define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
 
@@ -130,38 +131,40 @@ static bool compile_model(struct model_config *model_config) {
 
 static char *autocomplete_command(const char *text, int state) {
 
-    static string_array matches = NULL;
-    static size_t match_index = 0;
+    static int list_index, len;
+    char *name;
 
+    /* If this is a new word to complete, initialize now.  This includes
+       saving the length of TEXT for efficiency, and initializing the index
+       variable to 0. */
     if (state == 0) {
-        arrsetlen(matches, 0);
-        match_index = 0;
+        list_index = 0;
+        len = strlen (text);
+    }
 
-        int len = shlen(commands);
+    /* Return the next name which partially matches from the command list. */
+    while (list_index < num_commands) {
 
-        sds textstr = sdsnew(text);
-        for (int i = 0; i < len; i++) {
-            char *word = (char *) commands[i].key;
-            size_t wlen = strlen(word);
-            size_t tlen = strlen(textstr);
+        name = commands[list_index].key;
+        list_index++;
 
-            if (wlen >= sdslen(textstr) && strncmp(word, textstr, tlen) == 0) {
-                arrput(matches, word);
-            }
+        if (strncmp (name, text, len) == 0) {
+            return (strdup(name));
         }
     }
 
-    if (match_index >= arrlen(matches)) {
-        return NULL;
-    } else {
-        return strdup(matches[match_index++]);
-    }
+    /* If no names matched, then return NULL. */
+    return ((char *)NULL);
+
 }
 
 static char **command_completion(const char *text, int start, int end) {
-    (void) start;
     (void) end;
-    return rl_completion_matches(text, autocomplete_command);
+
+    if(start == 0)
+        return rl_completion_matches(text, autocomplete_command);
+
+    else return NULL;
 }
 
 static bool check_command_number_argument(const char *command, int expected_args, int num_args) {

@@ -10,7 +10,7 @@
 #define COMMAND_FUNCTION(name) bool name(struct shell_variables *shell_state, sds *tokens, int num_args)
 typedef COMMAND_FUNCTION(command_fn);
 
-#define ADD_CMD(command, min_arg, max_arg, help) add_cmd(command, #command, min_arg, max_arg, help)
+#define ADD_CMD(command, min_arg, max_arg, help) add_cmd(command, #command, min_arg, max_arg, help); num_commands++
 
 typedef struct command_t {
     char *key; //command name
