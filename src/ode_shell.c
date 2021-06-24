@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 
     bool add_plot_commands = check_gnuplot_and_get_default_terminal(&shell_state);
 
-    initialize_commands(add_plot_commands);
+    initialize_commands(&shell_state, add_plot_commands);
 
     if(arguments.work_dir) {
         sds command = sdscatfmt(sdsempty(), "cd %s\n", arguments.work_dir);

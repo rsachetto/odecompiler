@@ -56,7 +56,7 @@ typedef enum cmd_type_t {
         }                                                                                                                                \
     } while (0)
 
-void initialize_commands(bool plot_enabled);
+void initialize_commands(struct shell_variables* state, bool plot_enabled);
 bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 void clean_and_exit(struct shell_variables *shell_state);
 void maybe_reload_from_file_change(struct shell_variables *shell_state, struct inotify_event *event);

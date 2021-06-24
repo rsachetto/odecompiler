@@ -17,6 +17,8 @@ static command *commands = NULL;
 static string_array commands_sorted = NULL;
 static int num_commands = 0;
 
+static struct shell_variables * global_state;
+
 #define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
 
 #define GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, args)                                     \
@@ -28,9 +30,7 @@ static int num_commands = 0;
             (model_config) = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]); \
         }                                                                                         \
         if (!(model_config)) return false;                                                        \
-    } while(0)                                                                                    \
-
-
+    } while (0)
 
 static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
     va_list ap;
@@ -131,6 +131,8 @@ static bool compile_model(struct model_config *model_config) {
 
 static char *autocomplete_command(const char *text, int state) {
 
+    rl_attempted_completion_over = 1;
+
     static int list_index, len;
     char *name;
 
@@ -158,13 +160,55 @@ static char *autocomplete_command(const char *text, int state) {
 
 }
 
+static char *autocomplete_command_params(const char *text, int state) {
+
+    static int list_index, len;
+    char *name;
+
+    rl_attempted_completion_over = 0;
+    if (state == 0) {
+        list_index = 0;
+        len = strlen (text);
+    }
+
+    int count;
+    sds *splitted_buferr = sdssplit(rl_line_buffer, " ", &count);
+
+    int num_loaded_models = shlen(global_state->loaded_models);
+
+    if(STR_EQUALS(splitted_buferr[0], "vars")) {
+
+        rl_attempted_completion_over = 1;
+
+        if(count <= 2) {
+            while (list_index < num_loaded_models) {
+
+                name = global_state->loaded_models[list_index].key;
+                list_index++;
+
+                if (strncmp (name, text, len) == 0) {
+                    sdsfreesplitres(splitted_buferr, count);
+                    return (strdup(name));
+                }
+            }
+
+        }
+    }
+
+    sdsfreesplitres(splitted_buferr, count);
+    return ((char *)NULL);
+
+}
+
 static char **command_completion(const char *text, int start, int end) {
     (void) end;
 
-    if(start == 0)
+    if(start == 0) {
         return rl_completion_matches(text, autocomplete_command);
-
-    else return NULL;
+    }
+    else {
+        return rl_completion_matches(text, autocomplete_command_params);
+    }
 }
 
 static bool check_command_number_argument(const char *command, int expected_args, int num_args) {
@@ -1252,7 +1296,7 @@ static void add_cmd(command_fn *function, char *cmd,  int accept_min, int accept
     arrput(commands_sorted, strdup(cmd));
 }
 
-void initialize_commands(bool plot_enabled) {
+void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 
 #define DEFAULT_MSG "the command is executed using the last loaded model.\nE.g, "
 #define DEFAULT_MSG_PLOT "the command is executed using the last loaded model and the output of the last execution.\nThe execution number can be passed to the command to plot/save a specific output.\nE.g.,"
@@ -1261,6 +1305,8 @@ void initialize_commands(bool plot_enabled) {
 #define TWO_ARGS "\nIf only two argurments are provided, " DEFAULT_MSG
 #define PLOT_ARGS "\nIf no arguments are provided, " DEFAULT_MSG_PLOT
 #define PLOTFILE_ARGS "\nIf only the filename is provided, " DEFAULT_MSG_PLOT
+
+    global_state = state;
 
     rl_attempted_completion_function = command_completion;
 
