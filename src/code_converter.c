@@ -566,13 +566,13 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
         ast *a = p[i];
 
         if(!can_be_in_init(a->assignement_stmt.value, global_scope)) {
-            printf("Error on line %d of file %s. \nODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n", a->token.line_number, a->token.file_name);
+            fprintf(stderr, "Error on line %d of file %s. \nODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n", a->token.line_number, a->token.file_name);
         }
 
         if(!shget(result, a->assignement_stmt.name->identifier.value)) {
             shput(result, a->assignement_stmt.name->identifier.value, true);
         } else {
-            printf("Warning on line %d of file %s. Duplicate initialization ode variable %s\n", a->token.line_number, a->token.file_name, a->assignement_stmt.name->identifier.value);
+            fprintf(stderr, "Warning on line %d of file %s. Duplicate initialization ode variable %s\n", a->token.line_number, a->token.file_name, a->assignement_stmt.name->identifier.value);
         }
 
         int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
@@ -600,7 +600,7 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
 
     int wrong_initialized = shlen(result);
     for(int i = 0; i < wrong_initialized; i++) {
-        printf("Error - initialization of a non ode variable (%s)\n", result[i].key);
+        fprintf(stderr, "Error - initialization of a non ode variable (%s)\n", result[i].key);
     }
 
     int non_initialized = arrlen(non_initialized_edos);
@@ -1201,7 +1201,7 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "\treturn (0);\n"
             "}");
 }
-void convert_to_c(program prog, FILE *file, solver_type solver) {
+bool convert_to_c(program prog, FILE *file, solver_type solver) {
 
     solver = solver;
 
@@ -1235,7 +1235,14 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
     }
 
     if(ode_count == 0) {
-        fprintf(stderr, "Warning - no odes defined\n");
+        fprintf(stderr, "Error - no ODE(s) defined\n");
+        arrfree(main_body);
+        arrfree(functions);
+        arrfree(initial);
+        arrfree(globals);
+        arrfree(imports);
+
+        return true;
     }
 
     sds out_header = out_file_header(main_body);
@@ -1255,5 +1262,17 @@ void convert_to_c(program prog, FILE *file, solver_type solver) {
         default:
             fprintf(stderr, "Error: invalid solver type!\n");
     }
+
+    sdsfree(out_header);
+    shfree(variables_and_odes_scope);
+    shfree(global_scope);
+
+    arrfree(main_body);
+    arrfree(functions);
+    arrfree(initial);
+    arrfree(globals);
+    arrfree(imports);
+
+    return false;
 
 }

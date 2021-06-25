@@ -84,8 +84,8 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     bool gnuplot_installed = can_run_command("gnuplot");
 
     if (!gnuplot_installed) {
-        printf("Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
-        printf("Plotting commands will not be available!\n");
+        fprintf(stderr, "Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
+        fprintf(stderr, "Plotting commands will not be available!\n");
         shell_state->default_gnuplot_term = NULL;
         return false;
     }

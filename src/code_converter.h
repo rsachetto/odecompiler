@@ -22,6 +22,6 @@ typedef struct ode_initialized_hash_entry_t {
     bool value;
 } ode_initialized_hash_entry;
 
-void convert_to_c(program p, FILE *out, solver_type solver);
+bool convert_to_c(program p, FILE *out, solver_type solver);
 
 #endif /* __C_CONVERTER_H */
