@@ -218,7 +218,7 @@ static bool should_complete_model_and_var(const char *c) {
         if (model_config) {                                                                 \
             num_vars = shlen(model_config->var_indexes);                                    \
         }                                                                                   \
-        while (list_index < num_loaded_models) {                                            \
+        while (list_index < num_vars) {                                                     \
             name = model_config->var_indexes[list_index].key;                               \
             list_index++;                                                                   \
             if (strncmp(name, text, len) == 0) {                                            \
