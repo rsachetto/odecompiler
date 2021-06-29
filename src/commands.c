@@ -723,13 +723,24 @@ COMMAND_FUNCTION(vars) {
 COMMAND_FUNCTION(cd) {
 
     const char *path = tokens[1];
+    int ret = -1;
 
-    int ret = chdir(path);
+    if(strlen(path) == 1 && path[0] == '-') {
+        if(shell_state->last_dir) {
+            ret = chdir(shell_state->last_dir);
+        }
+    } else {
+        ret = chdir(path);
+    }
+
     if (ret == -1) {
         printf("Error changing working directory to %s\n", path);
         return false;
     } else {
-        free(shell_state->current_dir);
+
+        free(shell_state->last_dir);
+        shell_state->last_dir = shell_state->current_dir;
+
         shell_state->current_dir = get_current_directory();
         print_current_dir();
         return true;

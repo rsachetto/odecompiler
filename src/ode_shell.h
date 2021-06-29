@@ -25,6 +25,7 @@ struct shell_variables {
     pthread_mutex_t lock;
     struct watch_entry *notify_entries;
     char *current_dir;
+    char *last_dir;
     bool never_reload;
 };
 
