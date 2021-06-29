@@ -552,7 +552,7 @@ void write_initial_conditions(program p, FILE *file, declared_variable_hash *dec
 
 }
 
-void generate_initial_conditions_values(program p, program body, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
+bool generate_initial_conditions_values(program p, program body, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
     ode_initialized_hash_entry *result = NULL;
     shdefault(result, false);
@@ -561,12 +561,14 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
     int n_stmt = arrlen(p);
 
     fprintf(file, "    real values[%d];\n", n_stmt);
+    int error = false;
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
 
         if(!can_be_in_init(a->assignement_stmt.value, global_scope)) {
             fprintf(stderr, "Error on line %d of file %s. \nODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n", a->token.line_number, a->token.file_name);
+            error = true;
         }
 
         if(!shget(result, a->assignement_stmt.name->identifier.value)) {
@@ -601,6 +603,7 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
     int wrong_initialized = shlen(result);
     for(int i = 0; i < wrong_initialized; i++) {
         fprintf(stderr, "Error - initialization of a non ode variable (%s)\n", result[i].key);
+        error = true;
     }
 
     int non_initialized = arrlen(non_initialized_edos);
@@ -611,6 +614,7 @@ void generate_initial_conditions_values(program p, program body, FILE *file, dec
 
     arrfree(non_initialized_edos);
     shfree(result);
+    return error;
 
 }
 
@@ -875,7 +879,7 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
 }
 
-void write_cvode_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
+bool write_cvode_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
 
     fprintf(file,"#include <cvode/cvode.h>\n"
             "#include <math.h>\n"
@@ -1014,11 +1018,13 @@ void write_cvode_solver(FILE *file, program initial, program globals, program fu
             "}\n", "solve_model", out_header);
 
 
+    bool error = false;
+
     fprintf(file, "\nint main(int argc, char **argv) {\n"
             "\n"
             "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
             "\n");
-    generate_initial_conditions_values(initial, main_body, file, &variables_and_odes_scope, global_scope);
+    error = generate_initial_conditions_values(initial, main_body, file, &variables_and_odes_scope, global_scope);
     fprintf(file, "\tset_initial_conditions(x0, values);\n"
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
@@ -1026,9 +1032,11 @@ void write_cvode_solver(FILE *file, program initial, program globals, program fu
             "\n"
             "\treturn (0);\n"
             "}");
+
+    return error;
 }
 
-void write_adpt_euler_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
+bool write_adpt_euler_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, declared_variable_hash variables_and_odes_scope, declared_variable_hash global_scope) {
 
     fprintf(file,"#include <math.h>\n"
             "#include <stdbool.h>\n"
@@ -1192,7 +1200,8 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "\n"
             "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
             "\n");
-    generate_initial_conditions_values(initial, main_body, file, &variables_and_odes_scope, global_scope);
+
+    bool error = generate_initial_conditions_values(initial, main_body, file, &variables_and_odes_scope, global_scope);
     fprintf(file,"\tset_initial_conditions(x0, values);\n"
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
@@ -1200,6 +1209,8 @@ void write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "\n"
             "\treturn (0);\n"
             "}");
+
+    return error;
 }
 bool convert_to_c(program prog, FILE *file, solver_type solver) {
 
@@ -1214,6 +1225,8 @@ bool convert_to_c(program prog, FILE *file, solver_type solver) {
     int n_stmt = arrlen(prog);
 
     int ode_count = 0;
+
+    bool error = false;
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = prog[i];
@@ -1254,10 +1267,10 @@ bool convert_to_c(program prog, FILE *file, solver_type solver) {
 
     switch (solver) {
         case CVODE_SOLVER:
-            write_cvode_solver(file, initial, globals, functions, main_body, out_header, variables_and_odes_scope, global_scope);
+            error = write_cvode_solver(file, initial, globals, functions, main_body, out_header, variables_and_odes_scope, global_scope);
             break;
         case EULER_ADPT_SOLVER:
-            write_adpt_euler_solver(file, initial, globals, functions, main_body, out_header, variables_and_odes_scope, global_scope);
+            error = write_adpt_euler_solver(file, initial, globals, functions, main_body, out_header, variables_and_odes_scope, global_scope);
             break;
         default:
             fprintf(stderr, "Error: invalid solver type!\n");
@@ -1273,6 +1286,6 @@ bool convert_to_c(program prog, FILE *file, solver_type solver) {
     arrfree(globals);
     arrfree(imports);
 
-    return false;
+    return error;
 
 }
