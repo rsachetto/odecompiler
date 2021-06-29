@@ -10,7 +10,11 @@ char *token_literal(ast *ast) {
 }
 
 static ast *make_base_ast(token t, ast_tag tag) {
-    ast *a = (ast*)malloc(sizeof(ast));
+    ast *a = (ast *) malloc(sizeof(ast));
+    if (a == NULL) {
+        fprintf(stderr, "%s - Error alocatting memory for the new ast node\n,", __FUNCTION__);
+        return NULL;
+    }
     a->tag = tag;
     a->token = t;
     return a;
@@ -26,28 +30,41 @@ ast *make_assignement_stmt(token t, ast_tag tag) {
 
 ast *make_grouped_assignement_stmt(token t) {
     ast *a = make_base_ast(t, ast_grouped_assignment_stmt);
-    a->grouped_assignement_stmt.names = NULL;
-    a->grouped_assignement_stmt.call_expr = NULL;
+
+    if (a != NULL) {
+        a->grouped_assignement_stmt.names = NULL;
+        a->grouped_assignement_stmt.call_expr = NULL;
+    }
     return a;
 }
 
 ast *make_while_stmt(token t) {
     ast *a = make_base_ast(t, ast_while_stmt);
-    a->while_stmt.body = NULL;
+
+    if (a != NULL) {
+        a->while_stmt.body = NULL;
+    }
+
     return a;
 }
 
 
 ast *make_identifier(token t, char *name) {
     ast *a = make_base_ast(t, ast_identifier);
-    a->identifier.value = strdup(name);
-    return a;
 
+    if (a != NULL) {
+        a->identifier.value = strdup(name);
+    }
+
+    return a;
 }
 
 ast *make_string_literal(token t, char *name) {
     ast *a = make_base_ast(t, ast_string_literal);
-    a->str_literal.value = strdup(name);
+
+    if (a != NULL) {
+        a->str_literal.value = strdup(name);
+    }
     return a;
 }
 
@@ -68,49 +85,72 @@ ast *make_number_literal(token t) {
 
 ast *make_boolean_literal(token t, bool value) {
     ast *a = make_base_ast(t, ast_boolean_literal);
-    a->bool_literal.value = value;
+
+    if (a != NULL) {
+        a->bool_literal.value = value;
+    }
+
     return a;
 }
 
 ast *make_prefix_expression(token t, char *op) {
     ast *a = make_base_ast(t, ast_prefix_expression);
-    a->prefix_expr.op = strdup(op);
+
+    if (a != NULL) {
+        a->prefix_expr.op = strdup(op);
+    }
+
     return a;
 }
 
 ast *make_infix_expression(token t, char *op, ast *left) {
     ast *a = make_base_ast(t, ast_infix_expression);
-    a->infix_expr.op = strdup(op);
-    a->infix_expr.left = left;
+
+    if(a != NULL) {
+        a->infix_expr.op = strdup(op);
+        a->infix_expr.left = left;
+    }
     return a;
 }
 
 ast *make_if_expression(token t) {
     ast *a = make_base_ast(t, ast_if_expr);
-    a->if_expr.alternative = NULL;
-    a->if_expr.consequence = NULL;
+    
+    if(a != NULL) {
+        a->if_expr.alternative = NULL;
+        a->if_expr.consequence = NULL;
+    }
+
     return a;
 }
 
 ast *make_function_statement(token t) {
     ast *a = make_base_ast(t, ast_function_statement);
-    a->function_stmt.body = NULL;
-    a->function_stmt.parameters = NULL;
+
+    if(a != NULL) {
+        a->function_stmt.body = NULL;
+        a->function_stmt.parameters = NULL;
+    }
     return a;
 }
 
 ast *make_call_expression(token t, ast *function) {
     ast *a = make_base_ast(t, ast_call_expression);
-    a->call_expr.function_identifier = function;
-    a->call_expr.arguments = NULL;
+
+    if(a != NULL) {
+        a->call_expr.function_identifier = function;
+        a->call_expr.arguments = NULL;
+    }
 
     return a;
 }
 
 static sds expression_stmt_to_str(ast *a) {
 
-    if (a->expr_stmt != NULL) {
-        return ast_to_string(a->expr_stmt);
+    if(a != NULL) {
+        if (a->expr_stmt != NULL) {
+            return ast_to_string(a->expr_stmt);
+        }
     }
     return sdsempty();
 }
@@ -119,13 +159,13 @@ static sds return_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level],  token_literal(a));
+    buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
 
-    if(a->return_stmt.return_values != NULL) {
+    if (a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
         buf = sdscat(buf, ast_to_string(a->return_stmt.return_values[0]));
 
-        for(int i = 1; i < n; i++) {
+        for (int i = 1; i < n; i++) {
             buf = sdscatfmt(buf, ", %s", ast_to_string(a->return_stmt.return_values[i]));
         }
     }
@@ -138,18 +178,17 @@ static sds assignement_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    if(a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
+    if (a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
         buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
         buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
-    }
-    else {
+    } else {
         buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value);
     }
 
     buf = sdscat(buf, " = ");
 
 
-    if(a->assignement_stmt.value != NULL) {
+    if (a->assignement_stmt.value != NULL) {
         buf = sdscat(buf, ast_to_string(a->assignement_stmt.value));
     }
 
@@ -190,7 +229,6 @@ static sds prefix_expr_to_str(ast *a) {
     buf = sdscat(buf, ")");
 
     return buf;
-
 }
 
 static sds infix_expr_to_str(ast *a) {
@@ -204,7 +242,6 @@ static sds infix_expr_to_str(ast *a) {
     buf = sdscat(buf, ")");
 
     return buf;
-
 }
 
 static sds if_expr_to_str(ast *a) {
@@ -217,7 +254,7 @@ static sds if_expr_to_str(ast *a) {
     indentation_level++;
 
     int n = arrlen(a->if_expr.consequence);
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         buf = sdscatfmt(buf, "%s\n", ast_to_string(a->if_expr.consequence[i]));
     }
     indentation_level--;
@@ -226,12 +263,12 @@ static sds if_expr_to_str(ast *a) {
 
     n = arrlen(a->if_expr.alternative);
 
-    if(n) {
+    if (n) {
 
         indentation_level++;
         buf = sdscat(buf, " else {\n");
-        for(int i = 0; i < n; i++) {
-            buf = sdscatfmt(buf, "%s\n",ast_to_string(a->if_expr.alternative[i]));
+        for (int i = 0; i < n; i++) {
+            buf = sdscatfmt(buf, "%s\n", ast_to_string(a->if_expr.alternative[i]));
         }
         indentation_level--;
 
@@ -239,7 +276,6 @@ static sds if_expr_to_str(ast *a) {
     }
 
     return buf;
-
 }
 
 static sds while_stmt_to_str(ast *a) {
@@ -251,15 +287,14 @@ static sds while_stmt_to_str(ast *a) {
 
     buf = sdscat(buf, "{");
 
-	indentation_level++;
+    indentation_level++;
     int n = arrlen(a->while_stmt.body);
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         buf = sdscatfmt(buf, "%s\n", ast_to_string(a->while_stmt.body[i]));
     }
-	indentation_level--;
+    indentation_level--;
     buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
     return buf;
-
 }
 
 static sds function_stmt_to_str(ast *a) {
@@ -274,10 +309,10 @@ static sds function_stmt_to_str(ast *a) {
 
     int n = arrlen(a->function_stmt.parameters);
 
-    if(n) {
+    if (n) {
         buf = sdscat(buf, ast_to_string(a->function_stmt.parameters[0]));
 
-        for(int i = 1; i < n; i++) {
+        for (int i = 1; i < n; i++) {
             buf = sdscatfmt(buf, ", %s", ast_to_string(a->function_stmt.parameters[i]));
         }
     }
@@ -287,11 +322,11 @@ static sds function_stmt_to_str(ast *a) {
     n = arrlen(a->function_stmt.body);
     buf = sdscat(buf, "{\n");
 
-	indentation_level++;
-    for(int i = 0; i < n; i++) {
+    indentation_level++;
+    for (int i = 0; i < n; i++) {
         buf = sdscatfmt(buf, "%s\n", ast_to_string(a->function_stmt.body[i]));
     }
-	indentation_level--;
+    indentation_level--;
 
     buf = sdscat(buf, "}\n");
 
@@ -308,10 +343,10 @@ static sds call_expr_to_str(ast *a) {
 
     int n = arrlen(a->call_expr.arguments);
 
-    if(n) {
+    if (n) {
         buf = sdscat(buf, ast_to_string(a->call_expr.arguments[0]));
 
-        for(int i = 1; i < n; i++) {
+        for (int i = 1; i < n; i++) {
             buf = sdscatfmt(buf, ", %s", ast_to_string(a->call_expr.arguments[i]));
         }
     }
@@ -328,7 +363,6 @@ static sds import_stmt_to_str(ast *a) {
     buf = sdscatfmt(buf, "%s ", token_literal(a));
     buf = sdscatfmt(buf, "%s", ast_to_string(a->import_stmt.filename));
     return buf;
-
 }
 
 static sds grouped_assignement_stmt_to_str(ast *a) {
@@ -338,7 +372,7 @@ static sds grouped_assignement_stmt_to_str(ast *a) {
 
     buf = sdscat(buf, a->grouped_assignement_stmt.names[0]->identifier.value);
 
-    for(int i = 1; i < n; i++) {
+    for (int i = 1; i < n; i++) {
         buf = sdscatfmt(buf, ", %s", a->grouped_assignement_stmt.names[i]->identifier.value);
     }
 
@@ -350,78 +384,76 @@ static sds grouped_assignement_stmt_to_str(ast *a) {
 
 
     return buf;
-
 }
 
 sds ast_to_string(ast *a) {
 
-    if(a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
+    if (a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
         return assignement_stmt_to_str(a);
     }
 
-    if(a->tag == ast_grouped_assignment_stmt) {
+    if (a->tag == ast_grouped_assignment_stmt) {
         return grouped_assignement_stmt_to_str(a);
     }
 
-    if(a->tag == ast_return_stmt) {
+    if (a->tag == ast_return_stmt) {
         return return_stmt_to_str(a);
     }
 
-    if(a->tag == ast_expression_stmt) {
+    if (a->tag == ast_expression_stmt) {
         return expression_stmt_to_str(a);
     }
 
-    if(a->tag == ast_number_literal) {
+    if (a->tag == ast_number_literal) {
         return number_literal_to_str(a);
     }
 
-    if(a->tag == ast_boolean_literal) {
+    if (a->tag == ast_boolean_literal) {
         return boolean_literal_to_str(a);
     }
 
-    if(a->tag == ast_string_literal) {
+    if (a->tag == ast_string_literal) {
         return string_literal_to_str(a);
     }
 
-    if(a->tag == ast_identifier) {
+    if (a->tag == ast_identifier) {
         return identifier_to_str(a);
     }
 
-    if(a->tag == ast_prefix_expression) {
+    if (a->tag == ast_prefix_expression) {
         return prefix_expr_to_str(a);
     }
 
-    if(a->tag == ast_infix_expression) {
+    if (a->tag == ast_infix_expression) {
         return infix_expr_to_str(a);
     }
 
-    if(a->tag == ast_if_expr) {
+    if (a->tag == ast_if_expr) {
         return if_expr_to_str(a);
     }
 
-    if(a->tag == ast_while_stmt) {
+    if (a->tag == ast_while_stmt) {
         return while_stmt_to_str(a);
     }
 
-    if(a->tag == ast_function_statement) {
+    if (a->tag == ast_function_statement) {
         return function_stmt_to_str(a);
     }
 
-    if(a->tag == ast_call_expression) {
+    if (a->tag == ast_call_expression) {
         return call_expr_to_str(a);
     }
 
-    if(a->tag == ast_import_stmt) {
+    if (a->tag == ast_import_stmt) {
         return import_stmt_to_str(a);
     }
 
     printf("[WARN] - to_str not implemented to token %s\n", a->token.literal);
 
     return NULL;
-
 }
 
-sds * program_to_string(program p) {
+sds *program_to_string(program p) {
 
     indentation_level = 0;
 
@@ -431,24 +463,29 @@ sds * program_to_string(program p) {
     for (int i = 0; i < n_stmt; i++) {
         sds s = ast_to_string(p[i]);
 
-        if(s) {
+        if (s) {
             arrput(return_str, s);
         }
     }
 
     return return_str;
-
 }
 
 ast *copy_ast(ast *src) {
 
-    ast *a = (ast*)malloc(sizeof(ast));
+    ast *a = (ast *) malloc(sizeof(ast));
+
+    if(a == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the new ast!\n", __FUNCTION__);
+        return NULL;
+    }
+
     a->tag = src->tag;
 
-    a->token          = src->token;
+    a->token = src->token;
     a->token.literal = strdup(src->token.literal);
 
-    switch(src->tag) {
+    switch (src->tag) {
 
         case ast_identifier:
             a->identifier.value = strdup(src->identifier.value);
@@ -466,106 +503,95 @@ ast *copy_ast(ast *src) {
         case ast_ode_stmt:
         case ast_global_stmt:
         case ast_initial_stmt:
-            a->assignement_stmt.name  = copy_ast(src->assignement_stmt.name);
+            a->assignement_stmt.name = copy_ast(src->assignement_stmt.name);
             a->assignement_stmt.value = copy_ast(src->assignement_stmt.value);
             break;
-        case ast_grouped_assignment_stmt:
-        {
-            a->grouped_assignement_stmt.names = NULL;
-            int n = arrlen(src->grouped_assignement_stmt.names);
+        case ast_grouped_assignment_stmt: {
+                                              a->grouped_assignement_stmt.names = NULL;
+                                              int n = arrlen(src->grouped_assignement_stmt.names);
 
-            for(int i = 0; i < n; i++) {
-                arrput(a->grouped_assignement_stmt.names, copy_ast(src->grouped_assignement_stmt.names[i]));
-            }
+                                              for (int i = 0; i < n; i++) {
+                                                  arrput(a->grouped_assignement_stmt.names, copy_ast(src->grouped_assignement_stmt.names[i]));
+                                              }
 
-            a->grouped_assignement_stmt.call_expr = src->grouped_assignement_stmt.call_expr;
-        }
-            break;
-        case ast_function_statement:
-        {
-            a->function_stmt.name = src->function_stmt.name;
+                                              a->grouped_assignement_stmt.call_expr = src->grouped_assignement_stmt.call_expr;
+                                          } break;
+        case ast_function_statement: {
+                                         a->function_stmt.name = src->function_stmt.name;
 
-            int n = arrlen(src->function_stmt.parameters);
-            a->function_stmt.parameters = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->function_stmt.parameters, copy_ast(src->function_stmt.parameters[i]));
-            }
+                                         int n = arrlen(src->function_stmt.parameters);
+                                         a->function_stmt.parameters = NULL;
+                                         for (int i = 0; i < n; i++) {
+                                             arrput(a->function_stmt.parameters, copy_ast(src->function_stmt.parameters[i]));
+                                         }
 
-            n = arrlen(src->function_stmt.body);
-            a->function_stmt.body = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->function_stmt.body, copy_ast(src->function_stmt.body[i]));
-            }
+                                         n = arrlen(src->function_stmt.body);
+                                         a->function_stmt.body = NULL;
+                                         for (int i = 0; i < n; i++) {
+                                             arrput(a->function_stmt.body, copy_ast(src->function_stmt.body[i]));
+                                         }
 
-            a->function_stmt.num_return_values = src->function_stmt.num_return_values;
+                                         a->function_stmt.num_return_values = src->function_stmt.num_return_values;
 
-        }
-            break;
-        case ast_return_stmt:
-        {
-            int n = arrlen(src->return_stmt.return_values);
-            a->return_stmt.return_values = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->return_stmt.return_values, copy_ast(src->return_stmt.return_values[i]));
-            }
+                                     } break;
+        case ast_return_stmt: {
+                                  int n = arrlen(src->return_stmt.return_values);
+                                  a->return_stmt.return_values = NULL;
+                                  for (int i = 0; i < n; i++) {
+                                      arrput(a->return_stmt.return_values, copy_ast(src->return_stmt.return_values[i]));
+                                  }
 
-        }
-            break;
+                              } break;
         case ast_expression_stmt:
-            a->expr_stmt = copy_ast(src->expr_stmt);
-            break;
-        case ast_while_stmt:
-        {
-            a->while_stmt.condition = copy_ast(src->while_stmt.condition);
+                              a->expr_stmt = copy_ast(src->expr_stmt);
+                              break;
+        case ast_while_stmt: {
+                                 a->while_stmt.condition = copy_ast(src->while_stmt.condition);
 
-            int n = arrlen(src->while_stmt.body);
-            a->while_stmt.body = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->while_stmt.body, copy_ast(src->while_stmt.body[i]));
-            }
-        }
-            break;
+                                 int n = arrlen(src->while_stmt.body);
+                                 a->while_stmt.body = NULL;
+                                 for (int i = 0; i < n; i++) {
+                                     arrput(a->while_stmt.body, copy_ast(src->while_stmt.body[i]));
+                                 }
+                             } break;
         case ast_import_stmt:
-            a->import_stmt.filename = copy_ast(src->import_stmt.filename);
-            break;
+                             a->import_stmt.filename = copy_ast(src->import_stmt.filename);
+                             break;
         case ast_prefix_expression:
-            a->prefix_expr.op = strdup(src->prefix_expr.op);
-            a->prefix_expr.right = copy_ast(src->prefix_expr.right);
-            break;
+                             a->prefix_expr.op = strdup(src->prefix_expr.op);
+                             a->prefix_expr.right = copy_ast(src->prefix_expr.right);
+                             break;
         case ast_infix_expression:
-            a->infix_expr.left = copy_ast(src->infix_expr.left);
-            a->infix_expr.op = strdup(src->infix_expr.op);
-            a->infix_expr.right = copy_ast(src->infix_expr.right);
-            break;
-        case ast_if_expr:
-        {
-            a->if_expr.condition = copy_ast(src->if_expr.condition);
+                             a->infix_expr.left = copy_ast(src->infix_expr.left);
+                             a->infix_expr.op = strdup(src->infix_expr.op);
+                             a->infix_expr.right = copy_ast(src->infix_expr.right);
+                             break;
+        case ast_if_expr: {
+                              a->if_expr.condition = copy_ast(src->if_expr.condition);
 
-            int n = arrlen(src->if_expr.consequence);
-            a->if_expr.consequence = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->if_expr.consequence, copy_ast(src->if_expr.consequence[i]));
-            }
+                              int n = arrlen(src->if_expr.consequence);
+                              a->if_expr.consequence = NULL;
+                              for (int i = 0; i < n; i++) {
+                                  arrput(a->if_expr.consequence, copy_ast(src->if_expr.consequence[i]));
+                              }
 
-            n = arrlen(src->if_expr.alternative);
-            a->if_expr.alternative = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->if_expr.alternative, copy_ast(src->if_expr.alternative[i]));
-            }
+                              n = arrlen(src->if_expr.alternative);
+                              a->if_expr.alternative = NULL;
+                              for (int i = 0; i < n; i++) {
+                                  arrput(a->if_expr.alternative, copy_ast(src->if_expr.alternative[i]));
+                              }
 
-        }
-            break;
+                          } break;
         case ast_call_expression:
-            a->call_expr.function_identifier = copy_ast(src->call_expr.function_identifier);
+                          a->call_expr.function_identifier = copy_ast(src->call_expr.function_identifier);
 
-            int n = arrlen(src->call_expr.arguments);
-            a->call_expr.arguments = NULL;
-            for(int i = 0; i < n; i++) {
-                arrput(a->call_expr.arguments, copy_ast(src->call_expr.arguments[i]));
-            }
+                          int n = arrlen(src->call_expr.arguments);
+                          a->call_expr.arguments = NULL;
+                          for (int i = 0; i < n; i++) {
+                              arrput(a->call_expr.arguments, copy_ast(src->call_expr.arguments[i]));
+                          }
 
-            break;
-
+                          break;
     }
 
     return a;
@@ -577,30 +603,28 @@ program copy_program(program src_program) {
 
     int p_len = arrlen(src_program);
 
-    for(int i = 0; i < p_len; i++) {
+    for (int i = 0; i < p_len; i++) {
         ast *a = copy_ast(src_program[i]);
         arrput(dst_program, a);
     }
 
     return dst_program;
-
 }
 
 void free_program(program src_program) {
 
     int p_len = arrlen(src_program);
 
-    for(int i = 0; i < p_len; i++) {
+    for (int i = 0; i < p_len; i++) {
         free_ast(src_program[i]);
     }
 
     arrfree(src_program);
-
 }
 
 void free_ast(ast *src) {
 
-    switch(src->tag) {
+    switch (src->tag) {
 
         case ast_number_literal:
         case ast_boolean_literal:
@@ -654,11 +678,7 @@ void free_ast(ast *src) {
             free_ast(src->call_expr.function_identifier);
             free_program(src->call_expr.arguments);
             break;
-
     }
 
     free(src);
 }
-
-
-

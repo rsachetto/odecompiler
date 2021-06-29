@@ -4,9 +4,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 lexer *new_lexer(const char *input, const char *file_name) {
 	lexer *l = (lexer*) malloc(sizeof(lexer));
+
+    if(l == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the lexer!\n", __FUNCTION__);
+        return NULL;
+    }
+
 	l->input = input;
 	l->read_position = 0;
     l->current_line = 1;

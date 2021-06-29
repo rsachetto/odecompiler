@@ -71,6 +71,12 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
     new_model_name     = sdscatfmt(new_model_name, "_v%i", parent_model_config->version);
 
     struct model_config *model_config = calloc(1, sizeof(struct model_config));
+
+    if(model_config == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the new model config!\n", __FUNCTION__);
+        return NULL;
+    }
+
     model_config->model_name = strdup(new_model_name);
     model_config->model_file = strdup(parent_model_config->model_file);
 

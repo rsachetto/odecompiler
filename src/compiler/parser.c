@@ -47,6 +47,12 @@ bool check_parser_errors(parser *p, bool exit_on_error) {
 parser * new_parser(lexer *l) {
 
     parser *p = (parser*)calloc(1, sizeof(parser));
+
+    if(p == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
+        return NULL;
+    }
+
     p->l = l;
 
     advance_token(p);

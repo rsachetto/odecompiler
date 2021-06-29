@@ -31,6 +31,11 @@ bool can_run_command(const char *cmd) {
 
     char *buf = malloc(strlen(path)+strlen(cmd)+3);
 
+    if(buf == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for buffer!\n", __FUNCTION__);
+        return false;
+    }
+
     for(; *path; ++path) {
 
         // start from the beginning of the buffer
@@ -88,6 +93,10 @@ char *get_current_directory() {
 }
 
 const char *get_filename_ext(const char *filename) {
+
+    if(filename == NULL)
+        return NULL;
+
     const char *dot = strrchr(filename, '.');
     if(!dot || dot == filename)
         return NULL;
@@ -122,6 +131,11 @@ char *get_file_from_path(const char *path) {
 }
 
 char *get_filename_without_ext(const char *filename) {
+
+    if(filename == NULL) {
+        return NULL;
+    }
+
     char *last_dot = NULL;
     char *file = NULL;
     last_dot = strrchr(filename, '.');
@@ -259,6 +273,7 @@ char *read_entire_file(const char *filename, size_t *size) {
     if(n != numbytes) {
         fprintf(stderr, "Error reading file %s\n", filename);
         fclose(infile);
+        free(buffer);
         return NULL;
     }
 
@@ -338,6 +353,8 @@ string_array list_files_from_dir(const char *dir, const char *prefix, const char
         }
 
         char *file_name = strdup(dirp->d_name);
+
+        if(file_name == NULL) continue;
 
         if(ignore_extensions) {
 
@@ -461,6 +478,11 @@ int remove_directory(const char *path) {
             len = path_len + strlen(p->d_name) + 2;
             char *buf = malloc(len);
 
+            if(buf == NULL) {
+                fprintf(stderr, "%s - Error allocating memory for the char buffer!\n", __FUNCTION__);
+                return -1;
+            }
+
             struct stat statbuf;
 
             snprintf(buf, len, "%s/%s", path, p->d_name);
@@ -497,6 +519,11 @@ void create_dir(char *out_dir) {
 
     char *new_dir = (char *)malloc(out_dir_len + 2);
 
+    if(new_dir == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the new dir name!\n", __FUNCTION__);
+        return;
+    }
+
     memcpy(new_dir, out_dir, out_dir_len + 1);
 
     if(new_dir[out_dir_len] != '/') {
@@ -515,6 +542,12 @@ void create_dir(char *out_dir) {
     while(slash) {
         size_t dirname_size = slash - new_dir;
         char *dir_to_create = malloc(dirname_size + 1);
+
+        if(dir_to_create == NULL) {
+            fprintf(stderr, "%s - Error allocating memory for the new dir name!\n", __FUNCTION__);
+            return;
+        }
+
         memcpy(dir_to_create, new_dir, dirname_size);
         dir_to_create[dirname_size] = '\0';
 
@@ -522,10 +555,10 @@ void create_dir(char *out_dir) {
 
             printf("%s does not exist! Creating!\n", dir_to_create);
 
-			if(mkdir(dir_to_create, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
-				fprintf(stderr, "Error creating directory %s Exiting!\n", dir_to_create);
-				exit(EXIT_FAILURE);
-			}
+            if(mkdir(dir_to_create, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+                fprintf(stderr, "Error creating directory %s Exiting!\n", dir_to_create);
+                exit(EXIT_FAILURE);
+            }
         }
 
         slash = strchr(slash + 1, '/');

@@ -16,3 +16,8 @@ odecompiler.anjuta
 /compile_commands.json
 /.cache/
 .vimspector.json
+
+PVS-Studio.log
+project.error
+project.tasks
+strace_out
