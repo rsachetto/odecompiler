@@ -1,13 +1,13 @@
 # odecompiler
 A simple compiler and an interactive shell to play with Ordinary Differential Equations (ODEs).
-The ODEs can be described using a very simple language and compiled to c source code (more languages will be available). It is also
+The ODEs can be described using a very simple language and compiled to **C** code (more languages will be available). It is also
 possible to use the interactive shell to load, solve and plot the ODEs.
 
 **This software is in constant development. Keep it updated to have access to newer commands!**
 
 # Using
 
-Below, we have the SIR (**S**usceptible, **I**nfectious, or **R**ecovered) epidemiological model written using the ode language (more examples can be found in the [examples](https://github.com/rsachetto/odecompiler/tree/master/examples) folder):
+Below, we have the SIR (**S**usceptible, **I**nfectious, or **R**ecovered) epidemiological model written using the ODE language (more examples can be found in the [examples](https://github.com/rsachetto/odecompiler/tree/master/examples) folder):
 
 ```
 global n = 1000
@@ -53,7 +53,7 @@ ode_shell> solve
 ode_shell> plot
 ```
 
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode.png)
+![plot image](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode.png)
 
 ```
 ode_shell> vars
@@ -65,20 +65,19 @@ R, 4
 ode_shell> setploty I
 ode_shell> replot
 ```
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode2.png)
+![plot image](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode2.png)
 
 ```
 ode_shell> setploty R
 ode_shell> replot
 ode_shell> exit
 ```
-![alt text](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode3.png)
+![plot image](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode3.png)
 
 ## Running commands stored in a file:
 
 It is possible to run commands stored in a text file (one command per line):
 
 ```sh
-$ cd examples
 $ ./bin/ode_shell examples/run_examples.od
 ```
