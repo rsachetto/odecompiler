@@ -174,6 +174,7 @@ static bool should_complete_model(const char *c) {
             || STR_EQUALS(c, "plot")
             || STR_EQUALS(c, "plottofile")
             || STR_EQUALS(c, "plottoterm")
+            || STR_EQUALS(c, "printmodel")
             || STR_EQUALS(c, "replot")
             || STR_EQUALS(c, "replottofile")
             || STR_EQUALS(c, "replottoterm")
