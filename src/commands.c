@@ -1435,7 +1435,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
-        ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS "plot sir or plot sir 1 or plot 1");
+        ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS " plot sir or plot sir 1 or plot 1");
         ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS" replot sir");
         ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS"E.g., plottofile sir output.pdf 2");
         ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS "replottofile sir 2");
