@@ -49,7 +49,7 @@ $ ./bin/ode_shell
 Current directory odecompiler
 ode_shell> cd examples
 ode_shell> load sir.ode
-ode_shell> solve
+ode_shell> solve 100
 ode_shell> plot
 ```
 
