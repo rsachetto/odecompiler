@@ -693,7 +693,6 @@ COMMAND_FUNCTION(setplotylabel) {
 }
 
 COMMAND_FUNCTION(setplotlegend) {
-    //TODO: this command should be renamed to setplotlegend
     return setplot_helper(shell_state, tokens, CMD_SET_PLOT_TITLE, num_args);
 }
 
@@ -887,8 +886,11 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
     }
 
     if (i == n) {
-        printf("Error parsing command %s. Invalid variable name: %s. You can list model variable name using vars %s\n",
-                command, var_name, model_config->model_name);
+        parent_model_config->version--;
+        int command_len = strlen(command);
+        printf("Error parsing command %s. Invalid variable name: %s. You can list model variable name using g%*ss %s\n",
+                command, var_name, command_len-1,  command + 1 ,parent_model_config->model_name);
+        free_model_config(model_config);
     } else {
         if (action == CMD_SET) {
             printf("Reloading model %s as %s\n", parent_model_config->model_name, model_config->model_name);
