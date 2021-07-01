@@ -10,10 +10,10 @@ release: release_set common
 directories: bin_dir build_dir
 
 bin_dir:
-	${MKDIR_P} bin
+	@${MKDIR_P} bin
 
 build_dir:
-	${MKDIR_P} build
+	@${MKDIR_P} build
 
 release_set:
 	$(eval OPT_FLAGS=-O2 -Wno-stringop-overflow -mavx -maes)
@@ -64,10 +64,10 @@ build/to_latex.o: src/to_latex.c src/to_latex.h
 	gcc ${OPT_FLAGS} -c  src/to_latex.c -o build/to_latex.o
 
 build/enum_to_string.o: src/compiler/enum_to_string.c src/compiler/enum_to_string.h src/compiler/token_enum.h
-	gcc ${opt_flags} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
+	gcc ${OPT_FLAGS} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
 
 build/pipe_utils.o: src/pipe_utils.c src/pipe_utils.h
-	gcc ${opt_flags} -c src/pipe_utils.c -o build/pipe_utils.o
+	gcc ${OPT_FLAGS} -c src/pipe_utils.c -o build/pipe_utils.o
 
 clean:
 	rm bin/* build/*.o
