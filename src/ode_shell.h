@@ -6,6 +6,7 @@
 #define ODECOMPILER_ODE_SHELL_H
 
 #include "model_config.h"
+#include "pipe_utils.h"
 
 #include <stdio.h>
 #include <pthread.h>
@@ -19,7 +20,7 @@ struct shell_variables {
     struct model_hash_entry *loaded_models;
     struct model_config *current_model;
 
-    FILE *gnuplot_handle;
+    struct popen2 *gnuplot_handle;
     const char *default_gnuplot_term;
     int fd_notify;
     pthread_mutex_t lock;

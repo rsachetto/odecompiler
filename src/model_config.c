@@ -101,6 +101,7 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
 void free_model_config(struct model_config *model_config) {
 
     for(int r = 0; r < model_config->num_runs; r++) {
+        free(model_config->runs[r].filename);
         sds out = get_model_output_file(model_config, r);
         unlink(out);
         sdsfree(out);
@@ -115,6 +116,7 @@ void free_model_config(struct model_config *model_config) {
 
     free(model_config->model_command);
     free_program(model_config->program);
+    arrfree(model_config->runs);
     shfree(model_config->var_indexes);
 }
 

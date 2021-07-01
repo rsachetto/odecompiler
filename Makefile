@@ -21,7 +21,7 @@ release_set:
 debug_set:
 	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow -mavx -maes)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
 bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o
@@ -64,7 +64,10 @@ build/to_latex.o: src/to_latex.c src/to_latex.h
 	gcc ${OPT_FLAGS} -c  src/to_latex.c -o build/to_latex.o
 
 build/enum_to_string.o: src/compiler/enum_to_string.c src/compiler/enum_to_string.h src/compiler/token_enum.h
-	gcc ${OPT_FLAGS} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
+	gcc ${opt_flags} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
+
+build/pipe_utils.o: src/pipe_utils.c src/pipe_utils.h
+	gcc ${opt_flags} -c src/pipe_utils.c -o build/pipe_utils.o
 
 clean:
 	rm bin/* build/*.o

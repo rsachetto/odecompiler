@@ -10,40 +10,28 @@
 #include <readline/history.h>
 #include <unistd.h>
 #include <math.h>
-
 #include "hash/meow_hash_x64_aesni.h"
 
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
 static int num_commands = 0;
-
 static struct shell_variables * global_state;
 
-#define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
-
-#define GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, args)                                     \
-    do {                                                                                          \
-        if ((num_args) == args) {                                                                 \
-            (model_config) = load_model_config_or_print_error(shell_state, tokens[0], NULL);      \
-                                                                                                  \
-        } else {                                                                                  \
-            (model_config) = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]); \
-        }                                                                                         \
-        if (!(model_config)) return false;                                                        \
-    } while (0)
-
-static void gnuplot_cmd(FILE *handle, char const *cmd, ...) {
+static void gnuplot_cmd(struct popen2 *handle, char const *cmd, ...) {
     va_list ap;
 
     va_start(ap, cmd);
-    vfprintf(handle, cmd, ap);
+    vdprintf(handle->to_child, cmd, ap);
     va_end(ap);
 
-    fputs("\n", handle);
-    fflush(handle);
+    dprintf(handle->to_child, "\nprint \"done\"\n");
+
+    char msg[6];
+    read(handle->from_child, msg, 6);
+
 }
 
-static void reset_terminal(FILE *handle, const char *default_term) {
+static void reset_terminal(struct popen2 *handle, const char *default_term) {
     gnuplot_cmd(handle, "set terminal %s", default_term);
 }
 
@@ -361,7 +349,7 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
             return NULL;
         }
         else if(*run_number > model_config->num_runs) {
-            printf("Error running command %s. The model was executed %u time(s), but it was requested to plor run %u!\n", tokens[0], model_config->num_runs, *run_number);
+            printf("Error running command %s. The model was executed %u time(s), but it was requested to plot run %u!\n", tokens[0], model_config->num_runs, *run_number);
             return NULL;
         }
     }
@@ -479,6 +467,11 @@ COMMAND_FUNCTION(solve) {
 
     model_config->num_runs++;
 
+    struct run_params params;
+    params.time = simulation_steps;
+
+    arrput(model_config->runs, params);
+
     sds output_file = get_model_output_file(model_config, model_config->num_runs);
 
     sds model_command = sdscat(sdsempty(), model_config->model_command);
@@ -512,7 +505,13 @@ static bool plot_helper(struct shell_variables *shell_state, sds *tokens, comman
             return false;
         }
 
-        shell_state->gnuplot_handle = popen("gnuplot -persistent", "w");
+        shell_state->gnuplot_handle = (struct popen2 *) malloc(sizeof(struct popen2));
+        if(shell_state->gnuplot_handle == NULL) {
+            fprintf(stderr, "%s - error allocating memory for gnuplot handle\n", __FUNCTION__);
+            return false;
+        }
+
+        popen2("gnuplot", shell_state->gnuplot_handle);
     }
 
     if (c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
@@ -571,7 +570,12 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
             return false;
         }
 
-        shell_state->gnuplot_handle = popen("gnuplot -persistent", "w");
+        shell_state->gnuplot_handle = (struct popen2 *) malloc(sizeof(struct popen2));
+        if(shell_state->gnuplot_handle == NULL) {
+            fprintf(stderr, "%s - error allocating memory for gnuplot handle\n", __FUNCTION__);
+            return false;
+        }
+        popen2("gnuplot", shell_state->gnuplot_handle);
     }
 
     if (c_type == CMD_PLOT_FILE) {
@@ -1172,6 +1176,9 @@ COMMAND_FUNCTION(savemodeloutput) {
         return false;
     }
 
+    model_config->runs[run_number-1].filename = strdup(file_name);
+    model_config->runs[run_number-1].saved = true;
+
     sdsfree(output_file);
     return true;
 
@@ -1204,7 +1211,6 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
                 quit = parse_and_execute_command(command, shell_state);
                 sdsfree(command);
                 if (quit) break;
-                usleep(500);
             }
 
             fclose(f);
@@ -1213,7 +1219,6 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
             }
 
             if (quit) {
-                sleep(1);
                 clean_and_exit(shell_state);
             }
         }
@@ -1221,7 +1226,6 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
 }
 
 COMMAND_FUNCTION(loadcmds) {
-    pthread_mutex_unlock(&shell_state->lock);
     run_commands_from_file(shell_state, tokens[1]);
     return true;
 }
@@ -1239,7 +1243,6 @@ COMMAND_FUNCTION(pwd) {
 COMMAND_FUNCTION(odestolatex) {
 
     struct model_config *model_config = NULL;
-
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     sds *odes = odes_to_latex(model_config->program);
@@ -1257,6 +1260,34 @@ COMMAND_FUNCTION(odestolatex) {
 
     return true;
 
+}
+
+COMMAND_FUNCTION(listruns)  {
+
+    struct model_config *model_config = NULL;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
+
+    int n_runs = model_config->num_runs;
+
+    struct run_params *run_info = model_config->runs;
+
+    printf("-----------------------------------\n");
+    printf("Model %s was solved %d time(s).\n", model_config->model_name, n_runs);
+
+    for(int i = 0; i < n_runs; i++) {
+        printf("-----------------------------------\n");
+        printf("Run %d: \n", i + 1);
+        printf("Time: %lf\n", run_info[i].time);
+        if(run_info[i].saved) {
+            printf("output was saved to %s\n", run_info[i].filename);
+        }
+        else {
+            printf("output was not saved\n");
+        }
+        printf("-----------------------------------\n");
+    }
+
+    return true;
 }
 
 void clean_and_exit(struct shell_variables *shell_state) {
@@ -1301,11 +1332,15 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         return true;
     }
 
-    pthread_mutex_lock(&shell_state->lock);
-
+    if(!STR_EQUALS(tokens[0], "loadcmds")) {
+        pthread_mutex_lock(&shell_state->lock);
+    }
     command.command_function(shell_state, tokens, num_args);
 
-    pthread_mutex_unlock(&shell_state->lock);
+    if(!STR_EQUALS(tokens[0], "loadcmds")) {
+        pthread_mutex_unlock(&shell_state->lock);
+    }
+
     sdsfreesplitres(tokens, token_count);
     return false;
 
@@ -1313,7 +1348,6 @@ dealloc_vars :
     if (tokens)
         sdsfreesplitres(tokens, token_count);
 
-    pthread_mutex_unlock(&shell_state->lock);
     return false;
 
 }
@@ -1431,7 +1465,8 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(list,             0, 0, "Lists all loaded models");
     ADD_CMD(loadcmds,         1, 1, "Loads a list of command from a file and execute them.\nE.g., loadcmds file.os");
     ADD_CMD(load,             1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
-    ADD_CMD(unload,           1, 1, "Unloads previously loaded model.\nE.g, unload sir.ode");
+    ADD_CMD(listruns,         0, 1, "List all runs of a model."NO_ARGS" listruns sir");
+    ADD_CMD(unload,           1, 1, "Unloads previously loaded model.\nE.g, unload sir");
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
