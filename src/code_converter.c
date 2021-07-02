@@ -918,8 +918,6 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     write_variables_or_body(main_body, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
 
-    //write_odes(odes, file, &variables_and_odes_scope, global_scope, CVODE_SOLVER);
-
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
     fprintf(file, "static int check_flag(void *flagvalue, const char *funcname, int opt) {\n"
@@ -1068,8 +1066,6 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     indentation_level++;
     write_variables_or_body(main_body, file, &variables_and_odes_scope, global_scope);
     indentation_level--;
-
-    //write_odes(odes, file, &variables_and_odes_scope, global_scope, EULER_ADPT_SOLVER);
 
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
