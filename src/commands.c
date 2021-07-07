@@ -184,8 +184,9 @@ static bool should_complete_model_and_var(const char *c) {
     return     STR_EQUALS(c, "getodevalue")
                || STR_EQUALS(c, "setodevalue")
                || STR_EQUALS(c, "setplotx")
-               || STR_EQUALS(c, "setploty");
-
+               || STR_EQUALS(c, "setploty")
+               || STR_EQUALS(c, "plotvar")
+               || STR_EQUALS(c, "replotvar");
 }
 
 #define FIND_MODEL()                                            \
@@ -492,7 +493,7 @@ static bool plot_helper(struct shell_variables *shell_state, sds *tokens, comman
 
     if (!have_gnuplot(shell_state)) return false;
 
-    const char *command = tokens[0];
+    const char *command = "plot";
     uint run_number;
     struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, tokens, num_args, 0, &run_number);
 
@@ -516,11 +517,10 @@ static bool plot_helper(struct shell_variables *shell_state, sds *tokens, comman
 
     if (c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
         gnuplot_cmd(shell_state->gnuplot_handle, "set term dumb");
-        if (c_type == CMD_PLOT_TERM) {
-            command = "plot";
-        } else if(c_type == CMD_REPLOT_TERM) {
-            command = "replot";
-        }
+    }
+
+    if(c_type == CMD_REPLOT || c_type == CMD_REPLOT_TERM) {
+        command = "replot";
     }
 
     gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->plot_config.xlabel);
@@ -553,6 +553,7 @@ COMMAND_FUNCTION(plottoterm) {
 COMMAND_FUNCTION(replottoterm) {
     return plot_helper(shell_state, tokens, CMD_REPLOT_TERM, num_args);
 }
+
 
 static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
@@ -656,6 +657,7 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
         } else {
             model_config->plot_config.yindex = index;
 
+            free(model_config->plot_config.title);
             if (index_as_str) {
                 model_config->plot_config.title = strdup(cmd_param);
             } else {
@@ -665,11 +667,14 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
     } else if (c_type == CMD_SET_PLOT_X_LABEL || c_type == CMD_SET_PLOT_Y_LABEL) {
 
         if (c_type == CMD_SET_PLOT_X_LABEL) {
+            free(model_config->plot_config.xlabel);
             model_config->plot_config.xlabel = strdup(cmd_param);
         } else {
+            free(model_config->plot_config.ylabel);
             model_config->plot_config.ylabel = strdup(cmd_param);
         }
     } else if (c_type == CMD_SET_PLOT_TITLE) {
+        free(model_config->plot_config.title);
         model_config->plot_config.title = strdup(cmd_param);
     }
 
@@ -694,6 +699,46 @@ COMMAND_FUNCTION(setplotylabel) {
 
 COMMAND_FUNCTION(setplotlegend) {
     return setplot_helper(shell_state, tokens, CMD_SET_PLOT_TITLE, num_args);
+}
+
+bool plotvar_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
+
+    struct model_config *model_config = NULL;
+
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
+
+    char *last_title = strdup(model_config->plot_config.title);
+    int last_index   = model_config->plot_config.yindex;
+
+    bool ret = false;
+
+    ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, num_args);
+
+    if(ret) {
+        char *new_tokens[2];
+        new_tokens[0] = "plot";
+
+        if(num_args == 2) {
+            new_tokens[1] = tokens[1];
+        }
+
+        ret = plot_helper(shell_state, new_tokens, c_type, num_args-1);
+        free(model_config->plot_config.title);
+        model_config->plot_config.title = last_title;
+        model_config->plot_config.yindex = last_index;
+
+    }
+
+    return ret;
+
+}
+
+COMMAND_FUNCTION(plotvar) {
+    return plotvar_helper(shell_state, tokens, CMD_PLOT, num_args);
+}
+
+COMMAND_FUNCTION(replotvar) {
+    return plotvar_helper(shell_state, tokens, CMD_REPLOT, num_args);
 }
 
 COMMAND_FUNCTION(list) {
@@ -1472,20 +1517,23 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
-        ADD_CMD(plot,             0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS " plot sir or plot sir 1 or plot 1");
-        ADD_CMD(replot,           0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS" replot sir");
-        ADD_CMD(plottofile,       1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS"E.g., plottofile sir output.pdf 2");
-        ADD_CMD(replottofile,     1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS "replottofile sir 2");
-        ADD_CMD(plottoterm,       0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "PLOT_ARGS". E.g., plottoterm sir");
-        ADD_CMD(replottoterm,     0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "PLOT_ARGS" replototerm sir 2");
-        ADD_CMD(setplotx,         1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG" setplotx sir t or setplotx t");
-        ADD_CMD(setploty,         1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG" setplotx sir R or setplotx R");
-        ADD_CMD(setplotxlabel,    1, 2, "Sets x axis label. "ONE_ARG" setplotxlabel sir Pop or setplotxlabel Pop");
-        ADD_CMD(setplotylabel,    1, 2, "Sets y axis label. "ONE_ARG" setplotylabel sir days or setplotylabel days");
-        ADD_CMD(setplotlegend,     1, 2, "Sets the current plot title. "ONE_ARG" setplottitle sir title1 or setplottitle title1");
-        ADD_CMD(solveplot,        1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. "ONE_ARG" solveplot sir 100");
-        ADD_CMD(saveplot,         1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
-        ADD_CMD(getplotconfig,    0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
+        ADD_CMD(plot,          0, 2, "Plots the output of a model execution (one variable). "PLOT_ARGS " plot sir or plot sir 1 or plot 1");
+        ADD_CMD(replot,        0, 2, "Adds the output of a model execution (one variable) in to an existing plot. "PLOT_ARGS" replot sir");
+        ADD_CMD(plottofile,    1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). "PLOTFILE_ARGS"E.g., plottofile sir output.pdf 2");
+        ADD_CMD(replottofile,  1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). "PLOTFILE_ARGS "replottofile sir 2");
+        ADD_CMD(plottoterm,    0, 2, "Plots the output of a model execution (one variable) using the terminal (text). "PLOT_ARGS". E.g., plottoterm sir");
+        ADD_CMD(replottoterm,  0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). "PLOT_ARGS" replototerm sir 2");
+        ADD_CMD(setplotx,      1, 2, "Sets the variable to be plotted along the x axis. "ONE_ARG" setplotx sir t or setplotx t");
+        ADD_CMD(setploty,      1, 2, "Sets the variable to be plotted along the y axis. "ONE_ARG" setploty sir R or setploty R");
+        ADD_CMD(setplotxlabel, 1, 2, "Sets x axis label. "ONE_ARG" setplotxlabel sir Pop or setplotxlabel Pop");
+        ADD_CMD(setplotylabel, 1, 2, "Sets y axis label. "ONE_ARG" setplotylabel sir days or setplotylabel days");
+        ADD_CMD(setplotlegend, 1, 2, "Sets the current plot title. "ONE_ARG" setplottitle sir title1 or setplottitle title1");
+        ADD_CMD(solveplot,     1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. "ONE_ARG" solveplot sir 100");
+        ADD_CMD(saveplot,      1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
+        ADD_CMD(getplotconfig, 0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
+        ADD_CMD(plotvar,       1, 2, "Plot a variable along the y axis. "ONE_ARG" plotvar sir R or plotvar R");
+        ADD_CMD(replotvar,     1, 2, "Adds a variable to the current plot, along the y axis. "ONE_ARG" replotvar sir R or replotvar R");
+
     }
 
     ADD_CMD(pwd,              0, 0, "Shows the current directory");

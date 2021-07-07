@@ -10,9 +10,9 @@ struct var_index_hash_entry {
 };
 
 struct plot_config {
-    const char *xlabel;
-    const char *ylabel;
-    const char *title;
+    char *xlabel;
+    char *ylabel;
+    char *title;
     int xindex;
     int yindex;
 };
