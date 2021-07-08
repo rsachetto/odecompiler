@@ -734,7 +734,32 @@ bool plotvar_helper(struct shell_variables *shell_state, sds *tokens, command_ty
 }
 
 COMMAND_FUNCTION(plotvar) {
-    return plotvar_helper(shell_state, tokens, CMD_PLOT, num_args);
+
+    int varcount = 0;
+    sds *vars = sdssplit(tokens[num_args], " ", &varcount);
+
+    bool ret = true;
+
+    char *new_tokens[num_args];
+    for(int i  = 0; i < num_args; i++) {
+        new_tokens[i] = tokens[i];
+    }
+
+    for(int i = 0; i < varcount; i++) {
+        new_tokens[num_args] = vars[i];
+        if(i == 0) {
+            ret &= plotvar_helper(shell_state, new_tokens, CMD_PLOT, num_args);
+        }
+        else {
+            ret &= plotvar_helper(shell_state, new_tokens, CMD_REPLOT, num_args);
+        }
+
+    }
+
+    sdsfreesplitres(vars, varcount);
+
+    return ret;
+
 }
 
 COMMAND_FUNCTION(replotvar) {
