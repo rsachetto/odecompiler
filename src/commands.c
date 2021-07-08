@@ -442,6 +442,10 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         free_model_config(model_config);
     }
 
+    if(!error) {
+        printf("Model %s successfully loaded\n", model_config->model_name);
+    }
+
     return !error;
 }
 
@@ -1278,11 +1282,22 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
 
                 command = sdsnew(line);
                 command = sdstrim(command, "\n ");
+
                 add_history(command);
                 printf("%s%s\n", PROMPT, command);
-                quit = parse_and_execute_command(command, shell_state);
+
+                int cmd_count = 0;
+                sds *commands = sdssplit(command, ";", &cmd_count);
+
+                for(int i = 0; i < cmd_count; i++) {
+                    if(*commands[i]) {
+                        quit = parse_and_execute_command(commands[i], shell_state);
+                        if (quit) break;
+                    }
+                }
+
+                sdsfreesplitres(commands, cmd_count);
                 sdsfree(command);
-                if (quit) break;
             }
 
             fclose(f);

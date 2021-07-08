@@ -1,6 +1,5 @@
-cd examples
-load sird.ode
-load sir.ode
+cd examples;load sird.ode;
+load sir
 solve sird 100
 setplotxlabel sird "Population"
 setplotylabel sird Day

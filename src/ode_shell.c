@@ -193,8 +193,18 @@ int main(int argc, char **argv) {
 
         if (line[0] == '#') continue;
 
-        quit = parse_and_execute_command(line, &shell_state);
-        if (quit) break;
+        int cmd_count = 0;
+        sds *commands = sdssplit(line, ";", &cmd_count);
+
+        for(int i = 0; i < cmd_count; i++) {
+            if(*commands[i]) {
+                quit = parse_and_execute_command(commands[i], &shell_state);
+                if (quit) break;
+            }
+        }
+
+        sdsfreesplitres(commands, cmd_count);
+
     }
 
     clean_and_exit(&shell_state);
