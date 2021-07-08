@@ -26,23 +26,23 @@ ode I' = beta*S*I - gamma*I
 ode R' = gamma*I
 ```
 
-## To download and compile:
+## To download and compile
 
 ```sh
-$ git clone https://github.com/rsachetto/odecompiler
-$ cd odecompiler
-$ make
+git clone https://github.com/rsachetto/odecompiler
+cd odecompiler
+make
 ```
 
-## To update and compile:
+## To update and compile
 
 ```sh
-$ cd odecompiler
-$ git pull
-$ make
+cd odecompiler
+git pull
+make
 ```
 
-## Using the interactive shell (needs gnuplot in path for the plot command):
+## Using the interactive shell (needs gnuplot in path for the plot command)
 
 ```
 $ ./bin/ode_shell
@@ -74,10 +74,10 @@ ode_shell> exit
 ```
 ![plot image](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode3.png)
 
-## Running commands stored in a file:
+## Running commands stored in a file
 
 It is possible to run commands stored in a text file (one command per line):
 
 ```sh
-$ ./bin/ode_shell examples/run_examples.od
+./bin/ode_shell examples/run_examples.od
 ```
