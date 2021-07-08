@@ -1298,6 +1298,7 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
 
                 sdsfreesplitres(commands, cmd_count);
                 sdsfree(command);
+                if (quit) break;
             }
 
             fclose(f);

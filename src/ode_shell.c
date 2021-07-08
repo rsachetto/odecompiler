@@ -204,6 +204,7 @@ int main(int argc, char **argv) {
         }
 
         sdsfreesplitres(commands, cmd_count);
+        if (quit) break;
 
     }
 
