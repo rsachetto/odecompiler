@@ -5,8 +5,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "stb/stb_ds.h"
-
 int string_cmp(const void *a, const void *b) {
     const char **ia = (const char **)a;
     const char **ib = (const char **)b;
