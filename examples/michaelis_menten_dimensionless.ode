@@ -1,0 +1,16 @@
+#from https://hplgit.github.io/scaling-book/doc/pub/book/html/sphinx-cbc/._book003.html#eq-scale-mmk-es1
+
+alpha = 1.5
+beta = 1.0
+epsilon = 0.9
+
+initial S = 1
+initial E = 1
+
+initial Q = 0
+initial P = 0
+
+ode Q' = alpha*(E*S-Q)
+ode P' = beta*Q
+ode S' = -E*S + (1 - beta*(1.0/alpha))*Q
+ode E' = (-E*S+Q)/epsilon
