@@ -71,15 +71,13 @@ static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope,
 static bool can_be_in_init(const ast *a, declared_variable_hash global_scope) {
 
     switch(a->tag) {
+        case ast_boolean_literal: //FIXME: this should not be allowed in init, maybe in function calls
+        case ast_number_literal:
+            return true;
 
         case ast_identifier:
             return shget(global_scope, a->identifier.value);
-        case ast_number_literal:
-            return true;
-        case ast_boolean_literal:
-            return true;
-        case ast_string_literal:
-            return false;
+
         case ast_grouped_assignment_stmt:
         {
             bool can = false;
@@ -100,10 +98,7 @@ static bool can_be_in_init(const ast *a, declared_variable_hash global_scope) {
         case ast_prefix_expression:
             return can_be_in_init(a->prefix_expr.right, global_scope);
         case ast_infix_expression:
-            return can_be_in_init(a->infix_expr.left, global_scope);
-            return can_be_in_init(a->infix_expr.right, global_scope);
-        case ast_if_expr:
-            return false;
+            return can_be_in_init(a->infix_expr.left, global_scope) && can_be_in_init(a->infix_expr.right, global_scope);
 
         case ast_call_expression:
         {
@@ -118,7 +113,7 @@ static bool can_be_in_init(const ast *a, declared_variable_hash global_scope) {
         }
     }
 
-    return a;
+    return false;
 }
 
 
@@ -477,7 +472,7 @@ static sds global_variable_to_c(ast *a, declared_variable_hash global_scope) {
 
 static sds ast_to_c(ast *a, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
 
-    if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt | a->tag == ast_ode_stmt) {
+    if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt || a->tag == ast_ode_stmt) {
         return assignement_stmt_to_c(a, declared_variables_in_scope, global_scope);
     }
 
@@ -1016,7 +1011,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "}\n", "solve_model", out_header);
 
 
-    bool error = false;
+    bool error;
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
             "\n"
@@ -1208,9 +1203,9 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     return error;
 }
-bool convert_to_c(program prog, FILE *file, solver_type solver) {
+bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
 
-    solver = solver;
+    solver = p_solver;
 
     program main_body = NULL;
     program functions = NULL;

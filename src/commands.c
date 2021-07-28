@@ -12,6 +12,8 @@
 #include <math.h>
 #include "hash/meow_hash_x64_aesni.h"
 
+#include "libfort/src/fort.h"
+
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
 static int num_commands = 0;
@@ -153,40 +155,40 @@ static char *autocomplete_command(const char *text, int state) {
 
 static bool should_complete_model(const char *c) {
     return     STR_EQUALS(c, "editmodel")
-            || STR_EQUALS(c, "getglobalvalues")
-            || STR_EQUALS(c, "getinitialvalues")
-            || STR_EQUALS(c, "getodevalues")
-            || STR_EQUALS(c, "getparamvalues")
-            || STR_EQUALS(c, "getplotconfig")
-            || STR_EQUALS(c, "odestolatex")
-            || STR_EQUALS(c, "plot")
-            || STR_EQUALS(c, "plottofile")
-            || STR_EQUALS(c, "plottoterm")
-            || STR_EQUALS(c, "printmodel")
-            || STR_EQUALS(c, "replot")
-            || STR_EQUALS(c, "replottofile")
-            || STR_EQUALS(c, "replottoterm")
-            || STR_EQUALS(c, "savemodeloutput")
-            || STR_EQUALS(c, "setautolreload")
-            || STR_EQUALS(c, "setcurrentmodel")
-            || STR_EQUALS(c, "setplotlegend")
-            || STR_EQUALS(c, "setplotxlabel")
-            || STR_EQUALS(c, "setplotylabel")
-            || STR_EQUALS(c, "setshouldreload")
-            || STR_EQUALS(c, "solve")
-            || STR_EQUALS(c, "solveplot")
-            || STR_EQUALS(c, "unload")
-            || STR_EQUALS(c, "vars");
+        || STR_EQUALS(c, "getglobalvalues")
+        || STR_EQUALS(c, "getinitialvalues")
+        || STR_EQUALS(c, "getodevalues")
+        || STR_EQUALS(c, "getparamvalues")
+        || STR_EQUALS(c, "getplotconfig")
+        || STR_EQUALS(c, "odestolatex")
+        || STR_EQUALS(c, "plot")
+        || STR_EQUALS(c, "plottofile")
+        || STR_EQUALS(c, "plottoterm")
+        || STR_EQUALS(c, "printmodel")
+        || STR_EQUALS(c, "replot")
+        || STR_EQUALS(c, "replottofile")
+        || STR_EQUALS(c, "replottoterm")
+        || STR_EQUALS(c, "savemodeloutput")
+        || STR_EQUALS(c, "setautolreload")
+        || STR_EQUALS(c, "setcurrentmodel")
+        || STR_EQUALS(c, "setplotlegend")
+        || STR_EQUALS(c, "setplotxlabel")
+        || STR_EQUALS(c, "setplotylabel")
+        || STR_EQUALS(c, "setshouldreload")
+        || STR_EQUALS(c, "solve")
+        || STR_EQUALS(c, "solveplot")
+        || STR_EQUALS(c, "unload")
+        || STR_EQUALS(c, "vars");
 
 }
 
 static bool should_complete_model_and_var(const char *c) {
     return     STR_EQUALS(c, "getodevalue")
-               || STR_EQUALS(c, "setodevalue")
-               || STR_EQUALS(c, "setplotx")
-               || STR_EQUALS(c, "setploty")
-               || STR_EQUALS(c, "plotvar")
-               || STR_EQUALS(c, "replotvar");
+        || STR_EQUALS(c, "setodevalue")
+        || STR_EQUALS(c, "setplotx")
+        || STR_EQUALS(c, "setploty")
+        || STR_EQUALS(c, "plotvar")
+        || STR_EQUALS(c, "replotvar");
 }
 
 #define FIND_MODEL()                                            \
@@ -714,7 +716,7 @@ bool plotvar_helper(struct shell_variables *shell_state, sds *tokens, command_ty
     char *last_title = strdup(model_config->plot_config.title);
     int last_index   = model_config->plot_config.yindex;
 
-    bool ret = false;
+    bool ret;
 
     ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, num_args);
 
@@ -774,15 +776,37 @@ COMMAND_FUNCTION(list) {
 
     int len = shlen(shell_state->loaded_models);
 
-    if (len == 0) {
-        printf("No models loaded\n");
-    } else {
-        printf("Current model: %s\n", shell_state->current_model->model_name);
-        printf("Loaded models:\n");
-        for (int i = 0; i < len; i++) {
-            printf("%s\n", shell_state->loaded_models[i].key);
+
+        ft_table_t *table = ft_create_table();
+
+        table = ft_create_table();
+        ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+        ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+        ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+        ft_set_cell_prop(table, FT_ANY_COLUMN, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+
+        if(len == 0) {
+            ft_printf_ln(table, "No models loaded");
         }
-    }
+        else {
+            ft_printf_ln(table, "Available models|Num. of runs");
+            for (int i = 0; i < len; i++) {
+                char *name = shell_state->loaded_models[i].key;
+                if(!STR_EQUALS(name, shell_state->current_model->model_name)) {
+                    ft_printf_ln(table, "%s|%d", name, shell_state->loaded_models[i].value->num_runs);
+                }
+                else {
+                    ft_printf_ln(table, "%s (*)|%d", name, shell_state->loaded_models[i].value->num_runs);
+                }
+            }
+        }
+
+        printf("%s", ft_to_string(table));
+
+        ft_destroy_table(table);
+
+        if(len > 0)
+            printf("(*) - current model\n\n");
 
     return true;
 }

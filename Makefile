@@ -1,3 +1,5 @@
+.PHONY: build/libfort.a
+
 MKDIR_P = mkdir -p
 
 all: release
@@ -17,11 +19,13 @@ build_dir:
 
 release_set:
 	$(eval OPT_FLAGS=-O2 -Wno-stringop-overflow -mavx -maes)
+	$(eval OPT_TYPE=release)
 
 debug_set:
-	$(eval OPT_FLAGS=-g3 -Wall -Wno-stringop-overflow -mavx -maes)
+	$(eval OPT_FLAGS=-g3 -Wall -Wno-switch -Wno-stringop-overflow -Wno-misleading-indentation -mavx -maes)
+	$(eval OPT_TYPE=debug)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/libfort.a
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
 bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o
@@ -30,7 +34,7 @@ bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build
 build/token.o: src/compiler/token.c src/compiler/token.h src/compiler/token_enum.h
 	gcc ${OPT_FLAGS} -c  src/compiler/token.c -o  build/token.o
 
-build/lexer.o: src/compiler/lexer.c src/compiler/lexer.h  
+build/lexer.o: src/compiler/lexer.c src/compiler/lexer.h
 	gcc ${OPT_FLAGS} -c  src/compiler/lexer.c -o  build/lexer.o
 
 build/sds.o: src/string/sds.c src/string/sds.h
@@ -68,6 +72,13 @@ build/enum_to_string.o: src/compiler/enum_to_string.c src/compiler/enum_to_strin
 
 build/pipe_utils.o: src/pipe_utils.c src/pipe_utils.h
 	gcc ${OPT_FLAGS} -c src/pipe_utils.c -o build/pipe_utils.o
+
+build/fort.o: src/libfort/fort.c src/libfort/fort.h
+	gcc ${OPT_FLAGS} -c src/libfort/fort.c -o build/fort.o
+
+build/libfort.a:
+	cd src/libfort/src/ && ${MAKE} ${OPT_TYPE}
+	mv src/libfort/src/libfort.a build
 
 clean:
 	rm bin/* build/*.o

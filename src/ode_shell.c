@@ -114,7 +114,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     }
     else {
         //I think this will never happen
-        shell_state->default_gnuplot_term = strdup("dummy");
+        shell_state->default_gnuplot_term = "dummy";
     }
     fclose(f);
 
@@ -191,11 +191,13 @@ int main(int argc, char **argv) {
         //We want commented lines in the history
         add_history(line);
 
+        //do not execute commented lines
         if (line[0] == '#') continue;
 
         int cmd_count = 0;
         sds *commands = sdssplit(line, ";", &cmd_count);
 
+        //executing multiple commands per line separated by ";"
         for(int i = 0; i < cmd_count; i++) {
             if(*commands[i]) {
                 quit = parse_and_execute_command(commands[i], &shell_state);

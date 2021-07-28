@@ -146,11 +146,8 @@ ast *make_call_expression(token t, ast *function) {
 }
 
 static sds expression_stmt_to_str(ast *a) {
-
-    if(a != NULL) {
-        if (a->expr_stmt != NULL) {
-            return ast_to_string(a->expr_stmt);
-        }
+    if (a->expr_stmt != NULL) {
+        return ast_to_string(a->expr_stmt);
     }
     return sdsempty();
 }
