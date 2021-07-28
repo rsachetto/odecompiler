@@ -16,6 +16,7 @@ odecompiler.anjuta
 /compile_commands.json
 /.cache/
 .vimspector.json
+*.o
 
 PVS-Studio.log
 project.error
