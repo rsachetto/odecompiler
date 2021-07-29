@@ -776,37 +776,36 @@ COMMAND_FUNCTION(list) {
 
     int len = shlen(shell_state->loaded_models);
 
+    ft_table_t *table = ft_create_table();
 
-        ft_table_t *table = ft_create_table();
+    table = ft_create_table();
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, FT_ANY_COLUMN, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
 
-        table = ft_create_table();
-        ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-        ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
-        ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-        ft_set_cell_prop(table, FT_ANY_COLUMN, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
-
-        if(len == 0) {
-            ft_printf_ln(table, "No models loaded");
-        }
-        else {
-            ft_printf_ln(table, "Available models|Num. of runs");
-            for (int i = 0; i < len; i++) {
-                char *name = shell_state->loaded_models[i].key;
-                if(!STR_EQUALS(name, shell_state->current_model->model_name)) {
-                    ft_printf_ln(table, "%s|%d", name, shell_state->loaded_models[i].value->num_runs);
-                }
-                else {
-                    ft_printf_ln(table, "%s (*)|%d", name, shell_state->loaded_models[i].value->num_runs);
-                }
+    if(len == 0) {
+        ft_printf_ln(table, "No models loaded");
+    }
+    else {
+        ft_printf_ln(table, "Available models|Num. of runs");
+        for (int i = 0; i < len; i++) {
+            char *name = shell_state->loaded_models[i].key;
+            if(!STR_EQUALS(name, shell_state->current_model->model_name)) {
+                ft_printf_ln(table, "%s|%d", name, shell_state->loaded_models[i].value->num_runs);
+            }
+            else {
+                ft_printf_ln(table, "%s (*)|%d", name, shell_state->loaded_models[i].value->num_runs);
             }
         }
+    }
 
-        printf("%s", ft_to_string(table));
+    printf("%s", ft_to_string(table));
 
-        ft_destroy_table(table);
+    ft_destroy_table(table);
 
-        if(len > 0)
-            printf("(*) - current model\n\n");
+    if(len > 0)
+        printf("(*) - current model\n\n");
 
     return true;
 }
@@ -871,22 +870,41 @@ COMMAND_FUNCTION(ls) {
 }
 
 COMMAND_FUNCTION(help) {
+
+    ft_table_t *table = ft_create_table();
+    table = ft_create_table();
+
+    /* Change border style */
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
     if (num_args == 0) {
-        printf("Available commands:\n");
+
+        ft_printf_ln(table, "Available commands");
         int nc = arrlen(commands_sorted);
         for (int i = 0; i < nc; i++) {
-            printf("%s\n", commands_sorted[i]);
+            ft_printf_ln(table, "%s", commands_sorted[i]);
         }
 
-        printf("type 'help command' for more information about a specific command\n");
+        printf("type 'help command' for more information about a specific command\n\n");
+
     } else {
         command command = shgets(commands, tokens[1]);
         if (command.help) {
-            printf("%s\n", command.help);
-        } else {
-            printf("No help available for command %s yet\n", tokens[1]);
+            ft_printf_ln(table, "Command|help");
+            ft_printf_ln(table, "%s|%s", tokens[1], command.help);
+        } else if(command.key) {
+            ft_printf_ln(table, "%s|No help available yet!", tokens[1]);
+        }
+        else {
+            ft_printf_ln(table, "Invalid command %s!", tokens[1]);
         }
     }
+
+    printf("%s", ft_to_string(table));
+    ft_destroy_table(table);
+
     return true;
 }
 
@@ -1433,7 +1451,7 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     command command = shgets(commands, tokens[0]);
 
-    if (!command.command_function) {
+    if (!command.key) {
         printf("Invalid command: %s\n", tokens[0]);
         goto dealloc_vars;
     }
@@ -1564,7 +1582,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     rl_attempted_completion_function = command_completion;
 
     command def;
-    def.key = strdup("invalid");
+    def.key = NULL;
 
     shdefaults(commands, def);
     sh_new_arena(commands);
