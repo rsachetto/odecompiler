@@ -19,6 +19,16 @@ static string_array commands_sorted = NULL;
 static int num_commands = 0;
 static struct shell_variables * global_state;
 
+#define CREATE_TABLE(table)\
+    ft_table_t *(table) = ft_create_table();\
+    table = ft_create_table();\
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);\
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);\
+
+#define PRINT_AND_FREE_TABLE(table)\
+    printf("%s", ft_to_string((table)));\
+    ft_destroy_table(table);\
+
 static void gnuplot_cmd(struct popen2 *handle, char const *cmd, ...) {
     va_list ap;
 
@@ -776,11 +786,8 @@ COMMAND_FUNCTION(list) {
 
     int len = shlen(shell_state->loaded_models);
 
-    ft_table_t *table = ft_create_table();
+    CREATE_TABLE(table);
 
-    table = ft_create_table();
-    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
     ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
     ft_set_cell_prop(table, FT_ANY_COLUMN, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
 
@@ -800,9 +807,7 @@ COMMAND_FUNCTION(list) {
         }
     }
 
-    printf("%s", ft_to_string(table));
-
-    ft_destroy_table(table);
+    PRINT_AND_FREE_TABLE(table);
 
     if(len > 0)
         printf("(*) - current model\n\n");
@@ -871,12 +876,8 @@ COMMAND_FUNCTION(ls) {
 
 COMMAND_FUNCTION(help) {
 
-    ft_table_t *table = ft_create_table();
-    table = ft_create_table();
+    CREATE_TABLE(table);
 
-    /* Change border style */
-    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
     ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
 
     if (num_args == 0) {
@@ -902,13 +903,14 @@ COMMAND_FUNCTION(help) {
         }
     }
 
-    printf("%s", ft_to_string(table));
-    ft_destroy_table(table);
+    PRINT_AND_FREE_TABLE(table);
 
     return true;
 }
 
 COMMAND_FUNCTION(getplotconfig) {
+
+    CREATE_TABLE(table);
 
     struct model_config *model_config = NULL;
 
@@ -917,14 +919,18 @@ COMMAND_FUNCTION(getplotconfig) {
     char *xname = get_var_name(model_config, model_config->plot_config.xindex);
     char *yname = get_var_name(model_config, model_config->plot_config.yindex);
 
-    printf("\nPlot configuration for model %s\n\n", model_config->model_name);
+    ft_printf_ln(table, "Plot configuration for model %s|", model_config->model_name);
 
-    printf("Var on X: %s (%d)\n", xname, model_config->plot_config.xindex);
-    printf("Var on Y: %s (%d)\n", yname, model_config->plot_config.yindex);
+    ft_printf_ln(table, "Var on X|%s (%d)", xname, model_config->plot_config.xindex);
+    ft_printf_ln(table, "Var on Y|%s (%d)", yname, model_config->plot_config.yindex);
 
-    printf("Label X: %s\n", model_config->plot_config.xlabel);
-    printf("Label Y: %s\n", model_config->plot_config.ylabel);
-    printf("Title (appears on plot legend): %s\n\n", model_config->plot_config.title);
+    ft_printf_ln(table, "Label X|%s", model_config->plot_config.xlabel);
+    ft_printf_ln(table, "Label Y|%s", model_config->plot_config.ylabel);
+    ft_printf_ln(table, "Title (legend)|%s", model_config->plot_config.title);
+
+    ft_set_cell_span(table, 0, 0, 2);
+    ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    PRINT_AND_FREE_TABLE(table);
 
     return true;
 }
@@ -1060,9 +1066,10 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
 
     int n = arrlen(model_config->program);
 
-    printf("--------------------------------------\n");
-    printf("Model %s: ", model_config->model_name);
-    printf("\n--------------------------------------");
+    CREATE_TABLE(table);
+
+    ft_printf_ln(table, "%s", model_config->model_name);
+    ft_printf_ln(table, "Variable|Value");
 
     bool empty = true;
 
@@ -1072,10 +1079,10 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
             sds ast_string = ast_to_string(a->assignement_stmt.value);
             char *first_paren = strchr(ast_string, '(');
             if(first_paren) {
-                printf("\n%s = %.*s", a->assignement_stmt.name->identifier.value, (int)strlen(first_paren+1) - 1, first_paren + 1);
+                ft_printf_ln(table, "%s|%.*s", a->assignement_stmt.name->identifier.value, (int)strlen(first_paren+1) - 1, first_paren + 1);
             }
             else {
-                printf("\n%s = %s", a->assignement_stmt.name->identifier.value, ast_string);
+                ft_printf_ln(table, "%s|%s", a->assignement_stmt.name->identifier.value, ast_string);
             }
             sdsfree(ast_string);
             empty = false;
@@ -1083,14 +1090,13 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
     }
 
     if (empty) {
-        printf("No values to show");
+        ft_printf_ln(table, "No values to show");
     }
 
-    else {
-        printf("\n--------------------------------------");
-    }
+    ft_set_cell_span(table, 0, 0, 2);
+    ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
 
-    printf("\n");
+    PRINT_AND_FREE_TABLE(table);
 
     return true;
 }
