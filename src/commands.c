@@ -668,18 +668,27 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
             }
         }
 
+        CREATE_TABLE(table);
         if (c_type == CMD_SET_PLOT_X) {
             model_config->plot_config.xindex = index;
+            ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
         } else {
+
             model_config->plot_config.yindex = index;
 
+            ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", var_name);
+
             free(model_config->plot_config.title);
+
             if (index_as_str) {
                 model_config->plot_config.title = strdup(cmd_param);
             } else {
                 model_config->plot_config.title = strdup(var_name);
             }
         }
+
+        PRINT_AND_FREE_TABLE(table);
+
     } else if (c_type == CMD_SET_PLOT_X_LABEL || c_type == CMD_SET_PLOT_Y_LABEL) {
 
         if (c_type == CMD_SET_PLOT_X_LABEL) {
@@ -807,10 +816,13 @@ COMMAND_FUNCTION(list) {
         }
     }
 
+    if(len > 0) {
+        ft_printf_ln(table, "(*) - current model");
+        ft_set_cell_span(table, len+1, 0, 2);
+    }
+
     PRINT_AND_FREE_TABLE(table);
 
-    if(len > 0)
-        printf("(*) - current model\n\n");
 
     return true;
 }
@@ -823,10 +835,20 @@ COMMAND_FUNCTION(vars) {
 
     int len = shlen(model_config->var_indexes);
 
-    printf("Model vars for model %s:\n", model_config->model_name);
+    CREATE_TABLE(table);
+
+    ft_set_cell_prop(table, FT_ANY_COLUMN, FT_ANY_ROW, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
+    ft_printf_ln(table, "%s", model_config->model_name);
+    ft_printf_ln(table, "Var name|Index");
+
     for (int i = 0; i < len; i++) {
-        printf("%s, %d\n", model_config->var_indexes[i].key, model_config->var_indexes[i].value);
+        ft_printf_ln(table, "%s|%d", model_config->var_indexes[i].key, model_config->var_indexes[i].value);
     }
+
+    ft_set_cell_span(table, 0, 0, 2);
+
+    PRINT_AND_FREE_TABLE(table);
 
     return true;
 }
