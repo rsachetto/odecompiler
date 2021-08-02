@@ -13,6 +13,7 @@
 #include "hash/meow_hash_x64_aesni.h"
 
 #include "libfort/src/fort.h"
+#include "command_corrector.h"
 
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
@@ -676,7 +677,6 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
 
             model_config->plot_config.yindex = index;
 
-            ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", var_name);
 
             free(model_config->plot_config.title);
 
@@ -685,6 +685,8 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
             } else {
                 model_config->plot_config.title = strdup(var_name);
             }
+
+            ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", model_config->plot_config.title);
         }
 
         PRINT_AND_FREE_TABLE(table);
@@ -1481,6 +1483,10 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     if (!command.key) {
         printf("Invalid command: %s\n", tokens[0]);
+        char *suggested_command = correct(tokens[0], commands_sorted, arrlen(commands_sorted));
+        if(!STR_EQUALS(tokens[0], suggested_command)) {
+            printf("Did you mean %s?\n", suggested_command);
+        }
         goto dealloc_vars;
     }
 
