@@ -497,8 +497,12 @@ COMMAND_FUNCTION(solve) {
     model_command = sdscatprintf(model_command, " %lf %s", simulation_steps, output_file);
 
     FILE *fp = popen(model_command, "r");
-    check_and_print_execution_errors(fp);
+    bool error = check_and_print_execution_errors(fp);
     pclose(fp);
+
+    if(!error) {
+        printf("Model %s solved for %lf steps.\n", model_config->model_name, simulation_steps);
+    }
 
     sdsfree(model_command);
     sdsfree(output_file);
