@@ -1422,6 +1422,7 @@ COMMAND_FUNCTION(odestolatex) {
 
 }
 
+
 COMMAND_FUNCTION(listruns)  {
 
     struct model_config *model_config = NULL;
@@ -1431,23 +1432,43 @@ COMMAND_FUNCTION(listruns)  {
 
     struct run_params *run_info = model_config->runs;
 
-    printf("-----------------------------------\n");
-    printf("Model %s was solved %d time(s).\n", model_config->model_name, n_runs);
+    printf("\nModel %s was solved %d time(s).\n\n", model_config->model_name, n_runs);
 
-    for(int i = 0; i < n_runs; i++) {
-        printf("-----------------------------------\n");
-        printf("Run %d: \n", i + 1);
-        printf("Time: %lf\n", run_info[i].time);
-        if(run_info[i].saved) {
-            printf("output was saved to %s\n", run_info[i].filename);
-        }
-        else {
-            printf("output was not saved\n");
-        }
-        printf("-----------------------------------\n");
+    CREATE_TABLE(table);
+
+    if(n_runs > 0) {
+        ft_printf_ln(table, "Run|Time|Output File");
     }
 
+    for(int i = 0; i < n_runs; i++) {
+        if(run_info[i].saved) {
+            ft_printf_ln(table, "%d|%lf|%s", i+1, run_info[i].time, run_info[i].filename);
+        }
+        else {
+            ft_printf_ln(table, "%d|%lf|%s", i+1, run_info[i].time, "output not saved!");
+        }
+    }
+
+
+    PRINT_AND_FREE_TABLE(table);
+
     return true;
+}
+
+COMMAND_FUNCTION(resetruns) {
+
+    struct model_config *model_config = NULL;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
+
+    if(model_config->num_runs > 0) {
+        arrfree(model_config->runs);
+        model_config->runs = NULL;
+    }
+
+    model_config->num_runs = 0;
+
+    return true;
+
 }
 
 void clean_and_exit(struct shell_variables *shell_state) {
@@ -1676,6 +1697,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG" setshouldreload sir 1 or setshouldreload sir 0");
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models.\nE.g., setglobalreload 1 or setglobalreload 0");
     ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "PLOTFILE_ARGS" savemodeloutput sir output_sir.txt");
+    ADD_CMD(resetruns,        0, 1, "Solves the ODE(s) of a loaded model for x steps. "NO_ARGS" resetruns silr");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }
