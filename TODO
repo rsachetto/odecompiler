@@ -6,6 +6,6 @@ TODO: add a python src code generator and a monoalg3d generator (and more)
 TODO: check if a variable was already declared in the global scope.
 
 //Maybes
-TODO: consider \r maybe on skip comment function (lexer.c)
+TODO: consider \r on skip comment function (lexer.c)
 TODO: add imported functions to their own namespace: common.stim
 TODO: we do not know the value of function types
