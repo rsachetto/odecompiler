@@ -100,8 +100,14 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
 
 void free_model_config(struct model_config *model_config) {
 
+    if(model_config == NULL) return;
+
     for(int r = 0; r < model_config->num_runs; r++) {
+
         free(model_config->runs[r].filename);
+        free(model_config->runs[r].vars_max_value);
+        free(model_config->runs[r].vars_min_value);
+
         sds out = get_model_output_file(model_config, r);
         unlink(out);
         sdsfree(out);

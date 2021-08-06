@@ -429,7 +429,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         if (!model_config->plot_config.title) {
-            //model_config->plot_config.title = strdup(model_config->plot_config.ylabel);
             char *title =get_var_name(model_config, 2);
             if(title)
                 model_config->plot_config.title = strdup(title);
@@ -466,6 +465,43 @@ COMMAND_FUNCTION(load) {
     return load_model(shell_state, tokens[1], NULL);
 }
 
+static void load_min_max_data(const char *filename, struct model_config *model_config) {
+
+    size_t len = 0;
+
+    FILE *fp;
+    double data;
+
+    fp = fopen(filename, "r");
+
+    if(fp == NULL) {
+        fprintf(stderr, "Error reading file %s\n", filename);
+        return;
+    }
+
+    char *line = NULL;
+
+    int n  = shlen(model_config->var_indexes) - 1;
+
+    model_config->runs[model_config->num_runs-1].vars_max_value = (double*)malloc(sizeof(double)*n);
+    model_config->runs[model_config->num_runs-1].vars_min_value = (double*)malloc(sizeof(double)*n);
+
+    int count = 0;
+    while((getline(&line, &len, fp)) != -1) {
+        if(line) {
+            char *end;
+            double min = strtod(line, &end);
+            double max = strtod(end+1, NULL);
+            model_config->runs[model_config->num_runs-1].vars_max_value[count] = max;
+            model_config->runs[model_config->num_runs-1].vars_min_value[count] = min;
+            count++;
+        }
+    }
+
+    free(line);
+    fclose(fp);
+}
+
 COMMAND_FUNCTION(solve) {
 
     double simulation_steps = 0;
@@ -485,8 +521,10 @@ COMMAND_FUNCTION(solve) {
 
     model_config->num_runs++;
 
-    struct run_params params;
+    struct run_info params = {0};
     params.time = simulation_steps;
+    params.vars_max_value = NULL;
+    params.vars_min_value = NULL;
 
     arrput(model_config->runs, params);
 
@@ -502,6 +540,14 @@ COMMAND_FUNCTION(solve) {
 
     if(!error) {
         printf("Model %s solved for %lf steps.\n", model_config->model_name, simulation_steps);
+        sds min_max_filename = sdsempty();
+        min_max_filename = sdscatfmt(min_max_filename, "%s_min_max", output_file);
+
+        load_min_max_data(min_max_filename, model_config);
+    }
+    else {
+        model_config->num_runs--;
+        arrpop(model_config->runs);
     }
 
     sdsfree(model_command);
@@ -771,7 +817,7 @@ COMMAND_FUNCTION(plotvar) {
 
     bool ret = true;
 
-    char *new_tokens[num_args];
+    char *new_tokens[num_args + 1];
     for(int i  = 0; i < num_args; i++) {
         new_tokens[i] = tokens[i];
     }
@@ -1434,7 +1480,7 @@ COMMAND_FUNCTION(listruns)  {
 
     int n_runs = model_config->num_runs;
 
-    struct run_params *run_info = model_config->runs;
+    struct run_info *run_info = model_config->runs;
 
     printf("\nModel %s was solved %d time(s).\n\n", model_config->model_name, n_runs);
 
@@ -1455,6 +1501,47 @@ COMMAND_FUNCTION(listruns)  {
 
 
     PRINT_AND_FREE_TABLE(table);
+
+    return true;
+}
+
+COMMAND_FUNCTION(getruninfo) {
+
+    uint run_number;
+    struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, tokens, num_args, 0, &run_number);
+
+    if (!model_config) return false;
+
+    struct run_info run_info = model_config->runs[run_number-1];
+
+    CREATE_TABLE(table);
+
+    ft_printf_ln(table, "Run|Time|Output File");
+
+    if(run_info.saved) {
+        ft_printf_ln(table, "%d|%lf|%s", run_number, run_info.time, run_info.filename);
+    }
+    else {
+        ft_printf_ln(table, "%d|%lf|%s", run_number, run_info.time, "output not saved!");
+    }
+
+    PRINT_AND_FREE_TABLE(table);
+
+    int len = shlen(model_config->var_indexes);
+
+    CREATE_TABLE(table2);
+    ft_printf_ln(table2, "Var name|Min value|Max value");
+
+    for (int i = 0; i < len; i++) {
+        int var_index = model_config->var_indexes[i].value;
+        if(var_index > 1) {
+            double min_value = model_config->runs[run_number-1].vars_min_value[var_index-2];
+            double max_value = model_config->runs[run_number-1].vars_max_value[var_index-2];
+            ft_printf_ln(table2, "%s|%lf|%lf", model_config->var_indexes[i].key, min_value, max_value);
+        }
+    }
+
+    PRINT_AND_FREE_TABLE(table2);
 
     return true;
 }
@@ -1636,6 +1723,10 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 #define PLOT_ARGS "\nIf no arguments are provided, " DEFAULT_MSG_PLOT
 #define PLOTFILE_ARGS "\nIf only the filename is provided, " DEFAULT_MSG_PLOT
 
+#define DEFAULT_MSG_GETRUN "the command is executed using the last loaded model and the last execution.\nThe execution number can be passed to the command to list the details of an specific run.\nE.g.,"
+#define GETRUN_ARGS "\nIf no arguments are provided, " DEFAULT_MSG_GETRUN
+
+
     global_state = state;
 
     rl_attempted_completion_function = command_completion;
@@ -1702,6 +1793,6 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models.\nE.g., setglobalreload 1 or setglobalreload 0");
     ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "PLOTFILE_ARGS" savemodeloutput sir output_sir.txt");
     ADD_CMD(resetruns,        0, 1, "Solves the ODE(s) of a loaded model for x steps. "NO_ARGS" resetruns silr");
-
+    ADD_CMD(getruninfo,       0, 2, "Prints the information about an specific run. "GETRUN_ARGS " getruninfo sir or getruninfo sir 1 or getruninfo 1");
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }

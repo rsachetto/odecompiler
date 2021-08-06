@@ -1,5 +1,6 @@
 //Shell
 TODO: add colors to some outputs
+TODO: fix memory leaks on exit
 
 //Code converter
 TODO: add a python src code generator and a monoalg3d generator (and more)

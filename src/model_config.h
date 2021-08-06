@@ -17,8 +17,10 @@ struct plot_config {
     int yindex;
 };
 
-struct run_params {
+struct run_info {
     char *filename;
+    double *vars_max_value;
+    double *vars_min_value;
     bool saved;
     float time;
 };
@@ -29,7 +31,7 @@ struct model_config {
     char *model_command;
     uint version;
 	uint num_runs;
-    struct run_params *runs;
+    struct run_info *runs;
     program program;
     struct var_index_hash_entry *var_indexes;
     struct plot_config plot_config;

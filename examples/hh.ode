@@ -19,8 +19,6 @@ i_Na = g_Na*pow(m,3.0)*h*(V - E_Na)
 i_K = g_K*pow(n, 4.0)*(V - E_K)
 i_L = g_L*(V - E_L)
 
-E_Na = 1
-
 initial V = -7.500000e+01
 initial m = 5.000000e-02
 initial h = 6.000000e-01
