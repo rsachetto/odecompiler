@@ -388,7 +388,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
     if (new_model) {
         model_config = calloc(1, sizeof(struct model_config));
-        printf("%ld\n", sizeof(model_config));
 
         if(model_config == NULL) {
             fprintf(stderr, "%s - Error allocating memory fot the model config!\n", __FUNCTION__);
