@@ -7,7 +7,7 @@ release_set:
 	$(eval OPT_FLAGS=-O2)
 
 debug_set:
-	$(eval OPT_FLAGS=-g3 -Wall)
+	$(eval OPT_FLAGS=-g3 -fsanitize=address -Wall -Wno-switch -Wno-stringop-overflow -Wno-misleading-indentation -mavx -maes)
 
 common: libfort.a
 

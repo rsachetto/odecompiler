@@ -17,13 +17,20 @@ lexer *new_lexer(const char *input, const char *file_name) {
 	l->input = input;
 	l->read_position = 0;
     l->current_line = 1;
+    l->file_name = NULL;
 
-    if(file_name)
+    if(file_name) {
         l->file_name = strdup(file_name);
+    }
 
     read_char(l);
 
     return l;
+}
+
+void free_lexer(lexer *l) {
+    free(l->file_name);
+    free(l);
 }
 
 void read_char(lexer *l) {

@@ -111,6 +111,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         sds *tmp_tokens = sdssplit(tmp, " ", &c);
         shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
         sdsfreesplitres(tmp_tokens, c);
+        sdsfree(tmp);
     }
     else {
         //I think this will never happen
@@ -135,10 +136,7 @@ int main(int argc, char **argv) {
     shell_state.current_dir = get_current_directory();
     shell_state.never_reload = false;
 
-    shdefault(shell_state.loaded_models, NULL);
     sh_new_strdup(shell_state.loaded_models);
-
-    hmdefault(shell_state.notify_entries, NULL);
 
     bool add_plot_commands = check_gnuplot_and_get_default_terminal(&shell_state);
 
@@ -165,7 +163,11 @@ int main(int argc, char **argv) {
     pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void *) &shell_state);
 
     if (arguments.command_file) {
-        run_commands_from_file(&shell_state, arguments.command_file);
+        bool q = run_commands_from_file(&shell_state, arguments.command_file);
+        if(!q)
+            //clean_and_exit(&shell_state);
+            exit(0);
+
     }
 
     sds history_path = sdsnew(get_home_dir());
@@ -186,7 +188,10 @@ int main(int argc, char **argv) {
 
     while ((line = readline(PROMPT)) != 0) {
         //We do not want blank lines in the history
-        if (!line[0] || line[0] == '\n') continue;
+        if (!line[0] || line[0] == '\n') {
+            free(line);
+            continue;
+        }
 
         //We want commented lines in the history
         add_history(line);
@@ -206,6 +211,7 @@ int main(int argc, char **argv) {
         }
 
         sdsfreesplitres(commands, cmd_count);
+        free(line);
         if (quit) break;
 
     }

@@ -99,5 +99,8 @@ int main(int argc, char **argv) {
     }
 
     convert_to_c(program, outfile, solver_type);
+    free_lexer(l);
+    free_parser(p);
+    free_program(program);
     fclose(outfile);
 }

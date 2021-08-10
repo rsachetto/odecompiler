@@ -61,7 +61,12 @@ parser * new_parser(lexer *l) {
     return p;
 }
 
+void free_parser(parser *p) {
+    free(p);
+}
+
 void advance_token(parser *p) {
+    free(p->cur_token.literal);
     p->cur_token = p->peek_token;
     p->peek_token = next_token(p->l);
 }
@@ -552,6 +557,8 @@ ast *parse_function_statement(parser *p) {
             }
         }
     }
+
+    arrfree(return_stmts);
 
     stmt->function_stmt.num_return_values = return_len;
 

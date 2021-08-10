@@ -141,7 +141,7 @@ char *get_filename_without_ext(const char *filename) {
     last_dot = strrchr(filename, '.');
 
     if(!last_dot || last_dot == filename)
-        return (char *)filename;
+        return strdup(filename);
 
     file = strndup(filename, strlen(filename) - strlen(last_dot));
     return file;

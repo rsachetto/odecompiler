@@ -28,6 +28,7 @@ typedef struct parser_t {
 } parser;
 
 parser * new_parser(lexer *l);
+void free_parser(parser *p);
 void advance_token(parser *p);
 program parse_program(parser *p);
 void peek_error(parser *p, token_type t);

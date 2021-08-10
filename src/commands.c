@@ -22,7 +22,6 @@ static struct shell_variables * global_state;
 
 #define CREATE_TABLE(table)\
     ft_table_t *(table) = ft_create_table();\
-    table = ft_create_table();\
     ft_set_border_style(table, FT_SOLID_ROUND_STYLE);\
     ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);\
 
@@ -66,13 +65,15 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
 
     if(model_name != NULL) {
 
-        struct model_config *model_config = shget(shell_state->loaded_models, model_name);
+        int index = shgeti(shell_state->loaded_models, model_name);
 
-        if (!model_config) {
+        if (index == -1) {
             printf("Error executing command %s. model %s is not loaded. Load a model first using \"load %s.edo\" or list loaded models using \"list\"\n", command, model_name, model_name);
             return NULL;
         }
 
+
+        struct model_config *model_config = shell_state->loaded_models[index].value;
         return model_config;
 
     }
@@ -214,21 +215,23 @@ static bool should_complete_model_and_var(const char *c) {
         }                                                       \
     } while (0)
 
-#define FIND_VARS(model_name)                                                               \
-    do {                                                                                    \
-        struct model_config *model_config = shget(global_state->loaded_models, model_name); \
-        int num_vars = 0;                                                                   \
-        if (model_config) {                                                                 \
-            num_vars = shlen(model_config->var_indexes);                                    \
-        }                                                                                   \
-        while (list_index < num_vars) {                                                     \
-            name = model_config->var_indexes[list_index].key;                               \
-            list_index++;                                                                   \
-            if (strncmp(name, text, len) == 0) {                                            \
-                sdsfreesplitres(splitted_buferr, count);                                    \
-                return (strdup(name));                                                      \
-            }                                                                               \
-        }                                                                                   \
+#define FIND_VARS(model_name)                                                                      \
+    do {                                                                                           \
+        struct model_config *model_config = NULL;                                                  \
+        int index = shgeti(global_state->loaded_models, model_name);                               \
+        if (index != -1) model_config = global_state->loaded_models[index].value;                  \
+        int num_vars = 0;                                                                          \
+        if (model_config) {                                                                        \
+            num_vars = shlen(model_config->var_indexes);                                           \
+        }                                                                                          \
+        while (list_index < num_vars) {                                                            \
+            name = model_config->var_indexes[list_index].key;                                      \
+            list_index++;                                                                          \
+            if (strncmp(name, text, len) == 0) {                                                   \
+                sdsfreesplitres(splitted_buferr, count);                                           \
+                return (strdup(name));                                                             \
+            }                                                                                      \
+        }                                                                                          \
     } while (0)
 
 static char *autocomplete_command_params(const char *text, int state) {
@@ -248,7 +251,13 @@ static char *autocomplete_command_params(const char *text, int state) {
 
     int num_loaded_models = shlen(global_state->loaded_models);
 
-    command c = shgets(commands, splitted_buferr[0]);
+    int index = shgeti(commands, splitted_buferr[0]);
+
+    command c = {0};
+
+    if(index != -1) {
+        c = commands[index];
+    }
 
     if(!c.key
             || STR_EQUALS(c.key, "list")
@@ -379,6 +388,7 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
     if (new_model) {
         model_config = calloc(1, sizeof(struct model_config));
+        printf("%ld\n", sizeof(model_config));
 
         if(model_config == NULL) {
             fprintf(stderr, "%s - Error allocating memory fot the model config!\n", __FUNCTION__);
@@ -397,8 +407,7 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
             new_file = sdscat(new_file, ".ode");
         }
 
-        char *model_name = get_filename_without_ext(model_file);
-        model_config->model_name = strdup(model_name);
+        model_config->model_name = get_filename_without_ext(model_file);
 
         sds full_model_file_path;
 
@@ -410,12 +419,17 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
         full_model_file_path = sdscatfmt(full_model_file_path, "%s", new_file);
         model_config->model_file = strdup(full_model_file_path);
+
         sdsfree(full_model_file_path);
         sdsfree(new_file);
 
         error = generate_model_program(model_config);
 
-        if (error) return false;
+        if (error) {
+            free_model_config(model_config);
+            free(model_config);
+            return true;
+        }
 
         model_config->plot_config.xindex = 1;
         model_config->plot_config.yindex = 2;
@@ -447,11 +461,14 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         shell_state->current_model = model_config;
 
         if (new_model) {
-            add_file_watch(shell_state, get_dir_from_path(model_config->model_file));
+            char *tmp = get_dir_from_path(model_config->model_file);
+            add_file_watch(shell_state, tmp);
+            free(tmp);
         }
     }
     else {
         free_model_config(model_config);
+        free(model_config);
     }
 
     if(!error) {
@@ -544,6 +561,7 @@ COMMAND_FUNCTION(solve) {
         min_max_filename = sdscatfmt(min_max_filename, "%s_min_max", output_file);
 
         load_min_max_data(min_max_filename, model_config);
+        sdsfree(min_max_filename);
     }
     else {
         model_config->num_runs--;
@@ -726,8 +744,6 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
         } else {
 
             model_config->plot_config.yindex = index;
-
-
             free(model_config->plot_config.title);
 
             if (index_as_str) {
@@ -934,14 +950,13 @@ COMMAND_FUNCTION(cd) {
 
 COMMAND_FUNCTION(ls) {
 
-    char *p = tokens[1];
-
     char *path_name;
 
     if (num_args == 0) {
         path_name = ".";
     } else {
-        path_name = p;
+        path_name = tokens[1];
+;
     }
 
     print_path_contents(path_name);
@@ -965,7 +980,13 @@ COMMAND_FUNCTION(help) {
         printf("type 'help command' for more information about a specific command\n\n");
 
     } else {
-        command command = shgets(commands, tokens[1]);
+        command command = {0};
+        int index = shgeti(commands, tokens[1]);
+
+        if(index != -1) {
+            command = commands[index];
+        }
+
         if (command.help) {
             ft_printf_ln(table, "Command|help");
             ft_printf_ln(table, "%s|%s", tokens[1], command.help);
@@ -1073,6 +1094,9 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
                     free(a->assignement_stmt.value);
                     a->assignement_stmt.value = program[0];
+
+                    free_parser(p);
+
                 } else {
                     printf("%s = %s for model %s\n", var_name, ast_to_string(a->assignement_stmt.value), model_config->model_name);
                 }
@@ -1087,6 +1111,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
         printf("Error parsing command %s. Invalid variable name: %s. You can list model variable name using g%*ss %s\n",
                 command, var_name, command_len-1,  command + 1 ,parent_model_config->model_name);
         free_model_config(model_config);
+        free(model_config);
     } else {
         if (action == CMD_SET) {
             printf("Reloading model %s as %s\n", parent_model_config->model_name, model_config->model_name);
@@ -1382,7 +1407,7 @@ COMMAND_FUNCTION(savemodeloutput) {
 
 }
 
-void run_commands_from_file(struct shell_variables *shell_state, char *file_name) {
+bool run_commands_from_file(struct shell_variables *shell_state, char *file_name) {
 
     bool quit = false;
 
@@ -1429,15 +1454,17 @@ void run_commands_from_file(struct shell_variables *shell_state, char *file_name
             }
 
             if (quit) {
-                clean_and_exit(shell_state);
+                //clean_and_exit(shell_state);
+                return false;
             }
         }
     }
+
+    return true;
 }
 
 COMMAND_FUNCTION(loadcmds) {
-    run_commands_from_file(shell_state, tokens[1]);
-    return true;
+    return run_commands_from_file(shell_state, tokens[1]);
 }
 
 COMMAND_FUNCTION(quit) {
@@ -1572,6 +1599,24 @@ void clean_and_exit(struct shell_variables *shell_state) {
         struct model_config *config = shell_state->loaded_models[i].value;
         free_model_config(config);
     }
+    shfree(shell_state->loaded_models);
+
+    int n = arrlen(commands_sorted);
+    for(int i = 0; i < n; i++) {
+        free(commands_sorted[i]);
+    }
+    arrfree(commands_sorted);
+
+    shfree(commands);
+
+
+    n = hmlen(shell_state->notify_entries);
+
+    for(int i = 0; i < n; i++) {
+        arrfree(shell_state->notify_entries[i].value);
+    }
+
+    hmfree(shell_state->notify_entries);
 
     printf("\n");
     write_history(history_path);
@@ -1591,9 +1636,9 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     num_args = token_count - 1;
 
-    command command = shgets(commands, tokens[0]);
+    int index = shgeti(commands, tokens[0]);
 
-    if (!command.key) {
+    if (index == -1) {
         printf("Invalid command: %s\n", tokens[0]);
         char *suggested_command = correct(tokens[0], commands_sorted, arrlen(commands_sorted));
         if(!STR_EQUALS(tokens[0], suggested_command)) {
@@ -1602,9 +1647,14 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         goto dealloc_vars;
     }
 
+    command command = commands[index];
+
     CHECK_N_ARGS(command.key, command.accept[0], command.accept[1], num_args);
 
     if (STR_EQUALS(command.key, "quit")) {
+        if (tokens)
+            sdsfreesplitres(tokens, token_count);
+
         return true;
     }
 
@@ -1643,8 +1693,11 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
 
         if (STR_EQUALS(file_name, event->name)) {
             model_config = model_configs[i];
+            free(file_name);
             break;
         }
+
+        free(file_name);
 
     }
 
@@ -1698,13 +1751,16 @@ static void add_cmd(command_fn *function, char *cmd,  int accept_min, int accept
 
     command c;
 
-    c.key = strdup(cmd);
+    c.key = cmd;
 
     c.accept[0] = accept_min;
     c.accept[1] = accept_max;
 
     if (help) {
-        c.help = strdup(help);
+        c.help = help;
+    }
+    else {
+        c.help = NULL;
     }
 
     c.command_function = function;
@@ -1731,10 +1787,6 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 
     rl_attempted_completion_function = command_completion;
 
-    command def;
-    def.key = NULL;
-
-    shdefaults(commands, def);
     sh_new_arena(commands);
 
     arrsetcap(commands_sorted, 64);

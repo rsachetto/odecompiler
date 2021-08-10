@@ -52,21 +52,6 @@ static int start_dict(char **commands, int num_commands, ENTRY dict) {
     return 1;
 }
 
-static char *substr(char *str, size_t offset, size_t limit) {
-    char *new_str;
-    size_t str_size = strlen(str);
-
-    if ((limit > str_size) || ((offset + limit) > str_size) || (str_size < 1) || (limit == 0)) return NULL;
-
-    new_str = malloc(limit+1);
-    if (!new_str) return NULL;
-
-    strncpy(new_str, str+offset, limit);
-    *(new_str + limit) = '\0';
-
-    return new_str;
-}
-
 static void *checked_malloc(int len) {
     void *ret = malloc(len);
 
@@ -95,7 +80,15 @@ static void append(char *dst, int *dstLen, const char *src, int srcBegin, int le
     dst[*dstLen] = 0;
 }
 
-int deletion(char *word, char **array, int start_idx)
+static void array_cleanup(char **array, int rows)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        free(array[i]);
+    }
+}
+
+static int deletion(char *word, char **array, int start_idx)
 {
     int i = 0;
     size_t word_len = strlen(word);
@@ -110,7 +103,7 @@ int deletion(char *word, char **array, int start_idx)
     return i;
 }
 
-int transposition(char *word, char **array, int start_idx)
+static int transposition(char *word, char **array, int start_idx)
 {
     int i = 0;
     size_t word_len = strlen(word);
@@ -127,7 +120,7 @@ int transposition(char *word, char **array, int start_idx)
     return i;
 }
 
-int alteration(char *word, char **array, int start_idx)
+static int alteration(char *word, char **array, int start_idx)
 {
     int k = 0;
     size_t word_len = strlen(word);
@@ -148,7 +141,7 @@ int alteration(char *word, char **array, int start_idx)
     return k;
 }
 
-int insertion(char *word, char **array, int start_idx)
+static int insertion(char *word, char **array, int start_idx)
 {
     int k = 0;
     size_t word_len = strlen(word);
@@ -169,7 +162,7 @@ int insertion(char *word, char **array, int start_idx)
     return k;
 }
 
-size_t edits1_rows(char *word)
+static size_t edits1_rows(char *word)
 {
     size_t size = strlen(word);
 
@@ -179,7 +172,7 @@ size_t edits1_rows(char *word)
         (size + 1) * ALPHABET_SIZE;    // insertion
 }
 
-char **edits1(char *word)
+static char **edits1(char *word)
 {
     int next_idx;
     char **array = malloc(edits1_rows(word) * sizeof(char *));
@@ -194,7 +187,7 @@ char **edits1(char *word)
     return array;
 }
 
-int array_exist(char **array, int rows, char *word)
+static int array_exist(char **array, int rows, char *word)
 {
     for (int i = 0; i < rows; ++i)
     {
@@ -203,7 +196,7 @@ int array_exist(char **array, int rows, char *word)
     return 0;
 }
 
-char **known_edits2(char **array, int rows, int *e2_rows)
+static char **known_edits2(char **array, int rows, int *e2_rows)
 {
     size_t e1_rows = 0;
     int res_size = 0;
@@ -231,9 +224,11 @@ char **known_edits2(char **array, int rows, int *e2_rows)
                         res_max *= 2;
                 }
                 res = realloc(res, sizeof(char *) * res_max);
-                res[res_size++] = e1[j];
+                res[res_size++] = strdup(e1[j]);
             }
         }
+        array_cleanup(e1, e1_rows);
+        free(e1);
     }
 
     *e2_rows = res_size;
@@ -241,7 +236,7 @@ char **known_edits2(char **array, int rows, int *e2_rows)
     return res;
 }
 
-char *max(char **array, int rows)
+static char *max(char **array, int rows)
 {
     char *max_word = NULL;
     size_t max_size = 0;
@@ -258,14 +253,6 @@ char *max(char **array, int rows)
     }
 
     return max_word;
-}
-
-void array_cleanup(char **array, int rows)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        free(array[i]);
-    }
 }
 
 char *correct(char *word, char **commands, int num_commands) {

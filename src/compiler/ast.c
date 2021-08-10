@@ -119,6 +119,7 @@ ast *make_if_expression(token t) {
     if(a != NULL) {
         a->if_expr.alternative = NULL;
         a->if_expr.consequence = NULL;
+        a->if_expr.elif_alternative = NULL;
     }
 
     return a;
@@ -621,6 +622,8 @@ void free_program(program src_program) {
 
 void free_ast(ast *src) {
 
+    if(src == NULL) return;
+
     switch (src->tag) {
 
         case ast_number_literal:
@@ -643,6 +646,7 @@ void free_ast(ast *src) {
             free_program(src->grouped_assignement_stmt.names);
             break;
         case ast_function_statement:
+            free_ast(src->function_stmt.name);
             free_program(src->function_stmt.parameters);
             free_program(src->function_stmt.body);
             break;
@@ -668,8 +672,10 @@ void free_ast(ast *src) {
             free_ast(src->infix_expr.right);
             break;
         case ast_if_expr:
+            free_ast(src->if_expr.condition);
             free_program(src->if_expr.consequence);
             free_program(src->if_expr.alternative);
+            free_ast(src->if_expr.elif_alternative);
             break;
         case ast_call_expression:
             free_ast(src->call_expr.function_identifier);

@@ -13,6 +13,7 @@ sds get_model_output_file(struct model_config *model_config, uint run_number) {
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
     sds model_out_file = sdscatfmt(sdsempty(), MODEL_OUTPUT_TEMPLATE, modified_model_name, run_number);
+    sdsfree(modified_model_name);
 	return model_out_file;
 }
 
@@ -28,7 +29,6 @@ bool generate_model_program(struct model_config *model) {
     size_t file_size;
     char *source = read_entire_file_with_mmap(file_name, &file_size);
 
-	//TODO: maybe we can try to avoid this
 	model->hash = MeowHash(MeowDefaultSeed, file_size, source);
 
     lexer *l = new_lexer(source, file_name);
@@ -51,6 +51,7 @@ bool generate_model_program(struct model_config *model) {
             if(a->tag == ast_ode_stmt) {
                 sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
                 shput(model->var_indexes, var_name, ode_count);
+                sdsfree(var_name);
                 ode_count++;
 
             }
@@ -59,6 +60,9 @@ bool generate_model_program(struct model_config *model) {
     }
 
 	munmap(source, file_size);
+
+    free_parser(p);
+    free_lexer(l);
 
     return error;
 
@@ -119,10 +123,14 @@ void free_model_config(struct model_config *model_config) {
 
     free(model_config->model_name);
     free(model_config->model_file);
+    free(model_config->plot_config.title);
+    free(model_config->plot_config.xlabel);
+    free(model_config->plot_config.ylabel);
 
     free(model_config->model_command);
     free_program(model_config->program);
     arrfree(model_config->runs);
+
     shfree(model_config->var_indexes);
 }
 
