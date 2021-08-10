@@ -81,4 +81,6 @@ build/libfort.a:
 	mv src/libfort/src/libfort.a build
 
 clean:
+	cd src/libfort/src/ && ${MAKE} clean
 	rm bin/* build/*.o
+
