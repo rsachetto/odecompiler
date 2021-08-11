@@ -467,7 +467,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
     }
     else {
         free_model_config(model_config);
-        free(model_config);
     }
 
     if(!error) {
@@ -1594,11 +1593,14 @@ void clean_and_exit(struct shell_variables *shell_state) {
     history_path = sdscatfmt(history_path, "/%s", HISTORY_FILE);
 
     int n_models = shlen(shell_state->loaded_models);
+
     for (int i = 0; i < n_models; i++) {
         struct model_config *config = shell_state->loaded_models[i].value;
         free_model_config(config);
     }
+
     shfree(shell_state->loaded_models);
+    free(shell_state->default_gnuplot_term);
 
     int n = arrlen(commands_sorted);
     for(int i = 0; i < n; i++) {
@@ -1619,6 +1621,8 @@ void clean_and_exit(struct shell_variables *shell_state) {
 
     printf("\n");
     write_history(history_path);
+
+    sdsfree(history_path);
     exit(0);
 }
 

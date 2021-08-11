@@ -115,7 +115,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     }
     else {
         //I think this will never happen
-        shell_state->default_gnuplot_term = "dummy";
+        shell_state->default_gnuplot_term = strdup("dummy");
     }
     fclose(f);
 
@@ -163,11 +163,9 @@ int main(int argc, char **argv) {
     pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void *) &shell_state);
 
     if (arguments.command_file) {
-        bool q = run_commands_from_file(&shell_state, arguments.command_file);
-        if(!q)
-            //clean_and_exit(&shell_state);
-            exit(0);
-
+        bool continue_ = run_commands_from_file(&shell_state, arguments.command_file);
+        if(!continue_)
+            clean_and_exit(&shell_state);
     }
 
     sds history_path = sdsnew(get_home_dir());
@@ -216,5 +214,6 @@ int main(int argc, char **argv) {
 
     }
 
+    sdsfree(history_path);
     clean_and_exit(&shell_state);
 }

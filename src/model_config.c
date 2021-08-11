@@ -132,6 +132,7 @@ void free_model_config(struct model_config *model_config) {
     arrfree(model_config->runs);
 
     shfree(model_config->var_indexes);
+    free(model_config);
 }
 
 char *get_var_name(struct model_config *model_config, int index) {

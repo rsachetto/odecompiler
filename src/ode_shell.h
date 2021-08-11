@@ -21,7 +21,7 @@ struct shell_variables {
     struct model_config *current_model;
 
     struct popen2 *gnuplot_handle;
-    const char *default_gnuplot_term;
+    char *default_gnuplot_term;
     int fd_notify;
     pthread_mutex_t lock;
     struct watch_entry *notify_entries;
