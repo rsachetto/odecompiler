@@ -387,15 +387,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
     bool new_model = (model_config == NULL);
 
     if (new_model) {
-        model_config = calloc(1, sizeof(struct model_config));
-
-        if(model_config == NULL) {
-            fprintf(stderr, "%s - Error allocating memory fot the model config!\n", __FUNCTION__);
-            return true;
-        }
-
-        model_config->should_reload = true;
-        model_config->auto_reload = false;
 
         const char *ext = get_filename_ext(model_file);
 
@@ -406,7 +397,24 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
             new_file = sdscat(new_file, ".ode");
         }
 
+        model_config = calloc(1, sizeof(struct model_config));
+
+        if(model_config == NULL) {
+            fprintf(stderr, "%s - Error allocating memory fot the model config!\n", __FUNCTION__);
+            return true;
+        }
+
+        model_config->should_reload = true;
+        model_config->auto_reload = false;
+
         model_config->model_name = get_filename_without_ext(model_file);
+
+        if(shgeti(shell_state->loaded_models, model_config->model_name) != -1) {
+            printf("Model %s is alread loaded!\n", model_config->model_name);
+            free_model_config(model_config);
+            sdsfree(new_file);
+            return true;
+        }
 
         sds full_model_file_path;
 
@@ -426,7 +434,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
         if (error) {
             free_model_config(model_config);
-            free(model_config);
             return true;
         }
 
