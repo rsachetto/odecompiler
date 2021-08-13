@@ -77,7 +77,7 @@ static sds return_stmt_to_latex(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%s ",  token_literal(a));
+    buf = sdscatfmt(buf, "return ");
 
     if(a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
@@ -133,7 +133,7 @@ static sds assignement_stmt_to_latex(ast *a) {
 
 static sds number_literal_to_latex(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "%s", token_literal(a));
+    buf = sdscatprintf(buf, "%e", a->num_literal.value);
     return buf;
 }
 
@@ -152,13 +152,16 @@ static sds identifier_to_latex(ast *a) {
 
 static sds boolean_literal_to_latex(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "%s", a->token.literal);
+    if(a->bool_literal.value)
+        buf = sdscatprintf(buf, "true");
+    else
+        buf = sdscatprintf(buf, "false");
     return buf;
 }
 
 static sds string_literal_to_latex(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "\"%s\"", a->token.literal);
+    buf = sdscatprintf(buf, "\"%s\"", a->str_literal.value);
     return buf;
 }
 

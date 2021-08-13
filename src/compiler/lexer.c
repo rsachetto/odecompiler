@@ -131,7 +131,7 @@ void skip_comment(lexer *l) {
 }
 
 token next_token(lexer *l) {
-	token tok;
+	token tok = {0};
 
 	skip_whitespace(l);
 
@@ -153,7 +153,7 @@ token next_token(lexer *l) {
 				tok = new_token(EQ, ch, l->current_line, l->file_name);
 			}
 			else {
-				tok = new_token(ASSIGN, ch, l->current_line, l->file_name);
+				tok = new_token(ASSIGN, NULL, l->current_line, l->file_name);
 			}
 			break;
 		case '+':
@@ -228,7 +228,7 @@ token next_token(lexer *l) {
             tok = new_token(RBRACKET, ch, l->current_line, l->file_name);
             break;
 		case '\0':
-			tok.literal = "";
+			tok.literal = NULL;
 			tok.type = ENDOF;
 			tok.line_number = l->current_line;
 			tok.file_name =  l->file_name;

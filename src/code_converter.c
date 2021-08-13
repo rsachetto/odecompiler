@@ -1,6 +1,7 @@
 #include "file_utils/file_utils.h"
 #include "code_converter.h"
 #include "stb/stb_ds.h"
+#include <assert.h>
 
 static const char *builtin_functions[] = {
     "acos",
@@ -288,12 +289,12 @@ static sds assignement_stmt_to_c(ast *a, declared_variable_hash *declared_variab
             buf = sdscat(buf, "(");
 
             if(n_real_args) {
-                sds tmp = ast_to_c(b->call_expr.arguments[0], declared_variables_in_scope, global_scope);
+                tmp = ast_to_c(b->call_expr.arguments[0], declared_variables_in_scope, global_scope);
                 buf = sdscat(buf, tmp);
                 sdsfree(tmp);
 
                 for(int i = 1; i < n_real_args; i++) {
-                    sds tmp =ast_to_c(b->call_expr.arguments[i], declared_variables_in_scope, global_scope);
+                    tmp =ast_to_c(b->call_expr.arguments[i], declared_variables_in_scope, global_scope);
                     buf = sdscatfmt(buf, ", %s", tmp);
                     sdsfree(tmp);
                 }
@@ -348,7 +349,7 @@ static sds boolean_literal_to_c(ast *a) {
 
 static sds string_literal_to_c(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "\"%s\"", a->token.literal);
+    buf = sdscatprintf(buf, "\"%s\"", a->str_literal.value);
     return buf;
 }
 
@@ -588,6 +589,8 @@ void write_initial_conditions(program p, FILE *file, declared_variable_hash *dec
 
     int n_stmt = arrlen(p);
     for(int i = 0; i < n_stmt; i++) {
+        assert(p[i]);
+
         ast *a = p[i];
 
         int position = shget(*declared_variables_in_scope, a->assignement_stmt.name->identifier.value);
@@ -739,22 +742,6 @@ void write_variables_or_body(program p, FILE *file, declared_variable_hash *decl
             sdsfree(buf);
         }
     }
-}
-
-void write_odes(program p, FILE *file, declared_variable_hash *declared_variables_in_scope, declared_variable_hash global_scope) {
-
-    int n_stmt = arrlen(p);
-    for(int i = 0; i < n_stmt; i++) {
-        ast *a = p[i];
-        if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
-        }
-        else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    rDY[%d] = %s;\n", i, ast_to_c(a->assignement_stmt.value, declared_variables_in_scope, global_scope));
-        }
-
-    }
-
 }
 
 void write_functions(program p, FILE *file, declared_variable_hash global_scope) {
@@ -934,6 +921,7 @@ declared_variable_hash create_functions_and_global_scope(ast **functions, ast **
 
     //Ading function identifiers to scope.
     for(int i = 0; i < arrlen(functions); i++) {
+        assert(functions[i]);
         declared_variable_entry tmp;
         tmp.key = functions[i]->function_stmt.name->identifier.value;
         tmp.value = functions[i]->function_stmt.num_return_values;

@@ -135,7 +135,6 @@ typedef struct ast_t {
 
 typedef ast **program;
 
-char *token_literal(ast *ast);
 ast *make_assignement_stmt(token t, ast_tag tag);
 ast *make_grouped_assignement_stmt(token t);
 ast *make_identifier(token t, char *name);

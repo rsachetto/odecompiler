@@ -66,7 +66,6 @@ void free_parser(parser *p) {
 }
 
 void advance_token(parser *p) {
-    free(p->cur_token.literal);
     p->cur_token = p->peek_token;
     p->peek_token = next_token(p->l);
 }
@@ -130,6 +129,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         return NULL;
     }
 
+    //we do not use the = token in the ast, maybe we should
     advance_token(p);
 
     stmt->assignement_stmt.value = parse_expression(p, LOWEST);

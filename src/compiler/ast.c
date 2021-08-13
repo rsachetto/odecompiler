@@ -1,13 +1,11 @@
 #include "ast.h"
 #include "../stb/stb_ds.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int indentation_level = 0;
-
-char *token_literal(ast *ast) {
-    return ast->token.literal;
-}
 
 static ast *make_base_ast(token t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
@@ -25,6 +23,9 @@ ast *make_import_stmt(struct token_t t) {
 }
 
 ast *make_assignement_stmt(token t, ast_tag tag) {
+    if(tag == ast_assignment_stmt) {
+        t.literal = NULL;
+    }
     return make_base_ast(t, tag);
 }
 
@@ -157,7 +158,7 @@ static sds return_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
+    buf = sdscatfmt(buf, "%sreturn ", indent_spaces[indentation_level]);
 
     if (a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
@@ -177,14 +178,13 @@ static sds assignement_stmt_to_str(ast *a) {
     sds buf = sdsempty();
 
     if (a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
-        buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], token_literal(a));
+        buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], a->token.literal);
         buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
     } else {
         buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value);
     }
 
     buf = sdscat(buf, " = ");
-
 
     if (a->assignement_stmt.value != NULL) {
         buf = sdscat(buf, ast_to_string(a->assignement_stmt.value));
@@ -195,7 +195,7 @@ static sds assignement_stmt_to_str(ast *a) {
 
 static sds number_literal_to_str(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "%s", token_literal(a));
+    buf = sdscatprintf(buf, "%s", a->token.literal);
     return buf;
 }
 
@@ -208,12 +208,13 @@ static sds identifier_to_str(ast *a) {
 static sds boolean_literal_to_str(ast *a) {
     sds buf = sdsempty();
     buf = sdscatprintf(buf, "%s", a->token.literal);
+
     return buf;
 }
 
 static sds string_literal_to_str(ast *a) {
     sds buf = sdsempty();
-    buf = sdscatprintf(buf, "\"%s\"", a->token.literal);
+    buf = sdscatprintf(buf, "\"%s\"", a->str_literal.value);
     return buf;
 }
 
@@ -299,9 +300,7 @@ static sds function_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, token_literal(a));
-
-    buf = sdscatfmt(buf, " %s", ast_to_string(a->function_stmt.name));
+    buf = sdscatfmt(buf, "fn %s", ast_to_string(a->function_stmt.name));
 
     buf = sdscat(buf, "(");
 
@@ -357,9 +356,7 @@ static sds call_expr_to_str(ast *a) {
 static sds import_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
-
-    buf = sdscatfmt(buf, "%s ", token_literal(a));
-    buf = sdscatfmt(buf, "%s", ast_to_string(a->import_stmt.filename));
+    buf = sdscatfmt(buf, "import %s", ast_to_string(a->import_stmt.filename));
     return buf;
 }
 
@@ -683,5 +680,6 @@ void free_ast(ast *src) {
             break;
     }
 
+    free(src->token.literal);
     free(src);
 }

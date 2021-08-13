@@ -5,9 +5,14 @@
 token new_token(token_type type, char *ch, int line, const char *file_name) {
     token t;
     t.type = type;
-    t.literal = strdup(ch);
     t.line_number = line;
 	t.file_name = file_name;
+    t.literal = NULL;
+
+    if(ch != NULL) {
+        t.literal = strdup(ch);
+    }
+
     return t;
 }
 
