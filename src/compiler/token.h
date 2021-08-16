@@ -6,6 +6,7 @@
 #define TOKEN_TYPE_EQUALS(t1, t2) ((t1).type == t2)
 
 #include "token_enum.h"
+#include <stdbool.h>
 
 typedef struct token_t {
     token_type type;
@@ -14,7 +15,7 @@ typedef struct token_t {
     const char *file_name;
 } token;
 
-token new_token(token_type type, char *ch, int line, const char *file_name);
+token new_token(token_type type, char *ch, int line, const char *file_name, bool dup);
 token_type lookup_ident(char *ident);
 void print_token(token t);
 

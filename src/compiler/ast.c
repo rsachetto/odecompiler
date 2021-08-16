@@ -23,9 +23,6 @@ ast *make_import_stmt(struct token_t t) {
 }
 
 ast *make_assignement_stmt(token t, ast_tag tag) {
-    if(tag == ast_assignment_stmt) {
-        t.literal = NULL;
-    }
     return make_base_ast(t, tag);
 }
 
@@ -116,7 +113,7 @@ ast *make_infix_expression(token t, char *op, ast *left) {
 
 ast *make_if_expression(token t) {
     ast *a = make_base_ast(t, ast_if_expr);
-    
+
     if(a != NULL) {
         a->if_expr.alternative = NULL;
         a->if_expr.consequence = NULL;

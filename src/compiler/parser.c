@@ -91,7 +91,9 @@ bool expect_peek(parser *p, token_type t) {
 
 ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
-    ast *stmt = make_assignement_stmt(p->cur_token, tag);
+    token t = new_token(ASSIGNMENT, "assignment", p->cur_token.line_number, p->cur_token.file_name, true);
+
+    ast *stmt = make_assignement_stmt(t, tag);
 
     if(!skip_ident) {
         if (!expect_peek(p, IDENT)) {
@@ -669,7 +671,8 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
 }
 
 ast * parse_expression_statement(parser *p) {
-    ast *stmt = make_expression_stmt(p->cur_token);
+    token t = new_token(EXPR, "expr", p->cur_token.line_number, p->cur_token.file_name, true);
+    ast *stmt = make_expression_stmt(t);
     stmt->expr_stmt = parse_expression(p, LOWEST);
     if (peek_token_is(p, SEMICOLON)) {
         advance_token(p);

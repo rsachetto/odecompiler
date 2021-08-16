@@ -2,15 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 
-token new_token(token_type type, char *ch, int line, const char *file_name) {
+token new_token(token_type type, char *ch, int line, const char *file_name, bool dup) {
     token t;
     t.type = type;
     t.line_number = line;
 	t.file_name = file_name;
     t.literal = NULL;
 
-    if(ch != NULL) {
+    if(ch != NULL && dup) {
         t.literal = strdup(ch);
+    }
+    else {
+        t.literal = ch;
     }
 
     return t;

@@ -145,66 +145,68 @@ token next_token(lexer *l) {
 	ch[1] = '\0';
 	ch[2] = '\0';
 
+    bool dup = true;
+
 	switch (l->ch) {
 		case '=':
 			if(peek_char(l) == '=') {
 				read_char(l);
 				ch[1] = l->ch;
-				tok = new_token(EQ, ch, l->current_line, l->file_name);
+				tok = new_token(EQ, ch, l->current_line, l->file_name, !dup);
 			}
 			else {
-				tok = new_token(ASSIGN, NULL, l->current_line, l->file_name);
+				tok = new_token(ASSIGN, NULL, l->current_line, l->file_name, !dup);
 			}
 			break;
 		case '+':
-			tok = new_token(PLUS, ch, l->current_line, l->file_name);
+			tok = new_token(PLUS, ch, l->current_line, l->file_name, dup);
 			break;
 		case '-':
-			tok = new_token(MINUS, ch, l->current_line, l->file_name);
+			tok = new_token(MINUS, ch, l->current_line, l->file_name, dup);
 			break;
 		case '!':
 			if(peek_char(l) == '=') {
 				read_char(l);
 				ch[1] = l->ch;
-				tok = new_token(NOT_EQ, ch, l->current_line, l->file_name);
+				tok = new_token(NOT_EQ, ch, l->current_line, l->file_name, dup);
 			}
 			else {
-				tok = new_token(BANG, ch, l->current_line, l->file_name);
+				tok = new_token(BANG, ch, l->current_line, l->file_name, dup);
 			}
 			break;
 		case '/':
-			tok = new_token(SLASH, ch, l->current_line, l->file_name);
+			tok = new_token(SLASH, ch, l->current_line, l->file_name, dup);
 			break;
 		case '*':
-			tok = new_token(ASTERISK, ch, l->current_line, l->file_name);
+			tok = new_token(ASTERISK, ch, l->current_line, l->file_name, dup);
 			break;
 		case '<':
             if(peek_char(l) == '=') {
                 read_char(l);
                 ch[1] = l->ch;
-                tok = new_token(LEQ, ch, l->current_line, l->file_name);
+                tok = new_token(LEQ, ch, l->current_line, l->file_name, dup);
             }
             else {
-                tok = new_token(LT, ch, l->current_line, l->file_name);
+                tok = new_token(LT, ch, l->current_line, l->file_name, dup);
             }
 			break;
 		case '>':
             if(peek_char(l) == '=') {
                 read_char(l);
                 ch[1] = l->ch;
-                tok = new_token(GEQ, ch, l->current_line, l->file_name);
+                tok = new_token(GEQ, ch, l->current_line, l->file_name, dup);
             }else {
-                tok = new_token(GT, ch, l->current_line, l->file_name);
+                tok = new_token(GT, ch, l->current_line, l->file_name, dup);
             }
 			break;
 		case ';':
-			tok = new_token(SEMICOLON, ch, l->current_line, l->file_name);
+			tok = new_token(SEMICOLON, ch, l->current_line, l->file_name, dup);
 			break;
 		case '(':
-			tok = new_token(LPAREN, ch, l->current_line, l->file_name);
+			tok = new_token(LPAREN, ch, l->current_line, l->file_name, !dup);
 			break;
 		case ')':
-			tok = new_token(RPAREN, ch, l->current_line, l->file_name);
+			tok = new_token(RPAREN, ch, l->current_line, l->file_name, !dup);
 			break;
 		case '\"':
 			tok.type = STRING;
@@ -213,19 +215,19 @@ token next_token(lexer *l) {
 			tok.file_name =  l->file_name;
 			break;
 		case ',':
-			tok = new_token(COMMA, ch, l->current_line, l->file_name);
+			tok = new_token(COMMA, ch, l->current_line, l->file_name, !dup);
 			break;
 		case '{':
-			tok = new_token(LBRACE, ch, l->current_line, l->file_name);
+			tok = new_token(LBRACE, ch, l->current_line, l->file_name, !dup);
 			break;
 		case '}':
-			tok = new_token(RBRACE, ch, l->current_line, l->file_name);
+			tok = new_token(RBRACE, ch, l->current_line, l->file_name, !dup);
 			break;
         case '[':
-            tok = new_token(LBRACKET, ch, l->current_line, l->file_name);
+            tok = new_token(LBRACKET, ch, l->current_line, l->file_name, !dup);
             break;
         case ']':
-            tok = new_token(RBRACKET, ch, l->current_line, l->file_name);
+            tok = new_token(RBRACKET, ch, l->current_line, l->file_name, !dup);
             break;
 		case '\0':
 			tok.literal = NULL;
@@ -248,13 +250,13 @@ token next_token(lexer *l) {
 				tok.file_name =  l->file_name;
 
 				if(tok.literal == NULL) {
-					tok = new_token(ILLEGAL, ch, l->current_line, l->file_name);
+					tok = new_token(ILLEGAL, ch, l->current_line, l->file_name, dup);
 				}
 
 				return tok;
 			}
 			else {
-				tok = new_token(ILLEGAL, ch, l->current_line, l->file_name);
+				tok = new_token(ILLEGAL, ch, l->current_line, l->file_name, dup);
 			}
 	}
 
