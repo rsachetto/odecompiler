@@ -91,9 +91,7 @@ bool expect_peek(parser *p, token_type t) {
 
 ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
-    token t = new_token(ASSIGNMENT, "assignment", p->cur_token.line_number, p->cur_token.file_name, true);
-
-    ast *stmt = make_assignement_stmt(t, tag);
+    ast *stmt = make_assignement_stmt(p->cur_token, tag);
 
     if(!skip_ident) {
         if (!expect_peek(p, IDENT)) {
@@ -104,7 +102,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         }
     }
 
-    bool has_ode_symbol = (p->cur_token.literal[strlen(p->cur_token.literal)-1] == '\'');
+    bool has_ode_symbol = (p->cur_token.literal[p->cur_token.literal_len-1] == '\'');
     if(tag == ast_ode_stmt) {
         if(!has_ode_symbol) {
             sds msg = NEW_ERROR_PREFIX;
@@ -122,7 +120,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         }
     }
 
-    stmt->assignement_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
+    stmt->assignement_stmt.name = make_identifier(p->cur_token);
 
     if (!expect_peek(p, ASSIGN)) {
         //sds msg = NEW_ERROR_PREFIX;
@@ -171,7 +169,7 @@ ast *parse_import_statement(parser *p) {
         return NULL;
     }
 
-    stmt->import_stmt.filename = make_string_literal(p->cur_token, p->cur_token.literal);
+    stmt->import_stmt.filename = make_string_literal(p->cur_token);
 
     if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
@@ -234,7 +232,7 @@ ast *parse_while_statement(parser *p) {
 }
 
 ast *parse_identifier(parser *p) {
-    return make_identifier(p->cur_token, p->cur_token.literal);
+    return make_identifier(p->cur_token);
 }
 
 ast *parse_boolean_literal(parser *p) {
@@ -247,7 +245,7 @@ ast *parse_number_literal(parser *p) {
     double value = strtod(p->cur_token.literal, &end);
     if(p->cur_token.literal == end) {
         sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "could not parse %s as number\n", p->cur_token.literal);
+        msg = sdscatprintf(msg, "could not parse %.*s as number\n", p->cur_token.literal_len, p->cur_token.literal);
         arrput(p->errors, msg);
         return NULL;
     }
@@ -257,12 +255,12 @@ ast *parse_number_literal(parser *p) {
 }
 
 ast *parse_string_literal(parser *p) {
-    return make_string_literal(p->cur_token, p->cur_token.literal);
+    return make_string_literal(p->cur_token);
 }
 
 ast *parse_prefix_expression(parser *p) {
 
-    ast *expression = make_prefix_expression(p->cur_token, p->cur_token.literal);
+    ast *expression = make_prefix_expression(p->cur_token);
     advance_token(p);
     expression->prefix_expr.right = parse_expression(p, PREFIX);
 
@@ -272,7 +270,7 @@ ast *parse_prefix_expression(parser *p) {
 
 ast *parse_infix_expression(parser *p, ast *left) {
 
-    ast *expression = make_infix_expression(p->cur_token, p->cur_token.literal, left);
+    ast *expression = make_infix_expression(p->cur_token, left);
 
     enum operator_precedence precedence = cur_precedence(p);
 
@@ -304,13 +302,13 @@ ast **parse_grouped_assignment_names(parser *p) {
 
     ast ** identifiers = NULL;
 
-    ast *ident = make_identifier(p->cur_token, p->cur_token.literal);
+    ast *ident = make_identifier(p->cur_token);
     arrput(identifiers, ident);
 
     while (peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
-        ident = make_identifier(p->cur_token, p->cur_token.literal);
+        ident = make_identifier(p->cur_token);
         arrput(identifiers, ident);
     }
 
@@ -422,14 +420,14 @@ ast ** parse_function_parameters(parser *p) {
 
     advance_token(p);
 
-    ast *ident = make_identifier(p->cur_token, p->cur_token.literal);
+    ast *ident = make_identifier(p->cur_token);
 
     arrput(identifiers, ident);
 
     while (peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
-        ident = make_identifier(p->cur_token, p->cur_token.literal);
+        ident = make_identifier(p->cur_token);
         arrput(identifiers, ident);
     }
 
@@ -512,7 +510,7 @@ ast *parse_function_statement(parser *p) {
         return NULL;
     }
 
-    stmt->function_stmt.name = make_identifier(p->cur_token, p->cur_token.literal);
+    stmt->function_stmt.name = make_identifier(p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
         //sds msg = NEW_ERROR_PREFIX;
@@ -629,7 +627,7 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
         left_expr = parse_if_expression(p);
     } else {
         sds msg = NEW_ERROR_PREFIX;
-        msg = sdscatprintf(msg, "no prefix parse function for the token \"%s\"\n", p->cur_token.literal);
+        msg = sdscatprintf(msg, "no prefix parse function for the token \"%.*s\"\n", p->cur_token.literal_len, p->cur_token.literal);
         arrput(p->errors, msg);
         return NULL;
     }
@@ -671,8 +669,8 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
 }
 
 ast * parse_expression_statement(parser *p) {
-    token t = new_token(EXPR, "expr", p->cur_token.line_number, p->cur_token.file_name, true);
-    ast *stmt = make_expression_stmt(t);
+
+    ast *stmt = make_expression_stmt(p->cur_token);
     stmt->expr_stmt = parse_expression(p, LOWEST);
     if (peek_token_is(p, SEMICOLON)) {
         advance_token(p);

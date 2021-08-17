@@ -15,6 +15,11 @@ static ast *make_base_ast(token t, ast_tag tag) {
     }
     a->tag = tag;
     a->token = t;
+
+    if(t.literal) {
+        a->token.literal = strndup(t.literal, t.literal_len);
+    }
+
     return a;
 }
 
@@ -47,21 +52,21 @@ ast *make_while_stmt(token t) {
 }
 
 
-ast *make_identifier(token t, char *name) {
+ast *make_identifier(token t) {
     ast *a = make_base_ast(t, ast_identifier);
 
     if (a != NULL) {
-        a->identifier.value = strdup(name);
+        a->identifier.value = strndup(t.literal, t.literal_len);
     }
 
     return a;
 }
 
-ast *make_string_literal(token t, char *name) {
+ast *make_string_literal(token t) {
     ast *a = make_base_ast(t, ast_string_literal);
 
     if (a != NULL) {
-        a->str_literal.value = strdup(name);
+        a->str_literal.value = strndup(t.literal, t.literal_len);
     }
     return a;
 }
@@ -91,21 +96,21 @@ ast *make_boolean_literal(token t, bool value) {
     return a;
 }
 
-ast *make_prefix_expression(token t, char *op) {
+ast *make_prefix_expression(token t) {
     ast *a = make_base_ast(t, ast_prefix_expression);
 
     if (a != NULL) {
-        a->prefix_expr.op = strdup(op);
+        a->prefix_expr.op = strndup(t.literal, t.literal_len);
     }
 
     return a;
 }
 
-ast *make_infix_expression(token t, char *op, ast *left) {
+ast *make_infix_expression(token t, ast *left) {
     ast *a = make_base_ast(t, ast_infix_expression);
 
     if(a != NULL) {
-        a->infix_expr.op = strdup(op);
+        a->infix_expr.op = strndup(t.literal, t.literal_len);
         a->infix_expr.left = left;
     }
     return a;
