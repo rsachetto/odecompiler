@@ -169,6 +169,7 @@ static bool should_complete_model(const char *c) {
     return     STR_EQUALS(c, "editmodel")
         || STR_EQUALS(c, "getglobalvalues")
         || STR_EQUALS(c, "getinitialvalues")
+        || STR_EQUALS(c, "getinitialvalue")
         || STR_EQUALS(c, "getodevalues")
         || STR_EQUALS(c, "getparamvalues")
         || STR_EQUALS(c, "getplotconfig")
@@ -1122,10 +1123,11 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
     if (i == n) {
         parent_model_config->version--;
         int command_len = strlen(command);
-        printf("Error parsing command %s. Invalid variable name: %s. You can list model variable name using g%*ss %s\n",
+        printf("Error parsing command %s. Invalid variable name: %s. You can list model variable using g%*ss %s\n",
                 command, var_name, command_len-1,  command + 1 ,parent_model_config->model_name);
-        free_model_config(model_config);
-        free(model_config);
+        if(action == CMD_SET) {
+            free_model_config(model_config);
+        }
     } else {
         if (action == CMD_SET) {
             printf("Reloading model %s as %s\n", parent_model_config->model_name, model_config->model_name);
@@ -1844,7 +1846,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(solve,            1, 2, "Solves the ODE(s) of a loaded model for x steps. "ONE_ARG" run sir 100");
     ADD_CMD(vars,             0, 1, "List all variables available for plotting in a loaded model. "NO_ARGS" vars sir");
     ADD_CMD(setinitialvalue,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. "TWO_ARGS"E.g setinitialvalue sir I 10");
-    ADD_CMD(getinitialvalue,  2, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG" getinitialvalue sir R");
+    ADD_CMD(getinitialvalue,  1, 2, "Prints the initial value of a model's ODE variable. "ONE_ARG" getinitialvalue sir R");
     ADD_CMD(getinitialvalues, 0, 1, "Prints the initial values of all model's ODE variables. "NO_ARGS" getinitialvalues sir");
     ADD_CMD(setparamvalue,    2, 3, "Changes the value of a model's parameter and reloads the model. "TWO_ARGS" setparamvalue sir gamma 10");
     ADD_CMD(getparamvalue,    1, 2, "Prints the value of a model's parameter. "ONE_ARG"E.g., getparamvalue sir gamma");
