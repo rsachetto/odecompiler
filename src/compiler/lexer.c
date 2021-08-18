@@ -19,9 +19,7 @@ lexer *new_lexer(const char *input, const char *file_name) {
     l->current_line = 1;
     l->file_name = NULL;
 
-    if(file_name) {
-        l->file_name = strdup(file_name);
-    }
+    l->file_name = file_name;
 
     read_char(l);
 
@@ -29,7 +27,6 @@ lexer *new_lexer(const char *input, const char *file_name) {
 }
 
 void free_lexer(lexer *l) {
-    free(l->file_name);
     free(l);
 }
 

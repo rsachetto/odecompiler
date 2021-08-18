@@ -1093,17 +1093,26 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
                     check_parser_errors(p, true);
 
-                    printf("Changing value of variable %s from %s to %s for model %s\n",
-                            var_name, ast_to_string(a->assignement_stmt.value),
-                            ast_to_string(program[0]), parent_model_config->model_name);
+                    sds tmp1 = ast_to_string(a->assignement_stmt.value);
+                    sds tmp2 = ast_to_string(program[0]);
 
-                    free(a->assignement_stmt.value);
-                    a->assignement_stmt.value = program[0];
+                    printf("Changing value of variable %s from %s to %s for model %s\n",
+                            var_name, tmp1, tmp2, parent_model_config->model_name);
+
+                    sdsfree(tmp1);
+                    sdsfree(tmp2);
+
+                    free_ast(a->assignement_stmt.value);
+                    a->assignement_stmt.value = copy_ast(program[0]);
 
                     free_parser(p);
+                    free_program(program);
+                    free_lexer(l);
 
                 } else {
-                    printf("%s = %s for model %s\n", var_name, ast_to_string(a->assignement_stmt.value), model_config->model_name);
+                    sds tmp = ast_to_string(a->assignement_stmt.value);
+                    printf("%s = %s for model %s\n", var_name, tmp, model_config->model_name);
+                    sdsfree(tmp);
                 }
                 break;
             }

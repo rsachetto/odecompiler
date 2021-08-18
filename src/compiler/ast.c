@@ -20,6 +20,10 @@ static ast *make_base_ast(token t, ast_tag tag) {
         a->token.literal = strndup(t.literal, t.literal_len);
     }
 
+    if(t.file_name) {
+        a->token.file_name = strdup(t.file_name);
+    }
+
     return a;
 }
 
@@ -162,11 +166,11 @@ static sds return_stmt_to_str(ast *a) {
 
     buf = sdscatfmt(buf, "%sreturn ", indent_spaces[indentation_level]);
 
-    sds tmp;
 
     if (a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
 
+        sds tmp;
         tmp = ast_to_string(a->return_stmt.return_values[0]);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
@@ -535,6 +539,7 @@ ast *copy_ast(ast *src) {
 
     a->token = src->token;
     a->token.literal = strdup(src->token.literal);
+    a->token.file_name = strdup(src->token.file_name);
 
     switch (src->tag) {
 
@@ -737,5 +742,6 @@ void free_ast(ast *src) {
     }
 
     free(src->token.literal);
+    free(src->token.file_name);
     free(src);
 }

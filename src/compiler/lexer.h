@@ -5,7 +5,7 @@
 
 typedef struct lexer_t {
 	const char *input;
-    char *file_name;
+    const char *file_name;
 	int position;
 	int read_position;
     int current_line;

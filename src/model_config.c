@@ -99,6 +99,8 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
         shput(model_config->var_indexes,parent_model_config->var_indexes[i].key, parent_model_config->var_indexes[i].value);
     }
 
+    sdsfree(new_model_name);
+
     return model_config;
 }
 
