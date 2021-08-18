@@ -19,7 +19,10 @@ void print_program(program p) {
 
     for(int i = 0; i < n; i++) {
         printf("%s\n", p_str[i]);
+        sdsfree(p_str[i]);
     }
+
+    arrfree(p_str);
 }
 
 bool check_parser_errors(parser *p, bool exit_on_error) {
