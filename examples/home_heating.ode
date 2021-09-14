@@ -1,0 +1,13 @@
+initial x = 45
+initial y = 35
+initial z = 35
+
+k0 = 1/2
+k1 = 1/2
+k2 = 1/4
+k3 = 1/4
+k4 = 1/2
+
+ode x' = k0*(45 - x) + k1*(y - x)
+ode y' = k1*(x - y)  + k2*(35 - y) + k3*(z - y) + 20
+ode z' = k3*(y - z)  + k4*(35 - z)

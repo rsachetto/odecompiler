@@ -1816,10 +1816,10 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(quit,             0, 0, "Quits the shell (CTRL+d also quits).");
     ADD_CMD(help,             0, 1, "Prints all available commands or the help for a specific command.\nE.g., help run");
     ADD_CMD(list,             0, 0, "Lists all loaded models");
-    ADD_CMD(loadcmds,         1, 1, "Loads a list of command from a file and execute them.\nE.g., loadcmds file.os");
+    ADD_CMD(loadcmds,         1, 1, "Loads a list of command from a file and execute them.\nE.g., loadcmds file");
     ADD_CMD(load,             1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
     ADD_CMD(listruns,         0, 1, "List all runs of a model."NO_ARGS" listruns sir");
-    ADD_CMD(unload,           1, 1, "Unloads previously loaded model.\nE.g, unload sir");
+    ADD_CMD(unload,           1, 1, "Unloads previously loaded model."NO_ARGS" unload sir");
     ADD_CMD(ls,               0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
@@ -1839,7 +1839,6 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
         ADD_CMD(getplotconfig, 0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
         ADD_CMD(plotvar,       1, 2, "Plot a variable along the y axis. "ONE_ARG" plotvar sir R or plotvar R");
         ADD_CMD(replotvar,     1, 2, "Adds a variable to the current plot, along the y axis. "ONE_ARG" replotvar sir R or replotvar R");
-
     }
 
     ADD_CMD(pwd,              0, 0, "Shows the current directory");
@@ -1865,7 +1864,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. "ONE_ARG" setshouldreload sir 1 or setshouldreload sir 0");
     ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models.\nE.g., setglobalreload 1 or setglobalreload 0");
     ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "PLOTFILE_ARGS" savemodeloutput sir output_sir.txt");
-    ADD_CMD(resetruns,        0, 1, "Solves the ODE(s) of a loaded model for x steps. "NO_ARGS" resetruns silr");
+    ADD_CMD(resetruns,        0, 1, "Resets the runs information of a model. "NO_ARGS" resetruns sir");
     ADD_CMD(getruninfo,       0, 2, "Prints the information about an specific run. "GETRUN_ARGS " getruninfo sir or getruninfo sir 1 or getruninfo 1");
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }
