@@ -337,7 +337,7 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
         *run_number = model_config->num_runs;
     }
     else if(num_args == min_args + 1) {
-        *run_number = string_to_long(tokens[1], &error);
+        *run_number = (uint)string_to_long(tokens[1], &error);
 
         if(!error) {
             //the first argument is run number, so the model is the default
@@ -973,17 +973,24 @@ COMMAND_FUNCTION(help) {
 
     CREATE_TABLE(table);
 
-    ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
 
     if (num_args == 0) {
 
+
         ft_printf_ln(table, "Available commands");
         int nc = arrlen(commands_sorted);
-        for (int i = 0; i < nc; i++) {
-            ft_printf_ln(table, "%s", commands_sorted[i]);
+        for (int i = 0; i < nc; i+=3) {
+            if(i + 2 < nc) {
+                ft_printf_ln(table, "%s|%s|%s", commands_sorted[i], commands_sorted[i + 1], commands_sorted[i + 2]);
+            }
+            else if(i + 1 < nc) {
+                ft_printf_ln(table, "%s|%s| ", commands_sorted[i], commands_sorted[i + 1]);
+            }
+            else {
+                ft_printf_ln(table, "%s| | ", commands_sorted[i]);
+            }
         }
-
-        printf("type 'help command' for more information about a specific command\n\n");
 
     } else {
         command command = {0};
@@ -1004,7 +1011,15 @@ COMMAND_FUNCTION(help) {
         }
     }
 
+    if(num_args == 0) {
+        ft_set_cell_span(table, 0, 0, 3);
+    }
+
     PRINT_AND_FREE_TABLE(table);
+
+    if(num_args == 0 ) {
+        printf("\ntype 'help command' for more information about a specific command\n\n");
+    }
 
     return true;
 }

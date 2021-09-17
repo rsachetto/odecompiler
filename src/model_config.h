@@ -22,7 +22,7 @@ struct run_info {
     double *vars_max_value;
     double *vars_min_value;
     bool saved;
-    float time;
+    double time;
 };
 
 struct model_config {
