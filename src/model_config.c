@@ -9,12 +9,12 @@
 
 sds get_model_output_file(struct model_config *model_config, uint run_number) {
 
-	sds modified_model_name = sdsnew(model_config->model_name);
+    sds modified_model_name = sdsnew(model_config->model_name);
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
     sds model_out_file = sdscatfmt(sdsempty(), MODEL_OUTPUT_TEMPLATE, modified_model_name, run_number);
     sdsfree(modified_model_name);
-	return model_out_file;
+    return model_out_file;
 }
 
 bool generate_model_program(struct model_config *model) {
@@ -29,7 +29,7 @@ bool generate_model_program(struct model_config *model) {
     size_t file_size;
     char *source = read_entire_file_with_mmap(file_name, &file_size);
 
-	model->hash = MeowHash(MeowDefaultSeed, file_size, source);
+    model->hash = MeowHash(MeowDefaultSeed, file_size, source);
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
@@ -59,7 +59,7 @@ bool generate_model_program(struct model_config *model) {
         model->program = program;
     }
 
-	munmap(source, file_size);
+    munmap(source, file_size);
 
     free_parser(p);
     free_lexer(l);
@@ -67,6 +67,7 @@ bool generate_model_program(struct model_config *model) {
     return error;
 
 }
+
 struct model_config *new_config_from_parent(struct model_config *parent_model_config) {
 
     parent_model_config->version++;

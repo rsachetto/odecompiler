@@ -955,14 +955,12 @@ COMMAND_FUNCTION(cd) {
 }
 
 COMMAND_FUNCTION(ls) {
-
     char *path_name;
 
     if (num_args == 0) {
         path_name = ".";
     } else {
         path_name = tokens[1];
-;
     }
 
     print_path_contents(path_name);
@@ -976,7 +974,6 @@ COMMAND_FUNCTION(help) {
     ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
 
     if (num_args == 0) {
-
 
         ft_printf_ln(table, "Available commands");
         int nc = arrlen(commands_sorted);

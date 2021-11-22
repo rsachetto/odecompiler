@@ -1,9 +1,10 @@
 //Shell
 TODO: add colors to some outputs
-TODO: fix memory leaks on exit
 
 //Code converter
-TODO make a string buffer to avoid mallocs and frees
+TODO: check if a variable name has the same name of a math function
+TODO: remove the global keyword and declare every variable global in the C code.
+TODO: make a string buffer to avoid mallocs and frees
 TODO: add a python src code generator and a monoalg3d generator (and more)
 TODO: check if a variable was already declared in the global scope.
 
