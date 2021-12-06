@@ -98,9 +98,8 @@ static bool can_be_in_init(parser *p, const ast *a) {
         case ast_call_expression:
         {
             int n = arrlen(a->call_expr.arguments);
-            bool can;
             for(int i = 0; i < n; i++) {
-                can = can_be_in_init(p, a->call_expr.arguments[i]);
+                bool can = can_be_in_init(p, a->call_expr.arguments[i]);
                 if(!can) return false;
             }
 
@@ -121,6 +120,11 @@ static void add_builtin_function(parser *p, char *name, int n_args) {
 parser * new_parser(lexer *l) {
 
     parser *p = (parser*)calloc(1, sizeof(parser));
+
+    if(p == NULL) {
+        fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
+        return NULL;
+    }
 
     sh_new_arena(p->declared_functions);
     shdefault(p->declared_functions, (declared_function_entry_value){0});
@@ -189,10 +193,6 @@ parser * new_parser(lexer *l) {
     //variable time is auto declared in the scope
     shput(p->declared_variables, "time", ((declared_variable_entry_value){0, true, ast_global_stmt}));
 
-    if(p == NULL) {
-        fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
-        return NULL;
-    }
 
     p->l = l;
 

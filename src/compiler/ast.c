@@ -61,9 +61,9 @@ ast *make_identifier(token t) {
 
     if (a != NULL) {
         a->identifier.value = strndup(t.literal, t.literal_len);
+        a->identifier.global = false;
     }
 
-    a->identifier.global = false;
 
     return a;
 }
