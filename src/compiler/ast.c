@@ -63,6 +63,8 @@ ast *make_identifier(token t) {
         a->identifier.value = strndup(t.literal, t.literal_len);
     }
 
+    a->identifier.global = false;
+
     return a;
 }
 
@@ -152,6 +154,20 @@ ast *make_call_expression(token t, ast *function) {
 
     return a;
 }
+
+ast *make_builtin_function_ast(char *name, int n_params) {
+
+    token t = new_token(FUNCTION, name, strlen(name), 0, NULL);
+    ast *a  = make_function_statement(t);
+
+    arrsetlen(a->function_stmt.parameters, n_params);
+
+    a->function_stmt.num_return_values = 1;
+
+    return a;
+
+}
+
 
 static sds expression_stmt_to_str(ast *a) {
     if (a->expr_stmt != NULL) {

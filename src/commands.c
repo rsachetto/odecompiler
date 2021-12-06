@@ -1102,7 +1102,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                 if (action == CMD_SET) {
                     lexer *l = new_lexer(new_value, model_config->model_name);
                     parser *p = new_parser(l);
-                    program program = parse_program(p);
+                    program program = parse_program(p, false);
 
                     check_parser_errors(p, true);
 

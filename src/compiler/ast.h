@@ -20,6 +20,7 @@ static char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPA
 typedef struct assignement_statement_t {
     struct ast_t *name;
     struct ast_t *value;
+    int declaration_position;
 } assignement_statement;
 
 typedef struct grouped_assignement_statement_t {
@@ -54,6 +55,7 @@ typedef struct boolean_literal_t {
 
 typedef struct identifier_t {
     char *value;
+    bool global;
 } identifier_node;
 
 typedef struct prefix_expression_t {
@@ -147,6 +149,7 @@ ast *make_prefix_expression(token t);
 ast *make_infix_expression(token t, ast *left);
 ast *make_if_expression(token t);
 ast *make_function_statement(token t);
+ast *make_builtin_function_ast(char *name, int n_params);
 ast *make_call_expression(token t, ast *function);
 ast *make_import_stmt(token t);
 ast *make_string_literal(token t);

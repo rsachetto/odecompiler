@@ -33,7 +33,7 @@ bool generate_model_program(struct model_config *model) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program(p);
+    program program = parse_program(p, true);
 
     bool error = check_parser_errors(p, false);
 
