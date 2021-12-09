@@ -116,13 +116,17 @@ static bool compile_model(struct model_config *model_config) {
     if(!error) {
 
         sds compiler_command = sdsnew("gcc");
-        compiler_command = sdscatfmt(compiler_command, " %s -o %s -lm", compiled_file, model_config->model_command);
-
+#ifdef DEBUG_INFO
+        compiler_command = sdscatfmt(compiler_command, " -g3 %s -o %s -lm", compiled_file, model_config->model_command);
+#else
+        compiler_command = sdscatfmt(compiler_command, " -O2 %s -o %s -lm", compiled_file, model_config->model_command);
+#endif
         FILE *fp = popen(compiler_command, "r");
         error = check_and_print_execution_errors(fp);
 
         pclose(fp);
-        unlink(compiled_file);
+        //TODO: remove
+        //unlink(compiled_file);
         sdsfree(compiler_command);
     }
 

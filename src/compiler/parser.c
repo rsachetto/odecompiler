@@ -24,6 +24,9 @@
     ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
     return NULL;
 
+static int global_count = 1;
+static int local_var_count = 1;
+static int ode_count = 1;
 
 ast ** parse_expression_list(parser *, bool);
 
@@ -193,7 +196,6 @@ parser * new_parser(lexer *l) {
     //variable time is auto declared in the scope
     shput(p->declared_variables, "time", ((declared_variable_entry_value){0, true, ast_global_stmt}));
 
-
     p->l = l;
 
     advance_token(p);
@@ -275,10 +277,6 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     if (!expect_peek(p, ASSIGN)) {
         RETURN_ERROR("= expected\n");
     }
-
-    static int global_count = 1;
-    static int local_var_count = 1;
-    static int ode_count = 1;
 
 
     if(tag == ast_assignment_stmt) {
@@ -1152,6 +1150,10 @@ static void process_imports(parser *p, program original_program) {
 
 
 program parse_program(parser *p, bool proc_imports) {
+
+    global_count = 1;
+    local_var_count = 1;
+    ode_count = 1;
 
     program  program = NULL;
 
