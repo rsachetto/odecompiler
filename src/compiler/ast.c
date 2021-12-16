@@ -560,7 +560,8 @@ ast *copy_ast(ast *src) {
     switch (src->tag) {
 
         case ast_identifier:
-            a->identifier.value = strdup(src->identifier.value);
+            a->identifier.value  = strdup(src->identifier.value);
+            a->identifier.global = src->identifier.global;
             break;
         case ast_number_literal:
             a->num_literal.value = src->num_literal.value;
@@ -577,6 +578,7 @@ ast *copy_ast(ast *src) {
         case ast_initial_stmt:
             a->assignement_stmt.name = copy_ast(src->assignement_stmt.name);
             a->assignement_stmt.value = copy_ast(src->assignement_stmt.value);
+            a->assignement_stmt.declaration_position = src->assignement_stmt.declaration_position;
             break;
         case ast_grouped_assignment_stmt: {
                                               a->grouped_assignement_stmt.names = NULL;

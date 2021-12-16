@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program(p, true);
+    program program = parse_program(p, true, true);
 
     check_parser_errors(p, true);
 

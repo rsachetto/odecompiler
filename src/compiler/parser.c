@@ -1102,9 +1102,7 @@ static void process_imports(parser *p, program original_program) {
 
         lexer *l = new_lexer(source, import_file_name);
         parser *parser_new = new_parser(l);
-        program program_new = parse_program(parser_new, false);
-
-        check_parser_errors(p, true);
+        program program_new = parse_program(parser_new, false, true);
 
         int n_stmt = arrlen(program_new);
         for(int s = 0; s < n_stmt; s++) {
@@ -1149,7 +1147,7 @@ static void process_imports(parser *p, program original_program) {
 }
 
 
-program parse_program(parser *p, bool proc_imports) {
+program parse_program(parser *p, bool proc_imports, bool check_erros) {
 
     global_count = 1;
     local_var_count = 1;
@@ -1165,7 +1163,6 @@ program parse_program(parser *p, bool proc_imports) {
         advance_token(p);
     }
 
-
     if(proc_imports) {
         process_imports(p, program);
     }
@@ -1173,11 +1170,13 @@ program parse_program(parser *p, bool proc_imports) {
     check_variable_declarations(p, program);
     check_ode_initializations(p, program);
 
-    if(!p->have_ode) {
-        ADD_ERROR("No ODE(s) defined\n");
-    }
+    if(check_erros) {
+        if(!p->have_ode) {
+            ADD_ERROR("No ODE(s) defined\n");
+        }
 
-    check_parser_errors(p, true);
+        check_parser_errors(p, true);
+    }
 
     return program;
 

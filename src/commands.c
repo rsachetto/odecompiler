@@ -464,7 +464,6 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
     model_config->is_derived = !new_model;
 
-    //TODO: handle errors
     error = compile_model(model_config);
 
     if(!error) {
@@ -1106,9 +1105,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                 if (action == CMD_SET) {
                     lexer *l = new_lexer(new_value, model_config->model_name);
                     parser *p = new_parser(l);
-                    program program = parse_program(p, false);
-
-                    check_parser_errors(p, true);
+                    program program = parse_program(p, false, false);
 
                     sds tmp1 = ast_to_string(a->assignement_stmt.value);
                     sds tmp2 = ast_to_string(program[0]);
@@ -1119,8 +1116,10 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                     sdsfree(tmp1);
                     sdsfree(tmp2);
 
+                    int old_decl_pos = a->assignement_stmt.declaration_position;
                     free_ast(a->assignement_stmt.value);
                     a->assignement_stmt.value = copy_ast(program[0]);
+                    a->assignement_stmt.declaration_position = old_decl_pos;
 
                     free_parser(p);
                     free_program(program);

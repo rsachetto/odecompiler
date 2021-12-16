@@ -33,10 +33,12 @@ bool generate_model_program(struct model_config *model) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program(p, true);
+    program program = parse_program(p, true, true);
 
-    bool error = check_parser_errors(p, false);
+    //bool error = check_parser_errors(p, false);
 
+        //TODO: check
+    bool error = false;
     if(!error) {
         sh_new_arena(model->var_indexes);
         shdefault(model->var_indexes, -1);
