@@ -207,6 +207,7 @@ parser * new_parser(lexer *l) {
 void free_parser(parser *p) {
     shfree(p->declared_variables);
     shfree(p->declared_functions);
+    shfree(p->global_scope);
     free(p);
 }
 

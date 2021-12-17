@@ -125,8 +125,7 @@ static bool compile_model(struct model_config *model_config) {
         error = check_and_print_execution_errors(fp);
 
         pclose(fp);
-        //TODO: remove
-        //unlink(compiled_file);
+        unlink(compiled_file);
         sdsfree(compiler_command);
     }
 

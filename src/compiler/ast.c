@@ -591,7 +591,7 @@ ast *copy_ast(ast *src) {
                                               a->grouped_assignement_stmt.call_expr = src->grouped_assignement_stmt.call_expr;
                                           } break;
         case ast_function_statement: {
-                                         a->function_stmt.name = src->function_stmt.name;
+                                         a->function_stmt.name = copy_ast(src->assignement_stmt.name);
 
                                          int n = arrlen(src->function_stmt.parameters);
                                          a->function_stmt.parameters = NULL;
