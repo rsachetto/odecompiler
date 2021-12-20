@@ -35,38 +35,32 @@ bool generate_model_program(struct model_config *model) {
     parser *p = new_parser(l);
     program program = parse_program(p, true, true);
 
-    //bool error = check_parser_errors(p, false);
+    sh_new_arena(model->var_indexes);
+    shdefault(model->var_indexes, -1);
 
-        //TODO: check
-    bool error = false;
-    if(!error) {
-        sh_new_arena(model->var_indexes);
-        shdefault(model->var_indexes, -1);
+    int n_stmt = arrlen(program);
 
-        int n_stmt = arrlen(program);
+    shput(model->var_indexes, "t", 1);
 
-        shput(model->var_indexes, "t", 1);
+    int ode_count = 2;
+    for(int i = 0; i < n_stmt; i++) {
+        ast *a = program[i];
+        if(a->tag == ast_ode_stmt) {
+            sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+            shput(model->var_indexes, var_name, ode_count);
+            sdsfree(var_name);
+            ode_count++;
 
-        int ode_count = 2;
-        for(int i = 0; i < n_stmt; i++) {
-            ast *a = program[i];
-            if(a->tag == ast_ode_stmt) {
-                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
-                shput(model->var_indexes, var_name, ode_count);
-                sdsfree(var_name);
-                ode_count++;
-
-            }
         }
-        model->program = program;
     }
+    model->program = program;
 
     munmap(source, file_size);
 
     free_parser(p);
     free_lexer(l);
 
-    return error;
+    return false;
 
 }
 

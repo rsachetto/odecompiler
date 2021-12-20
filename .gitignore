@@ -22,3 +22,4 @@ PVS-Studio.log
 project.error
 project.tasks
 strace_out
+.vscode/

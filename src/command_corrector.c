@@ -14,19 +14,16 @@
 
 static bool first_call = true;
 
-static char *strtolower(char *word)
-{
+static char *strtolower(char *word) {
     for (char *s = word; *s; ++s) *s = tolower(*s);
     return word;
 }
 
-static ENTRY *find(char *word)
-{
+static ENTRY *find(char *word) {
     return hsearch((ENTRY){.key = word}, FIND);
 }
 
-static int update(char *word)
-{
+static int update(char *word) {
     ENTRY *e = find(word);
 
     if (!e) return 0;
@@ -80,16 +77,14 @@ static void append(char *dst, int *dstLen, const char *src, int srcBegin, int le
     dst[*dstLen] = 0;
 }
 
-static void array_cleanup(char **array, int rows)
-{
+static void array_cleanup(char **array, int rows) {
     for (int i = 0; i < rows; i++)
     {
         free(array[i]);
     }
 }
 
-static int deletion(char *word, char **array, int start_idx)
-{
+static int deletion(char *word, char **array, int start_idx) {
     int i = 0;
     size_t word_len = strlen(word);
 
@@ -103,8 +98,7 @@ static int deletion(char *word, char **array, int start_idx)
     return i;
 }
 
-static int transposition(char *word, char **array, int start_idx)
-{
+static int transposition(char *word, char **array, int start_idx) {
     int i = 0;
     size_t word_len = strlen(word);
 
@@ -120,8 +114,7 @@ static int transposition(char *word, char **array, int start_idx)
     return i;
 }
 
-static int alteration(char *word, char **array, int start_idx)
-{
+static int alteration(char *word, char **array, int start_idx) {
     int k = 0;
     size_t word_len = strlen(word);
     char c[2] = {};
@@ -141,8 +134,7 @@ static int alteration(char *word, char **array, int start_idx)
     return k;
 }
 
-static int insertion(char *word, char **array, int start_idx)
-{
+static int insertion(char *word, char **array, int start_idx) {
     int k = 0;
     size_t word_len = strlen(word);
     char c[2] = {};
@@ -162,8 +154,7 @@ static int insertion(char *word, char **array, int start_idx)
     return k;
 }
 
-static size_t edits1_rows(char *word)
-{
+static size_t edits1_rows(char *word) {
     size_t size = strlen(word);
 
     return (size)                + // deletion
@@ -172,8 +163,7 @@ static size_t edits1_rows(char *word)
         (size + 1) * ALPHABET_SIZE;    // insertion
 }
 
-static char **edits1(char *word)
-{
+static char **edits1(char *word) {
     int next_idx;
     char **array = malloc(edits1_rows(word) * sizeof(char *));
 
@@ -187,8 +177,7 @@ static char **edits1(char *word)
     return array;
 }
 
-static int array_exist(char **array, int rows, char *word)
-{
+static int array_exist(char **array, int rows, char *word) {
     for (int i = 0; i < rows; ++i)
     {
         if (!strcmp(array[i], word)) return 1;
@@ -196,8 +185,7 @@ static int array_exist(char **array, int rows, char *word)
     return 0;
 }
 
-static char **known_edits2(char **array, int rows, int *e2_rows)
-{
+static char **known_edits2(char **array, int rows, int *e2_rows) {
     size_t e1_rows = 0;
     int res_size = 0;
     int res_max  = 0;
@@ -236,8 +224,7 @@ static char **known_edits2(char **array, int rows, int *e2_rows)
     return res;
 }
 
-static char *max(char **array, int rows)
-{
+static char *max(char **array, int rows) {
     char *max_word = NULL;
     size_t max_size = 0;
     ENTRY *e;
