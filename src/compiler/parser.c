@@ -889,6 +889,7 @@ static void check_declaration(parser *p, ast *src) {
 
     switch (src->tag) {
 
+        case ast_string_literal:
         case ast_number_literal:
         case ast_boolean_literal:
             break;
