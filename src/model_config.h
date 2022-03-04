@@ -39,7 +39,6 @@ struct model_config {
     bool should_reload;
     bool auto_reload;
 	meow_u128 hash;
-
 };
 
 

@@ -102,6 +102,8 @@ static bool compile_model(struct model_config *model_config) {
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
     sds compiled_model_name = sdscatfmt(sdsempty(), "/tmp/%s_auto_compiled_model_tmp_file", modified_model_name);
+
+    free(model_config->model_command);
     model_config->model_command = strdup(compiled_model_name);
 
     sds compiled_file;
@@ -1330,10 +1332,12 @@ COMMAND_FUNCTION(editmodel) {
         return false;
     }
 
-    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode 2> /dev/null", model_config->model_name);
+    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode & 2> /dev/null", model_config->model_name);
 
     FILE *f = popen(cmd, "r");
     pclose(f);
+
+    sdsfree(cmd);
 
     return true;
 }

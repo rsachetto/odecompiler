@@ -35,6 +35,8 @@ bool generate_model_program(struct model_config *model) {
     parser *p = new_parser(l);
     program program = parse_program(p, true, true);
 
+    shfree(model->var_indexes);
+    model->var_indexes = NULL;
     sh_new_arena(model->var_indexes);
     shdefault(model->var_indexes, -1);
 
@@ -131,6 +133,7 @@ void free_model_config(struct model_config *model_config) {
     arrfree(model_config->runs);
 
     shfree(model_config->var_indexes);
+
     free(model_config);
 }
 
