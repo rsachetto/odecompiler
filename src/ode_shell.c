@@ -117,7 +117,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         //I think this will never happen
         shell_state->default_gnuplot_term = strdup("dummy");
     }
-    fclose(f);
+    pclose(f);
 
     return true;
 }

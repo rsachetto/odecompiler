@@ -1148,7 +1148,7 @@ static void process_imports(parser *p, program original_program) {
 }
 
 
-program parse_program(parser *p, bool proc_imports, bool check_erros) {
+program parse_program(parser *p, bool proc_imports, bool check_errors) {
 
     global_count = 1;
     local_var_count = 1;
@@ -1171,8 +1171,10 @@ program parse_program(parser *p, bool proc_imports, bool check_erros) {
     check_variable_declarations(p, program);
     check_ode_initializations(p, program);
 
-    if(check_erros) {
-        if(!p->have_ode) {
+    if(check_errors) {
+
+        //if process_imports==false we are comming from a imported file
+        if(proc_imports && !p->have_ode) {
             ADD_ERROR("No ODE(s) defined\n");
         }
 
