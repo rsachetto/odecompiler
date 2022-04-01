@@ -750,7 +750,12 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
         CREATE_TABLE(table);
         if (c_type == CMD_SET_PLOT_X) {
             model_config->plot_config.xindex = index;
-            ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
+            if (index_as_str) {
+                ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", cmd_param);
+            }
+            else {
+                ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
+            }
         } else {
 
             model_config->plot_config.yindex = index;
