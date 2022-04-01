@@ -370,10 +370,7 @@ ast *parse_while_statement(parser *p) {
     ast *exp = make_while_stmt(p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "( expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("( expected\n");
     }
 
     advance_token(p);
@@ -381,17 +378,11 @@ ast *parse_while_statement(parser *p) {
     exp->while_stmt.condition = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, ") expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR(") expected\n");
     }
 
     if(!expect_peek(p, LBRACE)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "{ expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("{ expected\n");
     }
 
     exp->while_stmt.body = parse_block_statement(p);
@@ -445,10 +436,7 @@ ast *parse_grouped_expression(parser *p) {
     ast *exp = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, ") expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR(") expected\n");
     }
 
     return exp;
@@ -490,17 +478,11 @@ ast *parse_grouped_assignment(parser *p) {
     stmt->grouped_assignement_stmt.names = parse_grouped_assignment_names(p);
 
     if (!expect_peek(p, RBRACKET)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "] expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("] expected\n");
     }
 
     if (!expect_peek(p, ASSIGN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "= expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("= expected\n");
     }
 
     advance_token(p);
@@ -534,17 +516,11 @@ ast *parse_if_expression(parser *p) {
     exp->if_expr.condition = parse_expression(p, LOWEST);
 
     if(!expect_peek(p, RPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, ") expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR(") expected\n");
     }
 
     if(!expect_peek(p, LBRACE)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "{ expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("{ expected\n");
     }
 
     exp->if_expr.consequence = parse_block_statement(p);
@@ -552,10 +528,7 @@ ast *parse_if_expression(parser *p) {
     if (peek_token_is(p, ELSE)) {
         advance_token(p);
         if (!expect_peek(p, LBRACE)) {
-            //sds msg = NEW_ERROR_PREFIX;
-            //msg = sdscatprintf(msg, "} expected\n");
-            //arrput(p->errors, msg);
-            return NULL;
+            RETURN_ERROR("} expected\n");
         }
         exp->if_expr.alternative = parse_block_statement(p);
     }
@@ -590,10 +563,7 @@ ast ** parse_function_parameters(parser *p) {
     }
 
     if (!expect_peek(p, RPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, ") expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR(") expected\n");
     }
 
     return identifiers;
@@ -662,29 +632,20 @@ ast *parse_function_statement(parser *p) {
     ast * stmt = make_function_statement(p->cur_token);
 
     if(!expect_peek(p, IDENT)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "expected identifier after fn statement\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("expected identifier after fn statement\n");
     }
 
     stmt->function_stmt.name = parse_identifier(p);
     //TODO: create a declared function hash map
 
     if(!expect_peek(p, LPAREN)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "( expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("( expected\n");
     }
 
     stmt->function_stmt.parameters = parse_function_parameters(p);
 
     if(!expect_peek(p, LBRACE)) {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "{ expected\n");
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("{ expected\n");
     }
 
     stmt->function_stmt.body = parse_block_statement(p);
@@ -750,10 +711,7 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
 
     if(with_paren) {
         if (!expect_peek(p, RPAREN)) {
-            //sds msg = NEW_ERROR_PREFIX;
-            //msg = sdscatprintf(msg, ") expected\n");
-            //arrput(p->errors, msg);
-            return NULL;
+            RETURN_ERROR(") expected\n");
         }
     }
 
@@ -787,10 +745,7 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, IF)) {
         left_expr = parse_if_expression(p);
     } else {
-        //sds msg = NEW_ERROR_PREFIX;
-        //msg = sdscatprintf(msg, "no prefix parse function for the token \"%.*s\"\n", p->cur_token.literal_len, p->cur_token.literal);
-        //arrput(p->errors, msg);
-        return NULL;
+        RETURN_ERROR("error parsing expression\n");
     }
 
     //infix expression
