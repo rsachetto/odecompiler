@@ -7,7 +7,7 @@
 
 void add_file_watch(struct shell_variables *shell_state, char *path) {
     //TODO: skip paths that have a watch already
-    int wd = inotify_add_watch(shell_state->fd_notify, path, IN_MODIFY);
+    int wd = inotify_add_watch(shell_state->fd_notify, path, IN_MODIFY|IN_MOVED_TO);
 
 	struct model_config **entries = hmget(shell_state->notify_entries, wd);
 	arrput(entries, shell_state->current_model);
@@ -33,7 +33,7 @@ _Noreturn void *check_for_model_file_changes(void *args) {
             struct inotify_event *event = (struct inotify_event *) &buffer[i];
 
             if (event->len) {
-                if (event->mask & IN_MODIFY) {
+                if ((event->mask & IN_MODIFY) || (event->mask & IN_MOVED_TO)) {
 
                     if (event->mask & IN_ISDIR) {
                     } else {

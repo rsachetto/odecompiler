@@ -1,3 +1,6 @@
+//Shell
+TODO: we do not have to exit the shell on a failed model reload
+
 //Code converter
 TODO: remove the global keyword and declare every variable global in the C code.
 TODO: make a string buffer to avoid mallocs and frees
