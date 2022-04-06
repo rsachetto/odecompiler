@@ -17,6 +17,7 @@ sds get_model_output_file(struct model_config *model_config, uint run_number) {
     return model_out_file;
 }
 
+//TODO: do not substitute model program if we fail to compile
 bool generate_model_program(struct model_config *model) {
 
     char *file_name = model->model_file;
@@ -33,36 +34,43 @@ bool generate_model_program(struct model_config *model) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program(p, true, true);
+    program program = parse_program_without_exiting_on_error(p, true, true);
 
-    shfree(model->var_indexes);
-    model->var_indexes = NULL;
-    sh_new_arena(model->var_indexes);
-    shdefault(model->var_indexes, -1);
+    if(program) {
+        shfree(model->var_indexes);
+        model->var_indexes = NULL;
+        sh_new_arena(model->var_indexes);
+        shdefault(model->var_indexes, -1);
 
-    int n_stmt = arrlen(program);
+        int n_stmt = arrlen(program);
 
-    shput(model->var_indexes, "t", 1);
+        shput(model->var_indexes, "t", 1);
 
-    int ode_count = 2;
-    for(int i = 0; i < n_stmt; i++) {
-        ast *a = program[i];
-        if(a->tag == ast_ode_stmt) {
-            sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
-            shput(model->var_indexes, var_name, ode_count);
-            sdsfree(var_name);
-            ode_count++;
+        int ode_count = 2;
+        for(int i = 0; i < n_stmt; i++) {
+            ast *a = program[i];
+            if(a->tag == ast_ode_stmt) {
+                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+                shput(model->var_indexes, var_name, ode_count);
+                sdsfree(var_name);
+                ode_count++;
 
+            }
         }
+        model->program = program;
     }
-    model->program = program;
 
     munmap(source, file_size);
 
     free_parser(p);
     free_lexer(l);
 
-    return false;
+    if(program) {
+        return false;
+    }
+    else {
+        return true;
+    }
 
 }
 

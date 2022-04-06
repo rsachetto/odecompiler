@@ -1103,8 +1103,7 @@ static void process_imports(parser *p, program original_program) {
     }
 }
 
-
-program parse_program(parser *p, bool proc_imports, bool check_errors) {
+program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bool exit_on_error) {
 
     global_count = 1;
     local_var_count = 1;
@@ -1134,12 +1133,25 @@ program parse_program(parser *p, bool proc_imports, bool check_errors) {
             ADD_ERROR("No ODE(s) defined\n");
         }
 
-        check_parser_errors(p, true);
+        if(check_parser_errors(p, exit_on_error)) {
+            free_program(program);
+            return NULL;
+        }
     }
 
     return program;
 
 }
+
+program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors) {
+    return parse_program_helper(p, proc_imports, check_errors, false);
+}
+
+program parse_program(parser *p, bool proc_imports, bool check_errors) {
+    return parse_program_helper(p, proc_imports, check_errors, true);
+}
+
+
 
 void peek_error(parser *p, token_type t) {
     ADD_ERROR_WITH_LINE( p->cur_token.line_number, p->l->file_name, "expected next token to be %s, got %s instead\n",

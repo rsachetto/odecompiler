@@ -62,6 +62,7 @@ parser * new_parser(lexer *l);
 void free_parser(parser *p);
 void advance_token(parser *p);
 program parse_program(parser *p, bool process_imports, bool check_errors);
+program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors);
 void peek_error(parser *p, token_type t);
 ast *parse_prefix_expression(parser *p);
 ast *parse_infix_expression(parser *p, ast *left);

@@ -687,6 +687,10 @@ program copy_program(program src_program) {
 
 void free_program(program src_program) {
 
+    if(src_program == NULL) {
+        return;
+    }
+
     int p_len = arrlen(src_program);
 
     for (int i = 0; i < p_len; i++) {

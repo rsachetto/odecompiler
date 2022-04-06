@@ -1774,11 +1774,12 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
         if (model_config->auto_reload || answer == 'Y' || answer == 'y' || answer == '\r') {
             printf("\nReloading model %s", model_config->model_name);
             fflush(stdout);
-            free_program(model_config->program);
+            program tmp = model_config->program;
             bool error = generate_model_program(model_config);
 
             if (!error) {
                 error = compile_model(model_config);
+                free_program(tmp);
             } else {
                 printf("Error compiling model %s", model_config->model_name);
             }
