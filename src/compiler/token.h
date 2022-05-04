@@ -19,8 +19,9 @@ typedef struct token_t {
 } token;
 
 token new_token(token_type type, char *ch, uint32_t len, int line, const char *file_name);
-token_type lookup_ident(token t);
-void print_token(token t);
+token_type lookup_ident(const token *t);
+void copy_token(token *dest, const token *src);
+void print_token(const token *t);
 
 
 #endif /* __TOKEN_H */

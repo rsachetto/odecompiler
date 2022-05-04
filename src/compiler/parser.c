@@ -236,16 +236,16 @@ bool expect_peek(parser *p, token_type t) {
 }
 
 ast *parse_identifier(parser *p) {
-    return make_identifier(p->cur_token);
+    return make_identifier(&p->cur_token);
 }
 
 ast *parse_boolean_literal(parser *p) {
-    return make_boolean_literal(p->cur_token, cur_token_is(p, TRUE));
+    return make_boolean_literal(&p->cur_token, cur_token_is(p, TRUE));
 }
 
 ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
-    ast *stmt = make_assignement_stmt(p->cur_token, tag);
+    ast *stmt = make_assignement_stmt(&p->cur_token, tag);
 
     if(!skip_ident) {
         if (!expect_peek(p, IDENT)) {
@@ -316,7 +316,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
 ast *parse_return_statement(parser *p) {
 
-    ast *stmt = make_return_stmt(p->cur_token);
+    ast *stmt = make_return_stmt(&p->cur_token);
 
     advance_token(p);
 
@@ -331,13 +331,13 @@ ast *parse_return_statement(parser *p) {
 
 ast *parse_import_statement(parser *p) {
 
-    ast *stmt = make_import_stmt(p->cur_token);
+    ast *stmt = make_import_stmt(&p->cur_token);
 
     if(!expect_peek(p, STRING)) {
         RETURN_ERROR("missing file name after import directive\n");
     }
 
-    stmt->import_stmt.filename = make_string_literal(p->cur_token);
+    stmt->import_stmt.filename = make_string_literal(&p->cur_token);
 
     if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
@@ -367,7 +367,7 @@ ast ** parse_block_statement(parser *p) {
 
 ast *parse_while_statement(parser *p) {
 
-    ast *exp = make_while_stmt(p->cur_token);
+    ast *exp = make_while_stmt(&p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
         RETURN_ERROR("( expected\n");
@@ -391,7 +391,7 @@ ast *parse_while_statement(parser *p) {
 }
 
 ast *parse_number_literal(parser *p) {
-    ast *lit = make_number_literal(p->cur_token);
+    ast *lit = make_number_literal(&p->cur_token);
     char *end;
     double value = strtod(p->cur_token.literal, &end);
     if(p->cur_token.literal == end) {
@@ -403,12 +403,12 @@ ast *parse_number_literal(parser *p) {
 }
 
 ast *parse_string_literal(parser *p) {
-    return make_string_literal(p->cur_token);
+    return make_string_literal(&p->cur_token);
 }
 
 ast *parse_prefix_expression(parser *p) {
 
-    ast *expression = make_prefix_expression(p->cur_token);
+    ast *expression = make_prefix_expression(&p->cur_token);
     advance_token(p);
     expression->prefix_expr.right = parse_expression(p, PREFIX);
 
@@ -418,7 +418,7 @@ ast *parse_prefix_expression(parser *p) {
 
 ast *parse_infix_expression(parser *p, ast *left) {
 
-    ast *expression = make_infix_expression(p->cur_token, left);
+    ast *expression = make_infix_expression(&p->cur_token, left);
 
     enum operator_precedence precedence = cur_precedence(p);
 
@@ -469,7 +469,7 @@ ast **parse_grouped_assignment_names(parser *p) {
 
 ast *parse_grouped_assignment(parser *p) {
 
-    ast *stmt = make_grouped_assignement_stmt(p->cur_token);
+    ast *stmt = make_grouped_assignement_stmt(&p->cur_token);
 
     if (peek_token_is(p, RBRACKET)) {
         RETURN_ERROR("expected at least one identifier\n");
@@ -503,7 +503,7 @@ ast *parse_grouped_assignment(parser *p) {
 
 ast *parse_if_expression(parser *p) {
 
-    ast *exp = make_if_expression(p->cur_token);
+    ast *exp = make_if_expression(&p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
         sds msg = sdscatprintf(sdsempty(), "Parse error on line %d: ( expected\n", p->cur_token.line_number);
@@ -629,7 +629,7 @@ void count_return(ast *a, program *stmts) {
 
 ast *parse_function_statement(parser *p) {
 
-    ast * stmt = make_function_statement(p->cur_token);
+    ast * stmt = make_function_statement(&p->cur_token);
 
     if(!expect_peek(p, IDENT)) {
         RETURN_ERROR("expected identifier after fn statement\n");
@@ -720,7 +720,7 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
 
 ast *parse_call_expression(parser *p, ast *function) {
 
-    ast *exp = make_call_expression(p->cur_token, function);
+    ast *exp = make_call_expression(&p->cur_token, function);
     exp->call_expr.arguments = parse_expression_list(p, true);
     return exp;
 }
@@ -786,7 +786,7 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
 
 ast * parse_expression_statement(parser *p) {
 
-    ast *stmt = make_expression_stmt(p->cur_token);
+    ast *stmt = make_expression_stmt(&p->cur_token);
     stmt->expr_stmt = parse_expression(p, LOWEST);
     if (peek_token_is(p, SEMICOLON)) {
         advance_token(p);

@@ -7,35 +7,28 @@
 
 static int indentation_level = 0;
 
-static ast *make_base_ast(token t, ast_tag tag) {
+static ast *make_base_ast(const token *t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
     if (a == NULL) {
         fprintf(stderr, "%s - Error alocatting memory for the new ast node\n,", __FUNCTION__);
         return NULL;
     }
     a->tag = tag;
-    a->token = t;
 
-    if(t.literal) {
-        a->token.literal = strndup(t.literal, t.literal_len);
-    }
-
-    if(t.file_name) {
-        a->token.file_name = strdup(t.file_name);
-    }
+    copy_token(&a->token, t);
 
     return a;
 }
 
-ast *make_import_stmt(struct token_t t) {
+ast *make_import_stmt(const token *t) {
     return make_base_ast(t, ast_import_stmt);
 }
 
-ast *make_assignement_stmt(token t, ast_tag tag) {
+ast *make_assignement_stmt(const token *t, ast_tag tag) {
     return make_base_ast(t, tag);
 }
 
-ast *make_grouped_assignement_stmt(token t) {
+ast *make_grouped_assignement_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_grouped_assignment_stmt);
 
     if (a != NULL) {
@@ -45,7 +38,7 @@ ast *make_grouped_assignement_stmt(token t) {
     return a;
 }
 
-ast *make_while_stmt(token t) {
+ast *make_while_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_while_stmt);
 
     if (a != NULL) {
@@ -56,11 +49,11 @@ ast *make_while_stmt(token t) {
 }
 
 
-ast *make_identifier(token t) {
+ast *make_identifier(const token *t) {
     ast *a = make_base_ast(t, ast_identifier);
 
     if (a != NULL) {
-        a->identifier.value = strndup(t.literal, t.literal_len);
+        a->identifier.value = strndup(t->literal, t->literal_len);
         a->identifier.global = false;
     }
 
@@ -68,31 +61,31 @@ ast *make_identifier(token t) {
     return a;
 }
 
-ast *make_string_literal(token t) {
+ast *make_string_literal(const token *t) {
     ast *a = make_base_ast(t, ast_string_literal);
 
     if (a != NULL) {
-        a->str_literal.value = strndup(t.literal, t.literal_len);
+        a->str_literal.value = strndup(t->literal, t->literal_len);
     }
     return a;
 }
 
-ast *make_return_stmt(token t) {
+ast *make_return_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_return_stmt);
     return a;
 }
 
-ast *make_expression_stmt(token t) {
+ast *make_expression_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_expression_stmt);
     return a;
 }
 
-ast *make_number_literal(token t) {
+ast *make_number_literal(const token *t) {
     ast *a = make_base_ast(t, ast_number_literal);
     return a;
 }
 
-ast *make_boolean_literal(token t, bool value) {
+ast *make_boolean_literal(const token *t, bool value) {
     ast *a = make_base_ast(t, ast_boolean_literal);
 
     if (a != NULL) {
@@ -102,27 +95,27 @@ ast *make_boolean_literal(token t, bool value) {
     return a;
 }
 
-ast *make_prefix_expression(token t) {
+ast *make_prefix_expression(const token *t) {
     ast *a = make_base_ast(t, ast_prefix_expression);
 
     if (a != NULL) {
-        a->prefix_expr.op = strndup(t.literal, t.literal_len);
+        a->prefix_expr.op = strndup(t->literal, t->literal_len);
     }
 
     return a;
 }
 
-ast *make_infix_expression(token t, ast *left) {
+ast *make_infix_expression(const token *t, ast *left) {
     ast *a = make_base_ast(t, ast_infix_expression);
 
     if(a != NULL) {
-        a->infix_expr.op = strndup(t.literal, t.literal_len);
+        a->infix_expr.op = strndup(t->literal, t->literal_len);
         a->infix_expr.left = left;
     }
     return a;
 }
 
-ast *make_if_expression(token t) {
+ast *make_if_expression(const token *t) {
     ast *a = make_base_ast(t, ast_if_expr);
 
     if(a != NULL) {
@@ -134,7 +127,7 @@ ast *make_if_expression(token t) {
     return a;
 }
 
-ast *make_function_statement(token t) {
+ast *make_function_statement(const token *t) {
     ast *a = make_base_ast(t, ast_function_statement);
 
     if(a != NULL) {
@@ -144,7 +137,7 @@ ast *make_function_statement(token t) {
     return a;
 }
 
-ast *make_call_expression(token t, ast *function) {
+ast *make_call_expression(const token *t, ast *function) {
     ast *a = make_base_ast(t, ast_call_expression);
 
     if(a != NULL) {
@@ -158,7 +151,7 @@ ast *make_call_expression(token t, ast *function) {
 ast *make_builtin_function_ast(char *name, int n_params) {
 
     token t = new_token(FUNCTION, name, strlen(name), 0, NULL);
-    ast *a  = make_function_statement(t);
+    ast *a  = make_function_statement(&t);
 
     arrsetlen(a->function_stmt.parameters, n_params);
 

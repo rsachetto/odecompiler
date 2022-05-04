@@ -2,6 +2,21 @@
 #include <stdio.h>
 #include <string.h>
 
+void copy_token(token *dest, const token *src) {
+
+	dest->type        = src->type;
+  	dest->line_number = src->line_number;
+
+	if(src->literal) {
+        dest->literal = strndup(src->literal, src->literal_len);
+    	dest->literal_len = src->literal_len;
+    }
+
+    if(src->file_name) {
+        dest->file_name = strdup(src->file_name);
+    }
+}
+
 token new_token(token_type type, char *ch, uint32_t len, int line, const char *file_name) {
     token t;
     t.type = type;
@@ -13,13 +28,13 @@ token new_token(token_type type, char *ch, uint32_t len, int line, const char *f
     return t;
 }
 
-void print_token(token t) {
-    printf("Type: %d - Literal: %s\n", t.type, t.literal);
+void print_token(const token *t) {
+    printf("Type: %d - Literal: %s\n", t->type, t->literal);
 }
 
-token_type lookup_ident(token t) {
+token_type lookup_ident(const token *t) {
 
-    char *ident = t.literal;
+    char *ident = t->literal;
 
 	if(STRING_EQUALS_N(ident, "fn", 2)) {
 	   return FUNCTION;

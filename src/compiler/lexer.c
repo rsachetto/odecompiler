@@ -228,7 +228,7 @@ token next_token(lexer *l) {
 		default:
 			if(isalpha(l->ch) || l->ch == '_') {
 				tok.literal = read_identifier(l, &tok.literal_len);
-				tok.type = lookup_ident(tok);
+				tok.type = lookup_ident(&tok);
                 tok.line_number = l->current_line;
 				tok.file_name   = (char*) l->file_name;
 				return tok;

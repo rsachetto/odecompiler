@@ -137,22 +137,22 @@ typedef struct ast_t {
 
 typedef ast **program;
 
-ast *make_assignement_stmt(token t, ast_tag tag);
-ast *make_grouped_assignement_stmt(token t);
-ast *make_identifier(token t);
-ast *make_return_stmt(token t);
-ast *make_while_stmt(token t);
-ast *make_expression_stmt(token t);
-ast *make_number_literal(token t);
-ast *make_boolean_literal(token t, bool value);
-ast *make_prefix_expression(token t);
-ast *make_infix_expression(token t, ast *left);
-ast *make_if_expression(token t);
-ast *make_function_statement(token t);
+ast *make_assignement_stmt(const token *t, ast_tag tag);
+ast *make_grouped_assignement_stmt(const token *t);
+ast *make_identifier(const token *t);
+ast *make_return_stmt(const token *t);
+ast *make_while_stmt(const token *t);
+ast *make_expression_stmt(const token *t);
+ast *make_number_literal(const token *t);
+ast *make_boolean_literal(const token *t, bool value);
+ast *make_prefix_expression(const token *t);
+ast *make_infix_expression(const token *t, ast *left);
+ast *make_if_expression(const token *t);
+ast *make_function_statement(const token *t);
 ast *make_builtin_function_ast(char *name, int n_params);
-ast *make_call_expression(token t, ast *function);
-ast *make_import_stmt(token t);
-ast *make_string_literal(token t);
+ast *make_call_expression(const token *t, ast *function);
+ast *make_import_stmt(const token *t);
+ast *make_string_literal(const token *t);
 
 sds *program_to_string(program p);
 sds ast_to_string(ast *a);

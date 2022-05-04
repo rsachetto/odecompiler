@@ -13,6 +13,8 @@ int string_cmp(const void *a, const void *b) {
 
 double string_to_double(char *string) {
 
+    if(string == NULL) return NAN;
+
     char *endptr = NULL;
     double result;
 
@@ -22,7 +24,7 @@ double string_to_double(char *string) {
     result = strtod(string, &endptr);
 
     /* test return to number and errno values */
-    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && string && *endptr != 0))  {
+    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && *endptr != 0))  {
         return NAN;
     }
 
