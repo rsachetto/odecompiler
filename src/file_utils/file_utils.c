@@ -81,14 +81,15 @@ FILE *open_file_or_exit(char *filename, char *mode) {
 }
 
 char *get_current_directory() {
-    long size;
+    size_t size;
     char *buf = NULL;
-    size = pathconf(".", _PC_PATH_MAX);
+    size = (size_t) pathconf(".", _PC_PATH_MAX);
 
-    if((buf = (char *)malloc((size_t)size)) != NULL)
-        buf = getcwd(buf, (size_t)size);
-
-    buf = strcat(buf, "/");
+    if((buf = (char *)malloc(size)) != NULL) {
+        buf = getcwd(buf, size);
+        buf = strcat(buf, "/");
+    }
+    
     return buf;
 }
 

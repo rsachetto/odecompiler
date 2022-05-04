@@ -144,7 +144,6 @@ static char *autocomplete_command(const char *text, int state) {
     rl_attempted_completion_over = 1;
 
     static int list_index, len;
-    char *name;
 
     /* If this is a new word to complete, initialize now.  This includes
        saving the length of TEXT for efficiency, and initializing the index
@@ -157,7 +156,7 @@ static char *autocomplete_command(const char *text, int state) {
     /* Return the next name which partially matches from the command list. */
     while (list_index < num_commands) {
 
-        name = commands[list_index].key;
+        char *name = commands[list_index].key;
         list_index++;
 
         if (strncmp (name, text, len) == 0) {
@@ -1381,11 +1380,11 @@ static bool set_reload_helper(struct shell_variables *shell_state, sds *tokens, 
         return false;
     }
 
-    struct model_config *model_config;
 
     if (cmd_type == CMD_SET_GLOBAL_RELOAD) {
         shell_state->never_reload = is_zero;
-    } else {
+    } else {    
+        struct model_config *model_config;
 
         if(num_args == 1) {
             model_config = shell_state->current_model;
@@ -1448,19 +1447,20 @@ COMMAND_FUNCTION(savemodeloutput) {
 
 bool run_commands_from_file(struct shell_variables *shell_state, char *file_name) {
 
-    bool quit = false;
 
     if (!file_exists(file_name)) {
-        printf("File %s does not exist!\n", file_name);
+        printf("File '%s' does not exist!\n", file_name);
     } else {
-        FILE *f = fopen(file_name, "r");
+        FILE *f = fopen(file_name, "r");    
 
         if (!f) {
-            printf("Error opening file %s for reading!\n", file_name);
+            printf("Error opening file '%s' for reading!\n", file_name);
         } else {
             char *line = NULL;
             size_t len = 0;
             sds command;
+            
+            bool quit = false;
 
             while ((getline(&line, &len, f)) != -1) {
 
