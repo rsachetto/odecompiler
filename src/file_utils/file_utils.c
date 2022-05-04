@@ -89,7 +89,7 @@ char *get_current_directory() {
         buf = getcwd(buf, size);
         buf = strcat(buf, "/");
     }
-    
+
     return buf;
 }
 
@@ -266,8 +266,10 @@ char *read_entire_file(const char *filename, size_t *size) {
 
     buffer = (char *)malloc(numbytes * sizeof(char));
 
-    if(buffer == NULL)
+    if(buffer == NULL) {
+        fclose(infile);
         return NULL;
+    }
 
     size_t n = fread(buffer, sizeof(char), numbytes, infile);
 

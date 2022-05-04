@@ -34,6 +34,11 @@ double string_to_double(char *string) {
 
 long string_to_long(char *string, bool *error) {
 
+    if(string == NULL) {
+        *error = true;
+        return 0;
+    }
+
     char *endptr = NULL;
     long result;
     *error = false;
@@ -44,7 +49,7 @@ long string_to_long(char *string, bool *error) {
     result = strtol(string, &endptr, 10);
 
     /* test return to number and errno values */
-    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && string && *endptr != 0))  {
+    if ( (string == endptr) || (errno != 0 && result == 0) || (errno == 0 && *endptr != 0))  {
         *error = true;
     }
 
