@@ -211,7 +211,18 @@ static char **known_edits2(char **array, int rows, int *e2_rows) {
                     else
                         res_max *= 2;
                 }
-                res = realloc(res, sizeof(char *) * res_max);
+
+                void *tmp = realloc(res, sizeof(char *) * res_max);
+                
+                if(tmp == NULL) {
+                    fprintf(stderr, "Error allocating memory in %d of %s", __LINE__, __FILE__);
+                    free(res);
+                    return NULL;
+                }
+                else {
+                    res = tmp;
+                }
+
                 res[res_size++] = strdup(e1[j]);
             }
         }
