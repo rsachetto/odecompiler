@@ -8,6 +8,7 @@
 typedef struct declared_variable_entry_value_t {
     int  declaration_position;
     bool initialized;
+    int line_number;
     ast_tag tag;
 } declared_variable_entry_value;
 

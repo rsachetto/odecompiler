@@ -259,11 +259,11 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
             RETURN_ERROR("ode identifiers needs to end with an ' \n");
         }
     }
-    else {
-        if(has_ode_symbol) {
-            RETURN_ERROR("only ode identifiers can end with an ' ");
-        }
-    }
+    // else {
+    //     if(has_ode_symbol) {
+    //         RETURN_ERROR("only ode identifiers can end with an ' ");
+    //     }
+    // }
 
     stmt->assignement_stmt.name = parse_identifier(p);
 
@@ -281,13 +281,15 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
 
     if(tag == ast_assignment_stmt) {
-        declared_variable_entry_value value = {local_var_count, false, tag};
-        shput(p->declared_variables, stmt->assignement_stmt.name->identifier.value, value);
-        stmt->assignement_stmt.declaration_position = local_var_count;
-        local_var_count++;
+        declared_variable_entry_value value = {local_var_count, false, p->cur_token.line_number, tag};
+        if(!has_ode_symbol) {
+            shput(p->declared_variables, stmt->assignement_stmt.name->identifier.value, value);
+            stmt->assignement_stmt.declaration_position = local_var_count;
+            local_var_count++;
+        }
     }
     else if(tag == ast_global_stmt) {
-        declared_variable_entry_value value = {global_count, false, tag};
+        declared_variable_entry_value value = {global_count, false, p->cur_token.line_number, tag};
         shput(p->global_scope, stmt->assignement_stmt.name->identifier.value, value);
         stmt->assignement_stmt.declaration_position = global_count;
         global_count++;
@@ -295,7 +297,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         p->have_ode = true;
         char *tmp = strndup(stmt->assignement_stmt.name->identifier.value, (int)strlen(stmt->assignement_stmt.name->identifier.value)-1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
-        declared_variable_entry_value value = {ode_count, false, tag};
+        declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
         shput(p->declared_variables, tmp, value);
         stmt->assignement_stmt.declaration_position = ode_count;
         //TODO: check if ODE is assigne twice!!
@@ -450,7 +452,7 @@ ast **parse_grouped_assignment_names(parser *p) {
     ast *ident = parse_identifier(p);
     arrput(identifiers, ident);
 
-    declared_variable_entry_value value = {p->cur_token.line_number, false, ast_grouped_assignment_stmt};
+    declared_variable_entry_value value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
 
     shput(p->declared_variables, ident->identifier.value, value);
 
@@ -460,7 +462,7 @@ ast **parse_grouped_assignment_names(parser *p) {
         advance_token(p);
         ident = parse_identifier(p);
         arrput(identifiers, ident);
-        declared_variable_entry_value value = {p->cur_token.line_number, false, ast_grouped_assignment_stmt};
+        declared_variable_entry_value value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
         shput(p->declared_variables, ident->identifier.value, value);
     }
 
@@ -865,6 +867,33 @@ static void check_declaration(parser *p, ast *src) {
         }
             break;
         case ast_assignment_stmt:
+        {
+            char *id_name = src->assignement_stmt.name->identifier.value;
+            int s = strlen(id_name)-1;
+            bool has_ode_symbol = (id_name[s] == '\'');
+
+            if(has_ode_symbol) {
+                char *tmp = strndup(id_name, s);
+                
+                int i = shgeti(p->declared_variables, tmp);
+                
+                free(tmp);
+
+                if(i == -1) {
+                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s not declared. Declare with 'ode %s = expr' before using!\n",
+                                    id_name, id_name);
+                }
+                else {
+                    if(p->declared_variables[i].value.line_number > src->token.line_number) {
+                        ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s is being assigned before being declared!\n", id_name);
+                    }
+                    else {
+                        src->assignement_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
+                    }
+                }
+            }
+        }
+            break;
         case ast_ode_stmt:
         case ast_global_stmt:
         {
@@ -908,18 +937,18 @@ static void check_declaration(parser *p, ast *src) {
             if(i != -1) {
 
                 if(p->declared_variables[i].value.initialized) {
-                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Duplicate initialization ode variable %s\n",  src->assignement_stmt.name->identifier.value);
+                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Duplicate initialization ode variable %s\n",  ode_name);
                 }
 
                 if(p->declared_variables[i].value.tag != ast_ode_stmt) {
-                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Initialization of a non ode variable (%s).\n", src->assignement_stmt.name->identifier.value);
+                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Initialization of a non ode variable (%s).\n", ode_name);
                 }
 
                 p->declared_variables[i].value.initialized = true;
                 src->assignement_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
             }
             else {
-                ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s' not declared.\n", src->assignement_stmt.name->identifier.value);
+                ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s' not declared.\n", ode_name);
             }
         }
         break;

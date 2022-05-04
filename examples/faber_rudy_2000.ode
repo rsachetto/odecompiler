@@ -238,53 +238,53 @@ ode zdv' = ((zdv_ss-zdv)/tau_zdv)
 ode ydv' = ((ydv_ss-ydv)/tau_ydv)
 ode APtrack' = 0.0;
 if((dVdt>1.500000000000000e+02)) {
-    ode APtrack' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack))-(5.000000000000000e-01*APtrack))
+    APtrack' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack))-(5.000000000000000e-01*APtrack))
 } else {
-    ode APtrack' = ((-5.000000000000000e-01)*APtrack)
+    APtrack' = ((-5.000000000000000e-01)*APtrack)
 }
 
 ode APtrack2' = 0.0;
 if(((APtrack<2.000000000000000e-01) and (APtrack>1.800000000000000e-01))) {
-    ode APtrack2' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack2))-(5.000000000000000e-01*APtrack2))
+    APtrack2' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack2))-(5.000000000000000e-01*APtrack2))
 } else {
-    ode APtrack2' = ((-5.000000000000000e-01)*APtrack2)
+    APtrack2' = ((-5.000000000000000e-01)*APtrack2)
 }
 
 ode APtrack3' = 0.0;
 if(((APtrack<2.000000000000000e-01) and (APtrack>1.800000000000000e-01))) {
-    ode APtrack3' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack3))-(5.000000000000000e-01*APtrack3))
+    APtrack3' = ((1.000000000000000e+02*(1.000000000000000e+00-APtrack3))-(5.000000000000000e-01*APtrack3))
 } else {
-    ode APtrack3' = ((-1.000000000000000e-02)*APtrack3)
+    APtrack3' = ((-1.000000000000000e-02)*APtrack3)
 }
 
 ode Cainfluxtrack' = 0.0;
 if((APtrack>2.000000000000000e-01)) {
-    ode Cainfluxtrack' = (((-1.000000000000000e+00)*A_cap*(((i_CaCa+i_Ca_T)-(2.000000000000000e+00*i_NaCa))+i_p_Ca+i_Ca_b))/(2.000000000000000e+00*V_myo*F))
+    Cainfluxtrack' = (((-1.000000000000000e+00)*A_cap*(((i_CaCa+i_Ca_T)-(2.000000000000000e+00*i_NaCa))+i_p_Ca+i_Ca_b))/(2.000000000000000e+00*V_myo*F))
 } elif(((APtrack2>1.000000000000000e-02) and (APtrack<=2.000000000000000e-01))) {
-        ode Cainfluxtrack' = 0.000000000000000e+00
+    Cainfluxtrack' = 0.000000000000000e+00
 } else {
-    ode Cainfluxtrack' = ((-5.000000000000000e-01)*Cainfluxtrack)
+    Cainfluxtrack' = ((-5.000000000000000e-01)*Cainfluxtrack)
 }
 
 ode OVRLDtrack' = 0.0;
 if((((1.000000000000000e+00/(1.000000000000000e+00+(K_mCSQN/Ca_JSR)))>CSQNthresh) and (OVRLDtrack3<3.700000000000000e-01) and (APtrack3<3.700000000000000e-01))) {
-    ode OVRLDtrack' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack))
+    OVRLDtrack' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack))
 } else {
-    ode OVRLDtrack' = ((-5.000000000000000e-01)*OVRLDtrack)
+    OVRLDtrack' = ((-5.000000000000000e-01)*OVRLDtrack)
 }
 
 ode OVRLDtrack2' = 0.0;
 if(((OVRLDtrack>Logicthresh) and (OVRLDtrack2<Logicthresh))) {
-    ode OVRLDtrack2' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack2))
+    OVRLDtrack2' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack2))
 } else {
-    ode OVRLDtrack2' = ((-5.000000000000000e-01)*OVRLDtrack2)
+    OVRLDtrack2' = ((-5.000000000000000e-01)*OVRLDtrack2)
 }
 
 ode OVRLDtrack3' = 0.0;
 if(((OVRLDtrack>Logicthresh) and (OVRLDtrack3<Logicthresh))) {
-    ode OVRLDtrack3' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack3))
+    OVRLDtrack3' = (5.000000000000000e+01*(1.000000000000000e+00-OVRLDtrack3))
 } else {
-    ode OVRLDtrack3' = ((-1.000000000000000e-02)*OVRLDtrack3)
+    OVRLDtrack3' = ((-1.000000000000000e-02)*OVRLDtrack3)
 }
 
 ode Ca_JSR' = ((1.000000000000000e+00/(1.000000000000000e+00+((CSQN_max*K_mCSQN)/pow((K_mCSQN+Ca_JSR),2.000000000000000e+00))))*(i_tr-i_rel))
