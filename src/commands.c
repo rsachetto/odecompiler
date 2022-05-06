@@ -1614,16 +1614,16 @@ bool run_commands_from_file(struct shell_variables *shell_state, char *file_name
                 printf("%s%s\n", PROMPT, command);
 
                 int cmd_count = 0;
-                sds *commands = sdssplit(command, ";", &cmd_count);
+                sds *all_commands = sdssplit(command, ";", &cmd_count);
 
                 for(int i = 0; i < cmd_count; i++) {
-                    if(*commands[i]) {
-                        quit_shell = parse_and_execute_command(commands[i], shell_state);
+                    if(*all_commands[i]) {
+                        quit_shell = parse_and_execute_command(all_commands[i], shell_state);
                         if (quit_shell) break;
                     }
                 }
 
-                sdsfreesplitres(commands, cmd_count);
+                sdsfreesplitres(all_commands, cmd_count);
                 sdsfree(command);
                 if (quit_shell) break;
             }
@@ -1933,6 +1933,11 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
             if (!error) {
                 error = compile_model(model_config);
                 free_program(tmp);
+
+                if(error) {
+                    printf("Error compiling model %s", model_config->model_name);
+                }
+
             } else {
                 printf("Error compiling model %s", model_config->model_name);
             }
@@ -2014,8 +2019,8 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
         ADD_CMD(saveplot,      1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
         ADD_CMD(getplotconfig, 0, 1, "Prints the current plot configuration of a model. "NO_ARGS" getplotconfig sir");
         ADD_CMD(plotvar,       1, 3, "Plots the output of a model execution (one or more variables). "PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
-        ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. "PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");        
-        ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). "PLOT_ARGS " plotvars sir or plotvar sir 1 or plotvars 1");
+        ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. "PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
+        ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). "PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
     }
 
     ADD_CMD(pwd,              0, 0, "Shows the current directory");
