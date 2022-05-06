@@ -13,6 +13,7 @@ replot sird
 saveplot sird.pdf
 #solve sir (last loaded model)
 solve 100
+plotvar "S I R"
 plottofile "sir_S.pdf"
 setploty I
 plottofile "sir_I.pdf"

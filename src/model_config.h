@@ -1,5 +1,5 @@
 #ifndef __MODEL_CONFIG_H
-#define __MODEL_CONFIG_H 
+#define __MODEL_CONFIG_H
 
 #include "compiler/parser.h"
 #include "hash/meow_hash_x64_aesni.h"
@@ -30,7 +30,7 @@ struct model_config {
     char *model_file;
     char *model_command;
     uint version;
-	uint num_runs;
+    uint num_runs;
     struct run_info *runs;
     program program;
     struct var_index_hash_entry *var_indexes;
@@ -38,11 +38,11 @@ struct model_config {
     bool is_derived;
     bool should_reload;
     bool auto_reload;
-	meow_u128 hash;
+    meow_u128 hash;
 };
 
 
-#define PRINT_NO_MODELS_LOADED_ERROR(command) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command)
+#define PRINT_NO_MODELS_LOADED_ERROR(command__) printf("Error executing command %s. No models loaded. Load a model first using load modelname.edo\n", command__)
 
 #define GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, args)                                     \
     do {                                                                                          \

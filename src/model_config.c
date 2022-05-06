@@ -9,6 +9,10 @@
 
 sds get_model_output_file(struct model_config *model_config, uint run_number) {
 
+    if(run_number == 0) {
+        run_number = model_config->num_runs;
+    }
+
     sds modified_model_name = sdsnew(model_config->model_name);
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
