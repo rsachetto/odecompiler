@@ -71,7 +71,7 @@ bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char 
     } else if (num_args == 3) {
         bool error = false;
         *model_name = tokens[1];
-        *run_number = (uint) string_to_long(tokens[2], &error);
+        *run_number = (uint) string_to_long(tokens[3], &error);
         if (error) {
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
             return false;
@@ -925,15 +925,15 @@ COMMAND_FUNCTION(plotvar) {
           vars_to_plot = sdssplit(tokens[1], " ", &varcount);
           split_index = 1;
     } else if(num_args == 2) {
-        bool error;
-        uint run_number = (uint)string_to_long(tokens[2], &error);
+        bool dont_have_run_number;
+        string_to_long(tokens[2], &dont_have_run_number);
 
-        if(!error) {
-            vars_to_plot = sdssplit(tokens[1], " ", &varcount);
-            split_index = 1;
-        } else {
+        if(dont_have_run_number) {
             vars_to_plot = sdssplit(tokens[2], " ", &varcount);
             split_index = 2;
+        } else {
+            vars_to_plot = sdssplit(tokens[1], " ", &varcount);
+            split_index = 1;
         }
     } else if(num_args == 3) {
         vars_to_plot = sdssplit(tokens[2], " ", &varcount);
