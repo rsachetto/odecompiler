@@ -480,7 +480,7 @@ void write_initial_conditions(program p, FILE *file) {
 
 }
 
-bool generate_initial_conditions_values(program p, program body, FILE *file) {
+static bool generate_initial_conditions_values(program p, FILE *file) {
 
     int n_stmt = arrlen(p);
 
@@ -781,7 +781,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "\n"
             "\tN_Vector x0 = N_VNew_Serial(NEQ);\n"
             "\n");
-    error = generate_initial_conditions_values(initial, main_body, file);
+    error = generate_initial_conditions_values(initial, file);
     fprintf(file, "\tset_initial_conditions(x0, values);\n"
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
@@ -976,7 +976,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
             "\n");
 
-    bool error = generate_initial_conditions_values(initial, main_body, file);
+    bool error = generate_initial_conditions_values(initial, file);
     fprintf(file,"\tset_initial_conditions(x0, values);\n"
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
