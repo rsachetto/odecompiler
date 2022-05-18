@@ -54,7 +54,7 @@ bool generate_model_program(struct model_config *model) {
         for(int i = 0; i < n_stmt; i++) {
             ast *a = program[i];
             if(a->tag == ast_ode_stmt) {
-                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+                sds var_name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
                 shput(model->var_indexes, var_name, ode_count);
                 sdsfree(var_name);
                 ode_count++;

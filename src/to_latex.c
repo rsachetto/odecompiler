@@ -92,17 +92,17 @@ static sds return_stmt_to_latex(ast *a) {
     return buf;
 }
 
-static sds assignement_stmt_to_latex(ast *a) {
+static sds assignment_stmt_to_latex(ast *a) {
 
     sds buf = sdsempty();
 
     sds identifier;
 
     if(a->tag == ast_ode_stmt) {
-        identifier = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+        identifier = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
     }
     else {
-        identifier = sdsnew(a->assignement_stmt.name->identifier.value);
+        identifier = sdsnew(a->assignment_stmt.name->identifier.value);
     }
 
     bool is_symbol = is_latex_symbol(identifier);
@@ -122,8 +122,8 @@ static sds assignement_stmt_to_latex(ast *a) {
 
     buf = sdscat(buf, " = ");
 
-    if(a->assignement_stmt.value != NULL) {
-        buf = sdscat(buf, ast_to_latex(a->assignement_stmt.value));
+    if(a->assignment_stmt.value != NULL) {
+        buf = sdscat(buf, ast_to_latex(a->assignment_stmt.value));
     }
 
     sdsfree(identifier);
@@ -214,22 +214,22 @@ static sds call_expr_to_latex(ast *a) {
     return buf;
 }
 
-static sds grouped_assignement_stmt_to_latex(ast *a) {
+static sds grouped_assignment_stmt_to_latex(ast *a) {
     sds buf = sdsnew("[");
 
-    int n = arrlen(a->grouped_assignement_stmt.names);
+    int n = arrlen(a->grouped_assignment_stmt.names);
 
-    buf = sdscat(buf, a->grouped_assignement_stmt.names[0]->identifier.value);
+    buf = sdscat(buf, a->grouped_assignment_stmt.names[0]->identifier.value);
 
     for(int i = 1; i < n; i++) {
-        buf = sdscatfmt(buf, ", %s", a->grouped_assignement_stmt.names[i]->identifier.value);
+        buf = sdscatfmt(buf, ", %s", a->grouped_assignment_stmt.names[i]->identifier.value);
     }
 
     buf = sdscat(buf, "]");
 
     buf = sdscat(buf, " = ");
 
-    buf = sdscat(buf, ast_to_latex(a->grouped_assignement_stmt.call_expr));
+    buf = sdscat(buf, ast_to_latex(a->grouped_assignment_stmt.call_expr));
 
     return buf;
 
@@ -238,11 +238,11 @@ static sds grouped_assignement_stmt_to_latex(ast *a) {
 sds ast_to_latex(ast *a) {
 
     if(a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
-        return assignement_stmt_to_latex(a);
+        return assignment_stmt_to_latex(a);
     }
 
     if(a->tag == ast_grouped_assignment_stmt) {
-        return grouped_assignement_stmt_to_latex(a);
+        return grouped_assignment_stmt_to_latex(a);
     }
 
     if(a->tag == ast_return_stmt) {

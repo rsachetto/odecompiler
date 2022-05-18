@@ -79,10 +79,10 @@ static bool can_be_in_init(parser *p, const ast *a) {
         case ast_grouped_assignment_stmt:
         {
             bool can = false;
-            int n = arrlen(a->grouped_assignement_stmt.names);
+            int n = arrlen(a->grouped_assignment_stmt.names);
 
             for(int i = 0; i < n; i++) {
-                can = can_be_in_init(p, a->grouped_assignement_stmt.names[i]);
+                can = can_be_in_init(p, a->grouped_assignment_stmt.names[i]);
                 if(!can) {
                     return false;
                 }
@@ -265,10 +265,10 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     //     }
     // }
 
-    stmt->assignement_stmt.name = parse_identifier(p);
+    stmt->assignment_stmt.name = parse_identifier(p);
 
     if(tag == ast_global_stmt) {
-        int builtin = shgeti(p->declared_functions, stmt->assignement_stmt.name->identifier.value);
+        int builtin = shgeti(p->declared_functions, stmt->assignment_stmt.name->identifier.value);
 
         if(builtin != -1) {
             RETURN_ERROR("%.*s is a function name and cannot be used as an global identifier\n",  p->cur_token.literal_len, p->cur_token.literal);
@@ -283,23 +283,23 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     if(tag == ast_assignment_stmt) {
         declared_variable_entry_value value = {local_var_count, false, p->cur_token.line_number, tag};
         if(!has_ode_symbol) {
-            shput(p->declared_variables, stmt->assignement_stmt.name->identifier.value, value);
-            stmt->assignement_stmt.declaration_position = local_var_count;
+            shput(p->declared_variables, stmt->assignment_stmt.name->identifier.value, value);
+            stmt->assignment_stmt.declaration_position = local_var_count;
             local_var_count++;
         }
     }
     else if(tag == ast_global_stmt) {
         declared_variable_entry_value value = {global_count, false, p->cur_token.line_number, tag};
-        shput(p->global_scope, stmt->assignement_stmt.name->identifier.value, value);
-        stmt->assignement_stmt.declaration_position = global_count;
+        shput(p->global_scope, stmt->assignment_stmt.name->identifier.value, value);
+        stmt->assignment_stmt.declaration_position = global_count;
         global_count++;
     } else if(tag == ast_ode_stmt) {
         p->have_ode = true;
-        char *tmp = strndup(stmt->assignement_stmt.name->identifier.value, (int)strlen(stmt->assignement_stmt.name->identifier.value)-1);
+        char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int)strlen(stmt->assignment_stmt.name->identifier.value)-1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
         shput(p->declared_variables, tmp, value);
-        stmt->assignement_stmt.declaration_position = ode_count;
+        stmt->assignment_stmt.declaration_position = ode_count;
         //TODO: check if ODE is assigne twice!!
         ode_count++;
         free(tmp);
@@ -307,7 +307,7 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     advance_token(p);
 
-    stmt->assignement_stmt.value = parse_expression(p, LOWEST);
+    stmt->assignment_stmt.value = parse_expression(p, LOWEST);
 
     if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
@@ -477,7 +477,7 @@ ast *parse_grouped_assignment(parser *p) {
         RETURN_ERROR("expected at least one identifier\n");
     }
 
-    stmt->grouped_assignement_stmt.names = parse_grouped_assignment_names(p);
+    stmt->grouped_assignment_stmt.names = parse_grouped_assignment_names(p);
 
     if (!expect_peek(p, RBRACKET)) {
         RETURN_ERROR("] expected\n");
@@ -489,9 +489,9 @@ ast *parse_grouped_assignment(parser *p) {
 
     advance_token(p);
 
-    stmt->grouped_assignement_stmt.call_expr = parse_expression(p, LOWEST);
+    stmt->grouped_assignment_stmt.call_expr = parse_expression(p, LOWEST);
 
-    if(stmt->grouped_assignement_stmt.call_expr->tag != ast_call_expression) {
+    if(stmt->grouped_assignment_stmt.call_expr->tag != ast_call_expression) {
         RETURN_ERROR("grouped expressions are only supported with function calls\n");
     }
 
@@ -868,7 +868,7 @@ static void check_declaration(parser *p, ast *src) {
             break;
         case ast_assignment_stmt:
         {
-            char *id_name = src->assignement_stmt.name->identifier.value;
+            char *id_name = src->assignment_stmt.name->identifier.value;
             int s = strlen(id_name)-1;
             bool has_ode_symbol = (id_name[s] == '\'');
 
@@ -888,7 +888,7 @@ static void check_declaration(parser *p, ast *src) {
                         ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s is being assigned before being declared!\n", id_name);
                     }
                     else {
-                        src->assignement_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
+                        src->assignment_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
                     }
                 }
             }
@@ -897,9 +897,9 @@ static void check_declaration(parser *p, ast *src) {
         case ast_ode_stmt:
         case ast_global_stmt:
         {
-            check_declaration(p, src->assignement_stmt.value);
-            if(src->assignement_stmt.value->tag == ast_call_expression) {
-                char *f_name = src->assignement_stmt.value->call_expr.function_identifier->identifier.value;
+            check_declaration(p, src->assignment_stmt.value);
+            if(src->assignment_stmt.value->tag == ast_call_expression) {
+                char *f_name = src->assignment_stmt.value->call_expr.function_identifier->identifier.value;
 
                 declared_function_entry dv = shgets(p->declared_functions, f_name);
                 int num_return_values = dv.value.n_returns;
@@ -912,10 +912,10 @@ static void check_declaration(parser *p, ast *src) {
             }
             if(src->tag == ast_assignment_stmt) {
 
-                bool var_is_global = shgeti(p->global_scope, src->assignement_stmt.name->identifier.value) != -1;
+                bool var_is_global = shgeti(p->global_scope, src->assignment_stmt.name->identifier.value) != -1;
                 if(var_is_global) {
-                    printf("%s is global\n", src->assignement_stmt.name->identifier.value);
-                    src->assignement_stmt.name->identifier.global = true;
+                    printf("%s is global\n", src->assignment_stmt.name->identifier.value);
+                    src->assignment_stmt.name->identifier.global = true;
                 }
 
 
@@ -925,12 +925,12 @@ static void check_declaration(parser *p, ast *src) {
 
         case ast_initial_stmt:
         {
-            check_declaration(p, src->assignement_stmt.value);
-            if(!can_be_in_init(p, src->assignement_stmt.value)) {
+            check_declaration(p, src->assignment_stmt.value);
+            if(!can_be_in_init(p, src->assignment_stmt.value)) {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n");
             }
 
-            char *ode_name = src->assignement_stmt.name->identifier.value;
+            char *ode_name = src->assignment_stmt.name->identifier.value;
 
             int i = shgeti(p->declared_variables, ode_name);
 
@@ -945,7 +945,7 @@ static void check_declaration(parser *p, ast *src) {
                 }
 
                 p->declared_variables[i].value.initialized = true;
-                src->assignement_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
+                src->assignment_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
             }
             else {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s' not declared.\n", ode_name);
@@ -954,33 +954,33 @@ static void check_declaration(parser *p, ast *src) {
         break;
         case ast_grouped_assignment_stmt:
         {
-            check_declaration(p, src->grouped_assignement_stmt.call_expr);
+            check_declaration(p, src->grouped_assignment_stmt.call_expr);
 
-            int n = arrlen(src->grouped_assignement_stmt.names);
+            int n = arrlen(src->grouped_assignment_stmt.names);
 
             for(int i = 0; i < n; i++) {
-                bool var_is_global = shgeti(p->global_scope, src->grouped_assignement_stmt.names[i]->identifier.value) != -1;
+                bool var_is_global = shgeti(p->global_scope, src->grouped_assignment_stmt.names[i]->identifier.value) != -1;
                 if(var_is_global) {
-                    src->grouped_assignement_stmt.names[i]->identifier.global = true;
+                    src->grouped_assignment_stmt.names[i]->identifier.global = true;
                 }
 
             }
 
             if(n > 1) {
 
-                char *f_name = src->grouped_assignement_stmt.call_expr->call_expr.function_identifier->identifier.value;
+                char *f_name = src->grouped_assignment_stmt.call_expr->call_expr.function_identifier->identifier.value;
                 declared_function_entry dv = shgets(p->declared_functions, f_name);
 
-                int num_expected_assignements = dv.value.n_returns;
+                int num_expected_assignments = dv.value.n_returns;
 
-                if(n != num_expected_assignements) {
+                if(n != num_expected_assignments) {
                     ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Function %s returns %d value(s) but %d are being assigned!\n", f_name,
-                            num_expected_assignements, n);
+                            num_expected_assignments, n);
                 }
             }
         }
 
-            //check_variable_declarations(p, src->grouped_assignement_stmt.names);
+            //check_variable_declarations(p, src->grouped_assignment_stmt.names);
             break;
         case ast_function_statement:
             //free_ast(src->function_stmt.name);
@@ -1054,7 +1054,7 @@ static void check_ode_initializations(parser *p, program program) {
         if(program[i]->tag == ast_ode_stmt) {
 
             ast *src = program[i];
-            char *ode_name = strndup(src->assignement_stmt.name->identifier.value, (int)strlen(src->assignement_stmt.name->identifier.value)-1);
+            char *ode_name = strndup(src->assignment_stmt.name->identifier.value, (int)strlen(src->assignment_stmt.name->identifier.value)-1);
             declared_variable_entry dv = shgets(p->declared_variables, ode_name);
 
             if(!dv.value.initialized) {
@@ -1106,7 +1106,7 @@ static void process_imports(parser *p, program original_program) {
 
             }
             else if( program_new[s]->tag == ast_global_stmt) {
-                int exists = shgeti(p->global_scope, program_new[s]->assignement_stmt.name->identifier.value) != -1;
+                int exists = shgeti(p->global_scope, program_new[s]->assignment_stmt.name->identifier.value) != -1;
                 if(exists) {
                     ADD_ERROR("Global variable %s alread exists.\n", program_new[s]->function_stmt.name->identifier.value);
                 }

@@ -51,71 +51,71 @@ static sds return_stmt_to_c(ast *a) {
     return buf;
 }
 
-static sds assignement_stmt_to_c(ast *a) {
+static sds assignment_stmt_to_c(ast *a) {
 
     sds buf = sdsempty();
     char *var_type;
 
     // if(a->tag == ast_ode_stmt) {
-    //     sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+    //     sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
 
-    //     int position = a->assignement_stmt.declaration_position;
+    //     int position = a->assignment_stmt.declaration_position;
 
     //     sdsfree(name);
     //     if(solver == CVODE_SOLVER) {
-    //         sds tmp = ast_to_c(a->assignement_stmt.value);
+    //         sds tmp = ast_to_c(a->assignment_stmt.value);
     //         buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;\n", indent_spaces[indentation_level], position-1, tmp);
     //         sdsfree(tmp);
     //     }
     //     else if(solver == EULER_ADPT_SOLVER) {
-    //         sds tmp = ast_to_c(a->assignement_stmt.value);
+    //         sds tmp = ast_to_c(a->assignment_stmt.value);
     //         buf = sdscatprintf(buf, "%srDY[%d] = %s;\n", indent_spaces[indentation_level], position-1, tmp);
     //         sdsfree(tmp);
     //     }
     // } else 
     
     if (a->tag == ast_assignment_stmt) {
-        if (a->assignement_stmt.value->tag == ast_boolean_literal || a->assignement_stmt.value->tag == ast_if_expr) {
+        if (a->assignment_stmt.value->tag == ast_boolean_literal || a->assignment_stmt.value->tag == ast_if_expr) {
             var_type = "bool";
-        } else if (a->assignement_stmt.value->tag == ast_string_literal) {
+        } else if (a->assignment_stmt.value->tag == ast_string_literal) {
             var_type = "char *";
         } else {
             var_type = "real";
         }
 
-        int global = a->assignement_stmt.name->identifier.global;
+        int global = a->assignment_stmt.name->identifier.global;
 
         if(global) {
-            sds tmp = ast_to_c(a->assignement_stmt.value);
-            buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value, tmp);
+            sds tmp = ast_to_c(a->assignment_stmt.value);
+            buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value, tmp);
             sdsfree(tmp);
         } else {
-            int declared = shgeti(var_declared, a->assignement_stmt.name->identifier.value) != -1;
-            bool has_ode_symbol = (a->assignement_stmt.name->identifier.value[strlen(a->assignement_stmt.name->identifier.value)-1] == '\'');
+            int declared = shgeti(var_declared, a->assignment_stmt.name->identifier.value) != -1;
+            bool has_ode_symbol = (a->assignment_stmt.name->identifier.value[strlen(a->assignment_stmt.name->identifier.value)-1] == '\'');
 
             if(has_ode_symbol) {
-                int position = a->assignement_stmt.declaration_position;
+                int position = a->assignment_stmt.declaration_position;
 
                 if(solver == CVODE_SOLVER) {
-                    sds tmp = ast_to_c(a->assignement_stmt.value);
+                    sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;\n", indent_spaces[indentation_level], position-1, tmp);
                     sdsfree(tmp);
                 }
                 else if(solver == EULER_ADPT_SOLVER) {
-                    sds tmp = ast_to_c(a->assignement_stmt.value);
+                    sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatprintf(buf, "%srDY[%d] = %s;\n", indent_spaces[indentation_level], position-1, tmp);
                     sdsfree(tmp);
                 }
             }
             else {
                 if (!declared) {
-                    sds tmp = ast_to_c(a->assignement_stmt.value);
-                    buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, a->assignement_stmt.name->identifier.value, tmp);
-                    shput(var_declared, a->assignement_stmt.name->identifier.value, 1);
+                    sds tmp = ast_to_c(a->assignment_stmt.value);
+                    buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
+                    shput(var_declared, a->assignment_stmt.name->identifier.value, 1);
                     sdsfree(tmp);
                 } else {
-                    sds tmp = ast_to_c(a->assignement_stmt.value);
-                    buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value, tmp);
+                    sds tmp = ast_to_c(a->assignment_stmt.value);
+                    buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value, tmp);
                     sdsfree(tmp);
                 }
             }
@@ -123,7 +123,7 @@ static sds assignement_stmt_to_c(ast *a) {
     }
     else if (a->tag == ast_grouped_assignment_stmt) {
 
-        ast **variables = a->grouped_assignement_stmt.names;
+        ast **variables = a->grouped_assignment_stmt.names;
         int n = arrlen(variables);
 
         var_type = "real";
@@ -131,7 +131,7 @@ static sds assignement_stmt_to_c(ast *a) {
         if(n == 1) {
 
             char *id_name = variables[0]->identifier.value;
-            ast  *call_expr = a->grouped_assignement_stmt.call_expr;
+            ast  *call_expr = a->grouped_assignment_stmt.call_expr;
 
             int global = variables[0]->identifier.global;
 
@@ -175,7 +175,7 @@ static sds assignement_stmt_to_c(ast *a) {
             }
 
             //Converting the function call here
-            ast *b = a->grouped_assignement_stmt.call_expr;
+            ast *b = a->grouped_assignment_stmt.call_expr;
 
             int n_real_args = arrlen(b->call_expr.arguments);
 
@@ -393,8 +393,8 @@ static sds call_expr_to_c(ast *a) {
 static sds global_variable_to_c(ast *a) {
 
     sds buf = sdsempty();
-    sds tmp = ast_to_c(a->assignement_stmt.value);
-    buf = sdscatfmt(buf, "real %s = %s;\n", a->assignement_stmt.name->identifier.value, tmp);
+    sds tmp = ast_to_c(a->assignment_stmt.value);
+    buf = sdscatfmt(buf, "real %s = %s;\n", a->assignment_stmt.name->identifier.value, tmp);
     sdsfree(tmp);
 
     return buf;
@@ -404,7 +404,7 @@ static sds global_variable_to_c(ast *a) {
 static sds ast_to_c(ast *a) {
 
     if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt || a->tag == ast_ode_stmt) {
-        return assignement_stmt_to_c(a);
+        return assignment_stmt_to_c(a);
     }
 
     if(a->tag == ast_global_stmt) {
@@ -468,13 +468,13 @@ void write_initial_conditions(program p, FILE *file) {
 
         ast *a = p[i];
 
-        int position = a->assignement_stmt.declaration_position;
+        int position = a->assignment_stmt.declaration_position;
 
         if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s\n", position-1, position-1, a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s\n", position-1, position-1, a->assignment_stmt.name->identifier.value);
         }
         else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    x0[%d] = values[%d]; //%s\n", position-1, position-1, a->assignement_stmt.name->identifier.value);
+            fprintf(file, "    x0[%d] = values[%d]; //%s\n", position-1, position-1, a->assignment_stmt.name->identifier.value);
         }
     }
 
@@ -490,9 +490,9 @@ bool generate_initial_conditions_values(program p, program body, FILE *file) {
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
 
-        int position = a->assignement_stmt.declaration_position;
-        sds tmp = ast_to_c(a->assignement_stmt.value);
-        fprintf(file, "    values[%d] = %s; //%s\n", position-1, tmp, a->assignement_stmt.name->identifier.value);
+        int position = a->assignment_stmt.declaration_position;
+        sds tmp = ast_to_c(a->assignment_stmt.value);
+        fprintf(file, "    values[%d] = %s; //%s\n", position-1, tmp, a->assignment_stmt.name->identifier.value);
         sdsfree(tmp);
     }
 
@@ -509,14 +509,14 @@ void write_odes_old_values(program p, FILE *file) {
 
         if(a->tag != ast_ode_stmt) continue;
 
-        int position = a->assignement_stmt.declaration_position;
+        int position = a->assignment_stmt.declaration_position;
 
         if (solver == CVODE_SOLVER) {
-            fprintf(file, "    const real %.*s =  NV_Ith_S(sv, %d);\n", (int) strlen(a->assignement_stmt.name->identifier.value) - 1,
-                          a->assignement_stmt.name->identifier.value, position-1);
+            fprintf(file, "    const real %.*s =  NV_Ith_S(sv, %d);\n", (int) strlen(a->assignment_stmt.name->identifier.value) - 1,
+                          a->assignment_stmt.name->identifier.value, position-1);
         } else if (solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    const real %.*s =  sv[%d];\n", (int) strlen(a->assignement_stmt.name->identifier.value) - 1,
-                          a->assignement_stmt.name->identifier.value, position-1);
+            fprintf(file, "    const real %.*s =  sv[%d];\n", (int) strlen(a->assignment_stmt.name->identifier.value) - 1,
+                          a->assignment_stmt.name->identifier.value, position-1);
         }
     }
 }
@@ -534,7 +534,7 @@ sds out_file_header(program p) {
         a = p[i];
         if(a->tag != ast_ode_stmt) continue;
 
-        ret = sdscatprintf(ret, ", %.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
+        ret = sdscatprintf(ret, ", %.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
     }
 
     ret = sdscat(ret, "\\n\"");
@@ -547,17 +547,17 @@ void write_variables_or_body(program p, FILE *file) {
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
         if(a->tag == ast_ode_stmt) {
-            sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignement_stmt.name->identifier.value)-1, a->assignement_stmt.name->identifier.value);
-            int position = a->assignement_stmt.declaration_position;
+            sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
+            int position = a->assignment_stmt.declaration_position;
             sdsfree(name);
 
             if(solver == CVODE_SOLVER) {
-                sds tmp = ast_to_c(a->assignement_stmt.value);
+                sds tmp = ast_to_c(a->assignment_stmt.value);
                 fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", position-1, tmp);
                 sdsfree(tmp);
             }
             else if(solver == EULER_ADPT_SOLVER) {
-                sds tmp = ast_to_c(a->assignement_stmt.value);
+                sds tmp = ast_to_c(a->assignment_stmt.value);
                 fprintf(file, "    rDY[%d] = %s;\n", position-1, tmp);
                 sdsfree(tmp);
             }
