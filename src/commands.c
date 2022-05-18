@@ -23,11 +23,11 @@ static struct shell_variables * global_state;
 #define CREATE_TABLE(table)\
     ft_table_t *(table) = ft_create_table();\
     ft_set_border_style(table, FT_SOLID_ROUND_STYLE);\
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);\
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER)
 
 #define PRINT_AND_FREE_TABLE(table)\
     printf("%s", ft_to_string((table)));\
-    ft_destroy_table(table);
+    ft_destroy_table(table)
 
 bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, uint *run_number) {
     *model_name = NULL;
@@ -196,7 +196,7 @@ static char *autocomplete_command(const char *text, int state) {
 
     rl_attempted_completion_over = 1;
 
-    static int list_index, len;
+    static size_t list_index, len;
 
     /* If this is a new word to complete, initialize now.  This includes
        saving the length of TEXT for efficiency, and initializing the index
@@ -267,7 +267,7 @@ static bool should_complete_model_and_var(const char *c) {
             name = global_state->loaded_models[list_index].key; \
             list_index++;                                       \
             if (strncmp(name, text, len) == 0) {                \
-                sdsfreesplitres(splitted_buferr, count);        \
+                sdsfreesplitres(splitted_buffer, count);        \
                 return (strdup(name));                          \
             }                                                   \
         }                                                       \
@@ -276,8 +276,8 @@ static bool should_complete_model_and_var(const char *c) {
 #define FIND_VARS(model_name)                                                                      \
     do {                                                                                           \
         struct model_config *model_config = NULL;                                                  \
-        int index = shgeti(global_state->loaded_models, model_name);                               \
-        if (index != -1) model_config = global_state->loaded_models[index].value;                  \
+        int index__ = shgeti(global_state->loaded_models, (model_name));                           \
+        if (index__ != -1) model_config = global_state->loaded_models[index__].value;              \
         int num_vars = 0;                                                                          \
         if (model_config) {                                                                        \
             num_vars = shlen(model_config->var_indexes);                                           \
@@ -286,7 +286,7 @@ static bool should_complete_model_and_var(const char *c) {
             name = model_config->var_indexes[list_index].key;                                      \
             list_index++;                                                                          \
             if (strncmp(name, text, len) == 0) {                                                   \
-                sdsfreesplitres(splitted_buferr, count);                                           \
+                sdsfreesplitres(splitted_buffer, count);                                           \
                 return (strdup(name));                                                             \
             }                                                                                      \
         }                                                                                          \
@@ -294,7 +294,7 @@ static bool should_complete_model_and_var(const char *c) {
 
 static char *autocomplete_command_params(const char *text, int state) {
 
-    static int list_index, len;
+    static size_t list_index, len;
     char *name;
 
     rl_attempted_completion_over = 1;
@@ -305,11 +305,11 @@ static char *autocomplete_command_params(const char *text, int state) {
     }
 
     int count;
-    sds *splitted_buferr = sdssplit(rl_line_buffer, " ", &count);
+    sds *splitted_buffer = sdssplit(rl_line_buffer, " ", &count);
 
     int num_loaded_models = shlen(global_state->loaded_models);
 
-    int index = shgeti(commands, splitted_buferr[0]);
+    int index = shgeti(commands, splitted_buffer[0]);
 
     command c = {0};
 
@@ -333,7 +333,7 @@ static char *autocomplete_command_params(const char *text, int state) {
         if(count <= 2) {
             FIND_MODEL();
         } else if(count <= 3) {
-            FIND_VARS(splitted_buferr[1]);
+            FIND_VARS(splitted_buffer[1]);
         }
     } else if(STR_EQUALS(c.key, "help")) {
 
@@ -352,7 +352,7 @@ static char *autocomplete_command_params(const char *text, int state) {
         rl_attempted_completion_over = 0;
     }
 
-    sdsfreesplitres(splitted_buferr, count);
+    sdsfreesplitres(splitted_buffer, count);
     return ((char *)NULL);
 
 }
@@ -382,16 +382,12 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
     struct model_config *model_config = NULL;
 
     if(model_name == NULL) {
-
         if(!shell_state->current_model) {
             PRINT_NO_MODELS_LOADED_ERROR(command);
             return NULL;
         }
         model_config = shell_state->current_model;
-    } else if(run_number == 0) {
-        model_config = load_model_config_or_print_error(shell_state, command, model_name);
-        if(!model_config) return NULL;
-    } else {
+    }  else {
          model_config = load_model_config_or_print_error(shell_state, command, model_name);
         if(!model_config) return NULL;
     }
@@ -1282,7 +1278,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
     if (i == n) {
         parent_model_config->version--;
-        int command_len = strlen(command);
+        int command_len = (int) strlen(command);
         printf("Error parsing command %s. Invalid variable name: %s. You can list model variable using g%*ss %s\n",
                 command, var_name, command_len-1,  command + 1 ,parent_model_config->model_name);
         if(action == CMD_SET) {
@@ -1684,7 +1680,7 @@ COMMAND_FUNCTION(listruns)  {
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    int n_runs = model_config->num_runs;
+    uint n_runs = model_config->num_runs;
 
     struct run_info *run_info = model_config->runs;
 
@@ -1703,7 +1699,6 @@ COMMAND_FUNCTION(listruns)  {
             ft_printf_ln(table, "%d|%lf|%s", i+1, run_info[i].time, "output not saved!");
         }
     }
-
 
     PRINT_AND_FREE_TABLE(table);
 
