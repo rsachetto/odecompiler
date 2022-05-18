@@ -20,7 +20,5 @@
     #define DECL_ENUM_ELEMENT_VAL( element, value ) DECL_ENUM_ELEMENT( element )
     #define DECL_ENUM_ELEMENT_STR( element, descr ) case element: return descr; break;
     #define DECL_ENUM_ELEMENT_VAL_STR( element, value, descr ) DECL_ENUM_ELEMENT_STR( element, descr )
-
     #define END_ENUM( ENUM_NAME ) default: return "Unknown value"; } } ;
-
 #endif

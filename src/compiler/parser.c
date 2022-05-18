@@ -12,17 +12,17 @@
 #define ADD_ERROR(...)                    \
     sds msg = sdsnew("Parse error: ");    \
     msg = sdscatprintf(msg, __VA_ARGS__); \
-    arrput(p->errors, msg);
+    arrput(p->errors, msg)
 
 
 #define ADD_ERROR_WITH_LINE(ln, fn, ...)  \
     sds msg = NEW_ERROR_PREFIX(ln, fn);   \
     msg = sdscatprintf(msg, __VA_ARGS__); \
-    arrput(p->errors, msg);
+    arrput(p->errors, msg)
 
 #define RETURN_ERROR(...)                                              \
     ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
-    return NULL;
+    return NULL
 
 static int global_count = 1;
 static int local_var_count = 1;
@@ -456,13 +456,12 @@ ast **parse_grouped_assignment_names(parser *p) {
 
     shput(p->declared_variables, ident->identifier.value, value);
 
-
     while (peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
         ident = parse_identifier(p);
         arrput(identifiers, ident);
-        declared_variable_entry_value value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
+        value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
         shput(p->declared_variables, ident->identifier.value, value);
     }
 
@@ -869,7 +868,7 @@ static void check_declaration(parser *p, ast *src) {
         case ast_assignment_stmt:
         {
             char *id_name = src->assignment_stmt.name->identifier.value;
-            int s = strlen(id_name)-1;
+            size_t s = strlen(id_name)-1;
             bool has_ode_symbol = (id_name[s] == '\'');
 
             if(has_ode_symbol) {
