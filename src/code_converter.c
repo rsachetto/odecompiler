@@ -529,9 +529,8 @@ sds out_file_header(program p) {
 
     ret = sdscatprintf(ret, "\"#t");
 
-    ast *a ;
     for(int i = 0; i < n_stmt; i++) {
-        a = p[i];
+        ast *a = p[i];
         if(a->tag != ast_ode_stmt) continue;
 
         ret = sdscatprintf(ret, ", %.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
