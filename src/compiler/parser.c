@@ -461,7 +461,7 @@ ast **parse_grouped_assignment_names(parser *p) {
         advance_token(p);
         ident = parse_identifier(p);
         arrput(identifiers, ident);
-        value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
+        value = (declared_variable_entry_value){p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
         shput(p->declared_variables, ident->identifier.value, value);
     }
 

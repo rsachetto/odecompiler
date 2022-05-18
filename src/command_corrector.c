@@ -82,6 +82,7 @@ static void array_cleanup(char **array, int rows) {
     {
         free(array[i]);
     }
+    free(array);
 }
 
 static int deletion(char *word, char **array, int start_idx) {
@@ -166,7 +167,6 @@ static size_t edits1_rows(char *word) {
 static char **edits1(char *word) {
     int next_idx;
     char **array = malloc(edits1_rows(word) * sizeof(char *));
-
     if (!array) return NULL;
 
     next_idx  = deletion(word, array, 0);
@@ -227,7 +227,6 @@ static char **known_edits2(char **array, int rows, int *e2_rows) {
             }
         }
         array_cleanup(e1, e1_rows);
-        free(e1);
     }
 
     *e2_rows = res_size;
@@ -274,7 +273,7 @@ char *correct(char *word, char **commands, int num_commands) {
 
     if (find(word)) return word;
 
-    e1_rows = (unsigned)edits1_rows(word);
+    e1_rows = (int) edits1_rows(word);
     if (e1_rows)
     {
         e1 = edits1(word);
@@ -283,7 +282,6 @@ char *correct(char *word, char **commands, int num_commands) {
         if (e1_word)
         {
             array_cleanup(e1, e1_rows);
-            free(e1);
             return e1_word;
         }
     }
@@ -298,9 +296,6 @@ char *correct(char *word, char **commands, int num_commands) {
 
     array_cleanup(e1, e1_rows);
     array_cleanup(e2, e2_rows);
-
-    free(e1);
-    free(e2);
 
     return res_word;
 }
