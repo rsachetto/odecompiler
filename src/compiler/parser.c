@@ -245,7 +245,7 @@ ast *parse_boolean_literal(parser *p) {
 
 ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
-    ast *stmt = make_assignement_stmt(&p->cur_token, tag);
+    ast *stmt = make_assignment_stmt(&p->cur_token, tag);
 
     if(!skip_ident) {
         if (!expect_peek(p, IDENT)) {
@@ -471,7 +471,7 @@ ast **parse_grouped_assignment_names(parser *p) {
 
 ast *parse_grouped_assignment(parser *p) {
 
-    ast *stmt = make_grouped_assignement_stmt(&p->cur_token);
+    ast *stmt = make_grouped_assignment_stmt(&p->cur_token);
 
     if (peek_token_is(p, RBRACKET)) {
         RETURN_ERROR("expected at least one identifier\n");

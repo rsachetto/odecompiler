@@ -10,7 +10,7 @@ static int indentation_level = 0;
 static ast *make_base_ast(const token *t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
     if (a == NULL) {
-        fprintf(stderr, "%s - Error alocatting memory for the new ast node\n,", __FUNCTION__);
+        fprintf(stderr, "%s - Error allocating memory for the new ast node\n,", __FUNCTION__);
         return NULL;
     }
     a->tag = tag;
@@ -24,16 +24,16 @@ ast *make_import_stmt(const token *t) {
     return make_base_ast(t, ast_import_stmt);
 }
 
-ast *make_assignement_stmt(const token *t, ast_tag tag) {
+ast *make_assignment_stmt(const token *t, ast_tag tag) {
     return make_base_ast(t, tag);
 }
 
-ast *make_grouped_assignement_stmt(const token *t) {
+ast *make_grouped_assignment_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_grouped_assignment_stmt);
 
     if (a != NULL) {
-        a->grouped_assignement_stmt.names = NULL;
-        a->grouped_assignement_stmt.call_expr = NULL;
+        a->grouped_assignment_stmt.names = NULL;
+        a->grouped_assignment_stmt.call_expr = NULL;
     }
     return a;
 }
@@ -158,9 +158,7 @@ ast *make_builtin_function_ast(char *name, int n_params) {
     a->function_stmt.num_return_values = 1;
 
     return a;
-
 }
-
 
 static sds expression_stmt_to_str(ast *a) {
     if (a->expr_stmt != NULL) {
@@ -196,21 +194,21 @@ static sds return_stmt_to_str(ast *a) {
     return buf;
 }
 
-static sds assignement_stmt_to_str(ast *a) {
+static sds assignment_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
 
     if (a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
         buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], a->token.literal);
-        buf = sdscatfmt(buf, "%s", a->assignement_stmt.name->identifier.value);
+        buf = sdscatfmt(buf, "%s", a->assignment_stmt.name->identifier.value);
     } else {
-        buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignement_stmt.name->identifier.value);
+        buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value);
     }
 
     buf = sdscat(buf, " = ");
 
-    if (a->assignement_stmt.value != NULL) {
-        sds tmp = ast_to_string(a->assignement_stmt.value);
+    if (a->assignment_stmt.value != NULL) {
+        sds tmp = ast_to_string(a->assignment_stmt.value);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
     }
@@ -427,22 +425,22 @@ static sds import_stmt_to_str(ast *a) {
     return buf;
 }
 
-static sds grouped_assignement_stmt_to_str(ast *a) {
+static sds grouped_assignment_stmt_to_str(ast *a) {
     sds buf = sdsnew("[");
 
-    int n = arrlen(a->grouped_assignement_stmt.names);
+    int n = arrlen(a->grouped_assignment_stmt.names);
 
-    buf = sdscat(buf, a->grouped_assignement_stmt.names[0]->identifier.value);
+    buf = sdscat(buf, a->grouped_assignment_stmt.names[0]->identifier.value);
 
     for (int i = 1; i < n; i++) {
-        buf = sdscatfmt(buf, ", %s", a->grouped_assignement_stmt.names[i]->identifier.value);
+        buf = sdscatfmt(buf, ", %s", a->grouped_assignment_stmt.names[i]->identifier.value);
     }
 
     buf = sdscat(buf, "]");
 
     buf = sdscat(buf, " = ");
 
-    sds tmp = ast_to_string(a->grouped_assignement_stmt.call_expr);
+    sds tmp = ast_to_string(a->grouped_assignment_stmt.call_expr);
     buf = sdscat(buf, tmp);
     sdsfree(tmp);
 
@@ -453,11 +451,11 @@ static sds grouped_assignement_stmt_to_str(ast *a) {
 sds ast_to_string(ast *a) {
 
     if (a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
-        return assignement_stmt_to_str(a);
+        return assignment_stmt_to_str(a);
     }
 
     if (a->tag == ast_grouped_assignment_stmt) {
-        return grouped_assignement_stmt_to_str(a);
+        return grouped_assignment_stmt_to_str(a);
     }
 
     if (a->tag == ast_return_stmt) {
@@ -569,22 +567,22 @@ ast *copy_ast(ast *src) {
         case ast_ode_stmt:
         case ast_global_stmt:
         case ast_initial_stmt:
-            a->assignement_stmt.name = copy_ast(src->assignement_stmt.name);
-            a->assignement_stmt.value = copy_ast(src->assignement_stmt.value);
-            a->assignement_stmt.declaration_position = src->assignement_stmt.declaration_position;
+            a->assignment_stmt.name = copy_ast(src->assignment_stmt.name);
+            a->assignment_stmt.value = copy_ast(src->assignment_stmt.value);
+            a->assignment_stmt.declaration_position = src->assignment_stmt.declaration_position;
             break;
         case ast_grouped_assignment_stmt: {
-                                              a->grouped_assignement_stmt.names = NULL;
-                                              int n = arrlen(src->grouped_assignement_stmt.names);
+                                              a->grouped_assignment_stmt.names = NULL;
+                                              int n = arrlen(src->grouped_assignment_stmt.names);
 
                                               for (int i = 0; i < n; i++) {
-                                                  arrput(a->grouped_assignement_stmt.names, copy_ast(src->grouped_assignement_stmt.names[i]));
+                                                  arrput(a->grouped_assignment_stmt.names, copy_ast(src->grouped_assignment_stmt.names[i]));
                                               }
 
-                                              a->grouped_assignement_stmt.call_expr = src->grouped_assignement_stmt.call_expr;
+                                              a->grouped_assignment_stmt.call_expr = src->grouped_assignment_stmt.call_expr;
                                           } break;
         case ast_function_statement: {
-                                         a->function_stmt.name = copy_ast(src->assignement_stmt.name);
+                                         a->function_stmt.name = copy_ast(src->assignment_stmt.name);
 
                                          int n = arrlen(src->function_stmt.parameters);
                                          a->function_stmt.parameters = NULL;
@@ -712,11 +710,11 @@ void free_ast(ast *src) {
         case ast_ode_stmt:
         case ast_global_stmt:
         case ast_initial_stmt:
-            free_ast(src->assignement_stmt.name);
-            free_ast(src->assignement_stmt.value);
+            free_ast(src->assignment_stmt.name);
+            free_ast(src->assignment_stmt.value);
             break;
         case ast_grouped_assignment_stmt:
-            free_program(src->grouped_assignement_stmt.names);
+            free_program(src->grouped_assignment_stmt.names);
             break;
         case ast_function_statement:
             free_ast(src->function_stmt.name);

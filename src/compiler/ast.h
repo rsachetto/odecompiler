@@ -17,16 +17,16 @@
 
 static char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
 
-typedef struct assignement_statement_t {
+typedef struct assignment_statement_t {
     struct ast_t *name;
     struct ast_t *value;
     int declaration_position;
-} assignement_statement;
+} assignment_statement;
 
-typedef struct grouped_assignement_statement_t {
+typedef struct grouped_assignment_statement_t {
     struct ast_t **names;
     struct ast_t *call_expr;
-} grouped_assignement_statement;
+} grouped_assignment_statement;
 
 typedef struct return_statement_t {
     struct ast_t **return_values;
@@ -69,7 +69,7 @@ typedef struct infix_expression_t {
     struct ast_t *right;
 } infix_expression;
 
-typedef struct if_expresssion_t {
+typedef struct if_expression_t {
     struct ast_t *condition;
     struct ast_t **consequence;
     struct ast_t **alternative;
@@ -116,7 +116,7 @@ typedef struct ast_t {
 
     union {
         identifier_node identifier;
-        assignement_statement assignement_stmt;
+        assignment_statement assignment_stmt;
         while_statement while_stmt;
         return_statement return_stmt;
         number_literal num_literal;
@@ -128,7 +128,7 @@ typedef struct ast_t {
         function_statement function_stmt;
         call_expression call_expr;
         import_statement import_stmt;
-        grouped_assignement_statement grouped_assignement_stmt;
+        grouped_assignment_statement grouped_assignment_stmt;
 
         struct ast_t *expr_stmt;
     };
@@ -137,8 +137,8 @@ typedef struct ast_t {
 
 typedef ast **program;
 
-ast *make_assignement_stmt(const token *t, ast_tag tag);
-ast *make_grouped_assignement_stmt(const token *t);
+ast *make_assignment_stmt(const token *t, ast_tag tag);
+ast *make_grouped_assignment_stmt(const token *t);
 ast *make_identifier(const token *t);
 ast *make_return_stmt(const token *t);
 ast *make_while_stmt(const token *t);
