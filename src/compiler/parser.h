@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "token.h"
+#include "program.h"
 
 typedef struct declared_variable_entry_value_t {
     int  declaration_position;
@@ -71,7 +72,6 @@ ast *parse_expression(parser *p, enum operator_precedence precedence);
 enum operator_precedence peek_precedence(parser *p);
 enum operator_precedence cur_precedence(parser *p);
 ast * parse_statement(parser *p);
-void print_program(program p);
 bool check_parser_errors(parser *p, bool exit_on_error);
 
 #endif /* __PARSER_H */

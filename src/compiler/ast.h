@@ -135,7 +135,7 @@ typedef struct ast_t {
 
 } ast;
 
-typedef ast **program;
+static int indentation_level = 0;
 
 ast *make_assignment_stmt(const token *t, ast_tag tag);
 ast *make_grouped_assignment_stmt(const token *t);
@@ -154,10 +154,9 @@ ast *make_call_expression(const token *t, ast *function);
 ast *make_import_stmt(const token *t);
 ast *make_string_literal(const token *t);
 
-sds *program_to_string(program p);
 sds ast_to_string(ast *a);
-program copy_program(program src);
 ast *copy_ast(ast *src);
 void free_ast(ast *src);
-void free_program(program src_program);
+void free_asts(ast **asts);
+
 #endif /* __AST_H */

@@ -25,10 +25,10 @@ debug_set:
 	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=address -Wall -Wno-switch -Wno-stringop-overflow -Wno-misleading-indentation -mavx -maes)
 	$(eval OPT_TYPE=debug)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/libfort.a
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/libfort.a
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
-bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/ast.o build/token.o build/file_utils.o build/sds.o
+bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/program.o build/ast.o build/token.o build/file_utils.o build/sds.o
 	gcc ${OPT_FLAGS} $^ -o bin/odec
 
 build/token.o: src/compiler/token.c src/compiler/token.h src/compiler/token_enum.h
@@ -48,6 +48,9 @@ build/ast.o: src/compiler/ast.c src/compiler/ast.h
 
 build/parser.o: src/compiler/parser.c  src/compiler/parser.h
 	gcc ${OPT_FLAGS} -c  src/compiler/parser.c -o  build/parser.o
+
+build/program.o: src/compiler/program.c  src/compiler/program.h
+	gcc ${OPT_FLAGS} -c  src/compiler/program.c -o  build/program.o
 
 build/code_converter.o: src/code_converter.c src/code_converter.h
 	gcc ${OPT_FLAGS} -c  src/code_converter.c -o build/code_converter.o

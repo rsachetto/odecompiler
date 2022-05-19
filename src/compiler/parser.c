@@ -30,20 +30,6 @@ static int ode_count = 1;
 
 ast ** parse_expression_list(parser *, bool);
 
-void print_program(program p) {
-
-    sds *p_str = program_to_string(p);
-
-    int n = arrlen(p_str);
-
-    for(int i = 0; i < n; i++) {
-        printf("%s\n", p_str[i]);
-        sdsfree(p_str[i]);
-    }
-
-    arrfree(p_str);
-}
-
 bool check_parser_errors(parser *p, bool exit_on_error) {
 
     int err_len = arrlen(p->errors);

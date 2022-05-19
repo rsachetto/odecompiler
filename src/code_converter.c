@@ -5,7 +5,7 @@
 
 static solver_type solver = EULER_ADPT_SOLVER;
 
-static int indentation_level = 0;
+//static int indentation_level = 0;
 
 struct var_declared_entry_t {
     char *key;

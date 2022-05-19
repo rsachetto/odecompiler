@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int indentation_level = 0;
 
 static ast *make_base_ast(const token *t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
@@ -515,24 +514,6 @@ sds ast_to_string(ast *a) {
     return NULL;
 }
 
-sds *program_to_string(program p) {
-
-    indentation_level = 0;
-
-    int n_stmt = arrlen(p);
-    sds *return_str = NULL;
-
-    for (int i = 0; i < n_stmt; i++) {
-        sds s = ast_to_string(p[i]);
-
-        if (s) {
-            arrput(return_str, s);
-        }
-    }
-
-    return return_str;
-}
-
 ast *copy_ast(ast *src) {
 
     ast *a = (ast *) malloc(sizeof(ast));
@@ -662,34 +643,21 @@ ast *copy_ast(ast *src) {
     return a;
 }
 
-program copy_program(program src_program) {
+void free_asts(ast **asts) {
 
-    program dst_program = NULL;
-
-    int p_len = arrlen(src_program);
-
-    for (int i = 0; i < p_len; i++) {
-        ast *a = copy_ast(src_program[i]);
-        arrput(dst_program, a);
-    }
-
-    return dst_program;
-}
-
-void free_program(program src_program) {
-
-    if(src_program == NULL) {
+    if(asts == NULL) {
         return;
     }
 
-    int p_len = arrlen(src_program);
+    int p_len = arrlen(asts);
 
     for (int i = 0; i < p_len; i++) {
-        free_ast(src_program[i]);
+        free_ast(asts[i]);
     }
 
-    arrfree(src_program);
+    arrfree(asts);
 }
+
 
 void free_ast(ast *src) {
 
@@ -714,21 +682,21 @@ void free_ast(ast *src) {
             free_ast(src->assignment_stmt.value);
             break;
         case ast_grouped_assignment_stmt:
-            free_program(src->grouped_assignment_stmt.names);
+            free_asts(src->grouped_assignment_stmt.names);
             break;
         case ast_function_statement:
             free_ast(src->function_stmt.name);
-            free_program(src->function_stmt.parameters);
-            free_program(src->function_stmt.body);
+            free_asts(src->function_stmt.parameters);
+            free_asts(src->function_stmt.body);
             break;
         case ast_return_stmt:
-            free_program(src->return_stmt.return_values);
+            free_asts(src->return_stmt.return_values);
             break;
         case ast_expression_stmt:
             free_ast(src->expr_stmt);
             break;
         case ast_while_stmt:
-            free_program(src->while_stmt.body);
+            free_asts(src->while_stmt.body);
             break;
         case ast_import_stmt:
             free_ast(src->import_stmt.filename);
@@ -744,13 +712,13 @@ void free_ast(ast *src) {
             break;
         case ast_if_expr:
             free_ast(src->if_expr.condition);
-            free_program(src->if_expr.consequence);
-            free_program(src->if_expr.alternative);
+            free_asts(src->if_expr.consequence);
+            free_asts(src->if_expr.alternative);
             free_ast(src->if_expr.elif_alternative);
             break;
         case ast_call_expression:
             free_ast(src->call_expr.function_identifier);
-            free_program(src->call_expr.arguments);
+            free_asts(src->call_expr.arguments);
             break;
     }
 
