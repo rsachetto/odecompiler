@@ -10,6 +10,7 @@ void add_file_watch(struct shell_variables *shell_state, char *path) {
     int wd = inotify_add_watch(shell_state->fd_notify, path, IN_MODIFY|IN_MOVED_TO);
 
 	struct model_config **entries = hmget(shell_state->notify_entries, wd);
+    shell_state->current_model->notify_code = wd;
 	arrput(entries, shell_state->current_model);
 
     hmput(shell_state->notify_entries, wd, entries);

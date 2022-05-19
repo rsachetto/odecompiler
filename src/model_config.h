@@ -38,6 +38,7 @@ struct model_config {
     bool is_derived;
     bool should_reload;
     bool auto_reload;
+    int notify_code;
     meow_u128 hash;
 };
 

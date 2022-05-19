@@ -1487,8 +1487,10 @@ COMMAND_FUNCTION(unload) {
 
     bool is_current = (model_config == shell_state->current_model);
 
-    free_model_config(model_config);
+    hmdel(shell_state->notify_entries, model_config->notify_code);
     shdel(shell_state->loaded_models, tokens[1]);
+    
+    free_model_config(model_config);
 
     if (shell_state->loaded_models != 0 && is_current) {
         //TODO: do we want to know the last loaded model??
