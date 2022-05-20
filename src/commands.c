@@ -17,7 +17,7 @@
 
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
-static int num_commands = 0;
+static size_t num_commands = 0;
 static struct shell_variables * global_state;
 
 #define CREATE_TABLE(table)\
@@ -278,11 +278,11 @@ static bool should_complete_model_and_var(const char *c) {
         struct model_config *model_config = NULL;                                                  \
         int index__ = shgeti(global_state->loaded_models, (model_name));                           \
         if (index__ != -1) model_config = global_state->loaded_models[index__].value;              \
-        int num_vars = 0;                                                                          \
+        size_t num_vars_ = 0;                                                                      \
         if (model_config) {                                                                        \
-            num_vars = shlen(model_config->var_indexes);                                           \
+            num_vars_ = shlen(model_config->var_indexes);                                          \
         }                                                                                          \
-        while (list_index < num_vars) {                                                            \
+        while (list_index < num_vars_) {                                                           \
             name = model_config->var_indexes[list_index].key;                                      \
             list_index++;                                                                          \
             if (strncmp(name, text, len) == 0) {                                                   \
@@ -307,7 +307,7 @@ static char *autocomplete_command_params(const char *text, int state) {
     int count;
     sds *splitted_buffer = sdssplit(rl_line_buffer, " ", &count);
 
-    int num_loaded_models = shlen(global_state->loaded_models);
+    size_t num_loaded_models = shlen(global_state->loaded_models);
 
     int index = shgeti(commands, splitted_buffer[0]);
 
@@ -509,6 +509,7 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 }
 
 COMMAND_FUNCTION(load) {
+    (void)num_args;
     return load_model(shell_state, tokens[1], NULL);
 }
 
@@ -882,7 +883,7 @@ bool plotvar_helper(struct shell_variables *shell_state, sds *tokens, command_ty
     char *last_title = strdup(model_config->plot_config.title);
     int last_index   = model_config->plot_config.yindex;
 
-    bool ret;
+    bool ret = false;
 
      if(num_args == 1) {
            ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
@@ -1018,6 +1019,9 @@ COMMAND_FUNCTION(replotvar) {
 
 COMMAND_FUNCTION(list) {
 
+    (void)tokens;
+    (void)num_args;
+
     int len = shlen(shell_state->loaded_models);
 
     CREATE_TABLE(table);
@@ -1078,6 +1082,8 @@ COMMAND_FUNCTION(vars) {
 
 COMMAND_FUNCTION(cd) {
 
+    (void)num_args;
+
     const char *path = tokens[1];
     int ret = -1;
 
@@ -1104,6 +1110,10 @@ COMMAND_FUNCTION(cd) {
 }
 
 COMMAND_FUNCTION(ls) {
+
+    (void)shell_state;
+    (void)num_args;
+    
     char *path_name;
 
     if (num_args == 0) {
@@ -1117,6 +1127,8 @@ COMMAND_FUNCTION(ls) {
 }
 
 COMMAND_FUNCTION(help) {
+
+    (void) shell_state;
 
     CREATE_TABLE(table);
 
@@ -1389,6 +1401,8 @@ COMMAND_FUNCTION(getodevalues) {
 
 COMMAND_FUNCTION(saveplot) {
 
+    (void)num_args;
+
     const char *command = tokens[0];
 
     const char *file_name = tokens[1];
@@ -1417,6 +1431,8 @@ COMMAND_FUNCTION(saveplot) {
 }
 
 COMMAND_FUNCTION(setcurrentmodel) {
+
+    (void) num_args;
 
     struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens[0], tokens[1]);
 
@@ -1642,15 +1658,24 @@ bool run_commands_from_file(struct shell_variables *shell_state, char *file_name
 }
 
 COMMAND_FUNCTION(loadcmds) {
+    (void) num_args;
     return run_commands_from_file(shell_state, tokens[1]);
 }
 
 COMMAND_FUNCTION(quit) {
+    (void) shell_state;
+    (void) tokens;
+    (void) num_args;
+
     printf("Bye!\n");
     return true;
 }
 
 COMMAND_FUNCTION(pwd) {
+    (void) shell_state;
+    (void) tokens;
+    (void) num_args;
+
     print_current_dir();
     return true;
 }
@@ -1694,7 +1719,7 @@ COMMAND_FUNCTION(listruns)  {
         ft_printf_ln(table, "Run|Time|Output File");
     }
 
-    for(int i = 0; i < n_runs; i++) {
+    for(uint i = 0; i < n_runs; i++) {
         if(run_info[i].saved) {
             ft_printf_ln(table, "%d|%lf|%s", i+1, run_info[i].time, run_info[i].filename);
         } else {
@@ -1760,7 +1785,7 @@ COMMAND_FUNCTION(resetruns) {
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    for(int r = 0; r < model_config->num_runs; r++) {
+    for(uint r = 0; r < model_config->num_runs; r++) {
 
         free(model_config->runs[r].filename);
         free(model_config->runs[r].vars_max_value);
