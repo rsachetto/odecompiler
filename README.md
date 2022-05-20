@@ -57,18 +57,32 @@ ode_shell> plot
 
 ```
 ode_shell> vars
-Model vars for model sir:
-t, 1
-S, 2
-I, 3
-R, 4
+╭──────────────────╮
+│       sir        │
+├──────────┬───────┤
+│ Var name │ Index │
+├──────────┼───────┤
+│    t     │   1   │
+├──────────┼───────┤
+│    S     │   2   │
+├──────────┼───────┤
+│    I     │   3   │
+├──────────┼───────┤
+│    R     │   4   │
+╰──────────┴───────╯
 ode_shell> setploty I
+╭───────────────────────────────────────────────╮
+│ 'I' variable will be plotted along the Y axis │
+╰───────────────────────────────────────────────╯
 ode_shell> replot
 ```
 ![plot image](https://raw.githubusercontent.com/rsachetto/odecompiler/master/imgs/sir_ode2.png)
 
 ```
 ode_shell> setploty R
+╭───────────────────────────────────────────────╮
+│ 'R' variable will be plotted along the Y axis │
+╰───────────────────────────────────────────────╯
 ode_shell> replot
 ode_shell> exit
 ```
