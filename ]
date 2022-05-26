@@ -1809,7 +1809,7 @@ COMMAND_FUNCTION(closeplot) {
     }
 
     gnuplot_cmd(shell_state->gnuplot_handle, "exit");
-    free(shell_state->gnuplot_handle);
+
     shell_state->gnuplot_handle = NULL;
 
     return true;
