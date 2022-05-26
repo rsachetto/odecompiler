@@ -22,19 +22,19 @@ static struct shell_variables * global_state;
 
 #define CREATE_TABLE(table)\
     ft_table_t *(table) = ft_create_table();\
-    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);\
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER)
+ft_set_border_style(table, FT_SOLID_ROUND_STYLE);\
+ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER)
 
 #define PRINT_AND_FREE_TABLE(table)\
     printf("%s", ft_to_string((table)));\
-    ft_destroy_table(table)
+ft_destroy_table(table)
 
 bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, uint *run_number) {
     *model_name = NULL;
     *run_number = 0;
 
     if (num_args == 1) {
-         bool error = false;
+        bool error = false;
         *run_number = (uint) string_to_long(tokens[1], &error);
 
         if (error) {
@@ -388,7 +388,7 @@ static struct model_config * get_model_and_n_runs_for_plot_cmds(struct shell_var
         }
         model_config = shell_state->current_model;
     }  else {
-         model_config = load_model_config_or_print_error(shell_state, command, model_name);
+        model_config = load_model_config_or_print_error(shell_state, command, model_name);
         if(!model_config) return NULL;
     }
 
@@ -625,6 +625,9 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
         }
 
         popen2("gnuplot", shell_state->gnuplot_handle);
+        if(strcmp(shell_state->default_gnuplot_term, "sixel") == 0) {
+            gnuplot_cmd(shell_state->gnuplot_handle, "set term sixel");
+        }
     }
 
     command = "plot";
@@ -643,8 +646,8 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
     sds output_file = get_model_output_file(model_config, run_number);
 
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2",
-                command, output_file, model_config->plot_config.xindex,
-                model_config->plot_config.yindex, model_config->plot_config.title);
+            command, output_file, model_config->plot_config.xindex,
+            model_config->plot_config.yindex, model_config->plot_config.title);
 
     sdsfree(output_file);
 
@@ -752,8 +755,8 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
     sds output_file = get_model_output_file(model_config, run_number);
 
     gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2",
-                command, output_file, model_config->plot_config.xindex,
-                model_config->plot_config.yindex, model_config->plot_config.title);
+            command, output_file, model_config->plot_config.xindex,
+            model_config->plot_config.yindex, model_config->plot_config.title);
 
     sdsfree(output_file);
 
@@ -885,8 +888,8 @@ bool plotvar_helper(struct shell_variables *shell_state, sds *tokens, command_ty
 
     bool ret = false;
 
-     if(num_args == 1) {
-           ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
+    if(num_args == 1) {
+        ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
     } else if(num_args == 2) {
         bool error;
         string_to_long(tokens[2], &error);
@@ -919,8 +922,8 @@ COMMAND_FUNCTION(plotvar) {
     int split_index;
 
     if(num_args == 1) {
-          vars_to_plot = sdssplit(tokens[1], " ", &varcount);
-          split_index = 1;
+        vars_to_plot = sdssplit(tokens[1], " ", &varcount);
+        split_index = 1;
     } else if(num_args == 2) {
         bool dont_have_run_number;
         string_to_long(tokens[2], &dont_have_run_number);
@@ -1113,7 +1116,7 @@ COMMAND_FUNCTION(ls) {
 
     (void)shell_state;
     (void)num_args;
-    
+
     char *path_name;
 
     if (num_args == 0) {
@@ -1505,7 +1508,7 @@ COMMAND_FUNCTION(unload) {
 
     hmdel(shell_state->notify_entries, model_config->notify_code);
     shdel(shell_state->loaded_models, tokens[1]);
-    
+
     free_model_config(model_config);
 
     if (shell_state->loaded_models != 0 && is_current) {

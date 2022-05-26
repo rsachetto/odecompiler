@@ -79,17 +79,53 @@ static void setup_ctrl_c_handler() {
     sigaction(SIGINT, &s, NULL);
 }
 
-static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell_state) {
+static bool check_sixel_support() {
 
-    bool gnuplot_installed = can_run_command("gnuplot");
+    bool can_bash = can_run_command("bash");
 
-    if (!gnuplot_installed) {
-        fprintf(stderr, "Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
-        fprintf(stderr, "Plotting commands will not be available!\n");
-        shell_state->default_gnuplot_term = NULL;
+    if(!can_bash) {
         return false;
     }
 
+    char * command  = "#!/usr/bin/env bash\n"
+        "\n"
+        "stty -echo\n"
+        "\n"
+        "IFS=\";?c\" read -a REPLY -s -t 1 -d \"c\" -p $'\\e[c' >&2\n"
+        "for code in \"${REPLY[@]}\"; do\n"
+        "    if [[ $code == \"4\" ]]; then\n"
+        "stty echo\n"
+        "\texit 1\n"
+        "    fi\n"
+        "done\n"
+        "\n"
+        "if [[ \"$TERM\" == yaft* ]]; then stty echo\n exit 1; fi\n"
+        "stty echo\n"
+        "exit 0\n"
+        "";
+
+
+    FILE *tmp_file = fopen("/tmp/has_sixel_support_XXXX.sh", "w");
+    fprintf(tmp_file, "%s\n", command);
+    fclose(tmp_file);
+
+    FILE *pipe = popen("bash /tmp/has_sixel_support_XXXX.sh", "r");
+    return WEXITSTATUS(pclose(pipe));
+
+}
+
+static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell_state) {
+
+  bool gnuplot_installed = can_run_command("gnuplot");
+
+  if (!gnuplot_installed) {
+    fprintf(stderr, "Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
+    fprintf(stderr, "Plotting commands will not be available!\n");
+    shell_state->default_gnuplot_term = NULL;
+    return false;
+  }
+
+  if(!check_sixel_support()) {
     const int BUF_MAX = 1024;
 
     FILE *f = popen("gnuplot -e \"show t\" 2>&1", "r");
@@ -98,34 +134,40 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
     sds tmp = NULL;
 
     while (fgets(msg, BUF_MAX, f) != NULL) {
-        unsigned long n = strlen(msg);
-        if (n > 5) {
-            tmp = sdsnew(msg);
-            tmp = sdstrim(tmp, " \n");
-            break;
-        }
+      unsigned long n = strlen(msg);
+      if (n > 5) {
+        tmp = sdsnew(msg);
+        tmp = sdstrim(tmp, " \n");
+        break;
+      }
     }
 
     if(tmp) {
-        int c;
-        sds *tmp_tokens = sdssplit(tmp, " ", &c);
-        shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
-        sdsfreesplitres(tmp_tokens, c);
-        sdsfree(tmp);
+      int c;
+      sds *tmp_tokens = sdssplit(tmp, " ", &c);
+      shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
+      sdsfreesplitres(tmp_tokens, c);
+      sdsfree(tmp);
     }
     else {
-        //I think this will never happen
-        shell_state->default_gnuplot_term = strdup("dummy");
+      //I think this will never happen
+      shell_state->default_gnuplot_term = strdup("dummy");
     }
     pclose(f);
+  }
+  else {
+    shell_state->default_gnuplot_term = strdup("sixel");
+  }
 
-    return true;
+  return true;
 }
 
 /* Our argp parser. */
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
 int main(int argc, char **argv) {
+
+    check_sixel_support();
 
     struct arguments arguments = {0};
 
