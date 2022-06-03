@@ -28,6 +28,7 @@ struct shell_variables {
     char *current_dir;
     char *last_dir;
     bool never_reload;
+    bool enable_sixel;
 };
 
 struct model_hash_entry {

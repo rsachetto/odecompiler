@@ -649,6 +649,11 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
             command, output_file, model_config->plot_config.xindex,
             model_config->plot_config.yindex, model_config->plot_config.title);
 
+    if(strcmp(shell_state->default_gnuplot_term, "sixel") == 0) {
+        printf("\n");
+    }
+
+
     sdsfree(output_file);
 
     if (c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {

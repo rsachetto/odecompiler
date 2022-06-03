@@ -28,6 +28,7 @@ static char args_doc[] = "FILE - A file with command to be executed.";
 /* The options we understand. */
 static struct argp_option options[] = {
     {"work_dir", 'w', "DIR", 0, "DIR where the shell will start." },
+    {"enable_sixel", 's', 0, 0, "Enable sixel gnuplot terminal when available" },
     { 0 }
 };
 
@@ -35,6 +36,7 @@ static struct argp_option options[] = {
 struct arguments {
     char *command_file;
     char *work_dir;
+    bool enable_sixel;
 };
 
 /* Parse a single option. */
@@ -45,6 +47,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'w':
             arguments->work_dir = arg;
+            break;
+        case 's':
+            arguments->enable_sixel = true;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num >= 1) {
@@ -116,50 +121,53 @@ static bool check_sixel_support() {
 
 static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell_state) {
 
-  bool gnuplot_installed = can_run_command("gnuplot");
+    bool gnuplot_installed = can_run_command("gnuplot");
 
-  if (!gnuplot_installed) {
-    fprintf(stderr, "Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
-    fprintf(stderr, "Plotting commands will not be available!\n");
-    shell_state->default_gnuplot_term = NULL;
-    return false;
-  }
-
-  if(!check_sixel_support()) {
-    const int BUF_MAX = 1024;
-
-    FILE *f = popen("gnuplot -e \"show t\" 2>&1", "r");
-    char msg[BUF_MAX];
-
-    sds tmp = NULL;
-
-    while (fgets(msg, BUF_MAX, f) != NULL) {
-      unsigned long n = strlen(msg);
-      if (n > 5) {
-        tmp = sdsnew(msg);
-        tmp = sdstrim(tmp, " \n");
-        break;
-      }
+    if (!gnuplot_installed) {
+        fprintf(stderr, "Warning - gnuplot was not found. Make sure that it is installed and added to the PATH variable!\n");
+        fprintf(stderr, "Plotting commands will not be available!\n");
+        shell_state->default_gnuplot_term = NULL;
+        return false;
     }
 
-    if(tmp) {
-      int c;
-      sds *tmp_tokens = sdssplit(tmp, " ", &c);
-      shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
-      sdsfreesplitres(tmp_tokens, c);
-      sdsfree(tmp);
+    bool try_sixel = check_sixel_support() && shell_state->enable_sixel;
+
+    if(!try_sixel) {
+        const int BUF_MAX = 1024;
+
+        FILE *f = popen("gnuplot -e \"show t\" 2>&1", "r");
+        char msg[BUF_MAX];
+
+        sds tmp = NULL;
+
+        while (fgets(msg, BUF_MAX, f) != NULL) {
+            unsigned long n = strlen(msg);
+            if (n > 5) {
+                tmp = sdsnew(msg);
+                tmp = sdstrim(tmp, " \n");
+                break;
+            }
+        }
+
+        if(tmp) {
+            int c;
+            sds *tmp_tokens = sdssplit(tmp, " ", &c);
+            shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
+            sdsfreesplitres(tmp_tokens, c);
+            sdsfree(tmp);
+        }
+        else {
+            //I think this will never happen
+            shell_state->default_gnuplot_term = strdup("dummy");
+        }
+        pclose(f);
     }
     else {
-      //I think this will never happen
-      shell_state->default_gnuplot_term = strdup("dummy");
+        printf("Using sixel as gnuplot output.\n");
+        shell_state->default_gnuplot_term = strdup("sixel");
     }
-    pclose(f);
-  }
-  else {
-    shell_state->default_gnuplot_term = strdup("sixel");
-  }
 
-  return true;
+    return true;
 }
 
 /* Our argp parser. */
@@ -167,13 +175,13 @@ static struct argp argp = { options, parse_opt, args_doc, doc };
 
 int main(int argc, char **argv) {
 
-    check_sixel_support();
-
     struct arguments arguments = {0};
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
     struct shell_variables shell_state = {0};
+
+    shell_state.enable_sixel = arguments.enable_sixel;
 
     shell_state.current_dir = get_current_directory();
     shell_state.never_reload = false;
