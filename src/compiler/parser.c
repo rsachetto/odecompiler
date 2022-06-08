@@ -180,7 +180,7 @@ parser * new_parser(lexer *l) {
     shdefault(p->declared_variables, ((declared_variable_entry_value){0}));
 
     //variable time is auto declared in the scope
-    shput(p->declared_variables, "time", ((declared_variable_entry_value){0, true, ast_global_stmt}));
+    shput(p->declared_variables, "time", ((declared_variable_entry_value){0, true, 0, ast_global_stmt}));
 
     p->l = l;
 
@@ -245,11 +245,6 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
             RETURN_ERROR("ode identifiers needs to end with an ' \n");
         }
     }
-    // else {
-    //     if(has_ode_symbol) {
-    //         RETURN_ERROR("only ode identifiers can end with an ' ");
-    //     }
-    // }
 
     stmt->assignment_stmt.name = parse_identifier(p);
 
