@@ -19,3 +19,5 @@ setploty I
 plottofile "sir_I.pdf"
 setploty R
 plottofile "sir_R.pdf"
+load lv.ode
+solve 100

@@ -1511,6 +1511,10 @@ COMMAND_FUNCTION(unload) {
 
     bool is_current = (model_config == shell_state->current_model);
 
+    
+	struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
+    arrfree(entries);
+
     hmdel(shell_state->notify_entries, model_config->notify_code);
     shdel(shell_state->loaded_models, tokens[1]);
 
