@@ -683,6 +683,7 @@ void free_ast(ast *src) {
             break;
         case ast_grouped_assignment_stmt:
             free_asts(src->grouped_assignment_stmt.names);
+            free_ast(src->grouped_assignment_stmt.call_expr);
             break;
         case ast_function_statement:
             free_ast(src->function_stmt.name);

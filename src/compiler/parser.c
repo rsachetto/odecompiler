@@ -960,27 +960,19 @@ static void check_declaration(parser *p, ast *src) {
             }
         }
 
-            //check_variable_declarations(p, src->grouped_assignment_stmt.names);
             break;
         case ast_function_statement:
-            //free_ast(src->function_stmt.name);
-            //free_program(src->function_stmt.parameters);
-            //free_program(src->function_stmt.body);
-            //TODO
             break;
         case ast_return_stmt:
             //TODO
-            //free_program(src->return_stmt.return_values);
             break;
         case ast_expression_stmt:
             check_declaration(p, src->expr_stmt);
             break;
         case ast_while_stmt:
-            //free_program(src->while_stmt.body);
             //TODO
             break;
         case ast_import_stmt:
-            //free_ast(src->import_stmt.filename);
             break;
         case ast_prefix_expression:
             check_declaration(p, src->prefix_expr.right);
