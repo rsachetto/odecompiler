@@ -1827,6 +1827,25 @@ COMMAND_FUNCTION(closeplot) {
     return true;
 }
 
+COMMAND_FUNCTION(converttoc) {
+
+    char *file_name = tokens[num_args];
+    struct model_config *model_config = NULL;
+    GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
+
+    FILE *outfile = fopen(file_name, "w");
+    bool error = convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
+    fclose(outfile);
+
+    if(!error) {
+        return true;
+    }
+    else {
+        printf("Error converting model!\n");
+        return false;
+    }
+}
+
 void clean_and_exit(struct shell_variables *shell_state) {
 
     sds history_path = sdsnew(get_home_dir());
@@ -2067,9 +2086,9 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
         ADD_CMD(plotvar,       1, 3, "Plots the output of a model execution (one or more variables). "PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
         ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. "PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
         ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). "PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
+        ADD_CMD(closeplot,        0, 0, "Close the current plot");
     }
 
-    ADD_CMD(closeplot,        0, 0, "Close the current plot");
     ADD_CMD(pwd,              0, 0, "Shows the current directory");
     ADD_CMD(solve,            1, 2, "Solves the ODE(s) of a loaded model for x steps. "ONE_ARG" run sir 100");
     ADD_CMD(vars,             0, 1, "List all variables available for plotting in a loaded model. "NO_ARGS" vars sir");
@@ -2095,5 +2114,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. "PLOTFILE_ARGS" savemodeloutput sir output_sir.txt or savemodeloutput sir output_sir.txt 1");
     ADD_CMD(resetruns,        0, 1, "Resets the runs information of a model. "NO_ARGS" resetruns sir");
     ADD_CMD(getruninfo,       0, 2, "Prints the information about an specific run. "GETRUN_ARGS " getruninfo sir or getruninfo sir 1 or getruninfo 1");
+    ADD_CMD(converttoc,       1, 2, "Convert the current model to a C program.\nE.g., converttoc model_name.c or converttoc sir model_name.c");
+
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 }
