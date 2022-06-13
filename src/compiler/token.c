@@ -39,6 +39,9 @@ token_type lookup_ident(const token *t) {
 	if(STRING_EQUALS_N(ident, "fn", 2)) {
 	   return FUNCTION;
 	}
+    if(STRING_EQUALS_N(ident, "tsfn", 2)) {
+	    return TSFUNCTION;
+	}
 	if(STRING_EQUALS_N(ident, "ode", 3)) {
 	   return ODE;
 	}

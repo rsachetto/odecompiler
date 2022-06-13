@@ -81,6 +81,7 @@ typedef struct function_statement_t {
     struct ast_t **parameters;
     struct ast_t **body;
     int num_return_values;
+    bool is_ts_fn;
 } function_statement;
 
 typedef struct call_expression_t {

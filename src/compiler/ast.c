@@ -132,6 +132,12 @@ ast *make_function_statement(const token *t) {
     if(a != NULL) {
         a->function_stmt.body = NULL;
         a->function_stmt.parameters = NULL;
+        if(t->type == TSFUNCTION) {
+            a->function_stmt.is_ts_fn = true;
+        }
+        else {
+            a->function_stmt.is_ts_fn = false;
+        }
     }
     return a;
 }

@@ -34,6 +34,7 @@ BEGIN_ENUM(token_type) {
 
 
     DECL_ENUM_ELEMENT_STR(FUNCTION,           "fn")
+    DECL_ENUM_ELEMENT_STR(TSFUNCTION,         "tsfn")
     DECL_ENUM_ELEMENT_STR(ODE,                "ode")
     DECL_ENUM_ELEMENT_STR(TRUE,              "true")
     DECL_ENUM_ELEMENT_STR(FALSE,            "false")

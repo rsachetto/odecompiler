@@ -480,21 +480,114 @@ void write_initial_conditions(program p, FILE *file) {
 
 }
 
+static bool create_dynamic_array_headers(FILE *f) {
+
+    fprintf(f, "//------------------ Support functions and data ---------------\n\n");
+
+    fprintf(f, "typedef struct __exposed_ode_value__t {\n");
+    fprintf(f, "    real value;\n");
+    fprintf(f, "    real timestep;\n");
+    fprintf(f, "} __exposed_ode_value__;\n\n");
+
+    fprintf(f, "typedef uint64_t u64;\n");
+    fprintf(f, "typedef uint32_t u32;\n");
+    fprintf(f, "\n");
+    fprintf(f, "struct header {    \n");
+    fprintf(f, "    u64 size;\n");
+    fprintf(f, "    u64 capacity;\n");
+    fprintf(f, "};\n");
+    fprintf(f, "\n");
+    fprintf(f, "\n");
+
+    fprintf(f, "//INTERNALS MACROS\n");
+    fprintf(f, "#define __original_address__(__l) ( (char*)(__l) - sizeof(struct header) )\n");
+    fprintf(f, "#define __len__(__l) ( ((struct header *)(__original_address__(__l)))->size )\n");
+    fprintf(f, "#define __cap__(__l) ( ((struct header* )(__original_address__(__l)))->capacity )\n");
+    fprintf(f, "#define __internal_len__(__l) ( ((struct header *)(__l))->size )\n");
+    fprintf(f, "#define __internal_cap__(__l) ( ((struct header *)(__l))->capacity )\n");
+    fprintf(f, "\n");
+    fprintf(f, "\n");
+    fprintf(f, "//API\n");
+    fprintf(f, "#define append(__l, __item) ( (__l) = maybe_grow( (__l), sizeof(*(__l)) ), __l[__len__(__l)++] = (__item) )\n");
+    fprintf(f, "#define arrlength(__l) ( (__l) ? __len__(__l) : 0 )\n");
+    fprintf(f, "#define arrcapacity(__l) ( (__l) ? __cap__(__l) : 0 )\n");
+    fprintf(f, "#define arrfree(__l) free(__original_address__(__l))\n\n");
+
+    fprintf(f, "void * maybe_grow(void *list, u64 data_size_in_bytes) {\n");
+    fprintf(f, "\n");
+    fprintf(f, "    u64 m = 2;\n");
+    fprintf(f, "\n");
+    fprintf(f, "    if(list == NULL) {\n");
+    fprintf(f, "        list = malloc(data_size_in_bytes * m + sizeof(struct header));\n");
+    fprintf(f, "        if(!list) return NULL;\n");
+    fprintf(f, "        __internal_cap__(list) = m;\n");
+    fprintf(f, "        __internal_len__(list) = 0;\n");
+    fprintf(f, "    }\n");
+    fprintf(f, "    else {\n");
+    fprintf(f, "\n");
+    fprintf(f, "        u64 list_size = __len__(list);\n");
+    fprintf(f, "        m = __cap__(list);\n");
+    fprintf(f, "\n");
+    fprintf(f, "        if ((list_size + 1) > m) {\n");
+    fprintf(f, "            m = m * 2;\n");
+    fprintf(f, "            list = realloc(__original_address__(list), data_size_in_bytes * m + sizeof(struct header));\n");
+    fprintf(f, "            if(!list) return NULL;\n");
+    fprintf(f, "            __internal_cap__(list) = m;\n");
+    fprintf(f, "        }\n");
+    fprintf(f, "        else {\n");
+    fprintf(f, "            return list;\n");
+    fprintf(f, "        }\n");
+    fprintf(f, "    }\n");
+    fprintf(f, "\n");
+    fprintf(f, "    return (char*) list + sizeof(struct header);\n");
+    fprintf(f, "}\n\n");
+    fprintf(f, "__exposed_ode_value__ **__exposed_odes_values__ = NULL;\n");
+
+    return false;
+}
+
+static sds generate_exposed_ode_values_for_loop(program p) {
+
+    int n_stmt = arrlen(p);
+    sds code = sdsempty();
+    if (solver == EULER_ADPT_SOLVER) {
+        code = sdscatfmt(code, "__exposed_ode_value__ tmp;\n");
+        code = sdscatfmt(code, "                tmp.timestep = time_new;\n");
+        code = sdscatfmt(code, "                tmp.value = sv[i];\n");
+        code = sdscatfmt(code, "                append(__exposed_odes_values__[i], tmp);\n");
+    }
+    else {
+        //TODO: cvode solver
+    }
+
+    return code;
+}
+
+
 static bool generate_initial_conditions_values(program p, FILE *file) {
 
     int n_stmt = arrlen(p);
 
     fprintf(file, "    real values[%d];\n", n_stmt);
     int error = false;
-
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
 
         int position = a->assignment_stmt.declaration_position;
-        sds tmp = ast_to_c(a->assignment_stmt.value);
-        fprintf(file, "    values[%d] = %s; //%s\n", position-1, tmp, a->assignment_stmt.name->identifier.value);
-        sdsfree(tmp);
+        sds value = ast_to_c(a->assignment_stmt.value);
+        fprintf(file, "    values[%d] = %s; //%s\n", position-1, value, a->assignment_stmt.name->identifier.value);
+        sdsfree(value);
     }
+    fprintf(file, "    \n");
+    fprintf(file, "    for(int i = 0; i < %d; i++) {\n", n_stmt);
+    fprintf(file, "        __exposed_ode_value__ *__ode_values_array__ = NULL;\n");
+    fprintf(file, "        __exposed_ode_value__ __tmp__;\n");
+    fprintf(file, "        append(__exposed_odes_values__, NULL);\n");
+    fprintf(file, "        __tmp__.value = values[i];\n");
+    fprintf(file, "        __tmp__.timestep = 0;\n");
+    fprintf(file, "        append(__ode_values_array__, __tmp__);\n");
+    fprintf(file, "        __exposed_odes_values__[i] = __ode_values_array__;\n");
+    fprintf(file, "    }\n");
 
     return error;
 
@@ -546,9 +639,7 @@ void write_variables_or_body(program p, FILE *file) {
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
         if(a->tag == ast_ode_stmt) {
-            sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
             int position = a->assignment_stmt.declaration_position;
-            sdsfree(name);
 
             if(solver == CVODE_SOLVER) {
                 sds tmp = ast_to_c(a->assignment_stmt.value);
@@ -643,6 +734,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "#include <math.h>\n"
             "#include <nvector/nvector_serial.h>\n"
             "#include <stdbool.h>\n"
+            "#include <stdint.h>\n"
             "#include <stdio.h>\n"
             "#include <stdlib.h>\n"
             "#include <sundials/sundials_dense.h>\n"
@@ -653,6 +745,8 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
 
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef realtype real;\n");
+
+    create_dynamic_array_headers(file);
 
     write_variables_or_body(globals, file);
     fprintf(file, "\n");
@@ -785,7 +879,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
             "\n"
-            "\n"
+            "free(x0);\n"
             "\treturn (0);\n"
             "}");
 
@@ -796,6 +890,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     fprintf(file,"#include <math.h>\n"
             "#include <stdbool.h>\n"
+            "#include <stdint.h>\n"
             "#include <stdio.h>\n"
             "#include <stdlib.h>\n"
             "#include <float.h>\n"
@@ -804,6 +899,8 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     fprintf(file, "#define NEQ %d\n", (int)arrlen(initial));
     fprintf(file, "typedef double real;\n");
+
+    create_dynamic_array_headers(file);
 
     write_variables_or_body(globals, file);
     fprintf(file, "\n");
@@ -826,6 +923,8 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     indentation_level++;
     write_variables_or_body(main_body, file);
     indentation_level--;
+
+    sds export_code = generate_exposed_ode_values_for_loop(initial);
 
     fprintf(file, "\n\treturn 0;  \n\n}\n\n");
 
@@ -864,110 +963,121 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "    }\n"
             "\n"
             "    FILE *f = fopen(file_name, \"w\");\n"
-            "    fprintf(f, %s);\n\n"
-            "    real min[NEQ];\n"
-            "    real max[NEQ];\n\n"
-            "    for(int i = 0; i < NEQ; i++) {\n"
-            "       min[i] = DBL_MAX;\n"
-            "       max[i] = DBL_MIN;\n"
-            "    }\n\n"
-            "    while(1) {\n"
-            "\n"
-            "        for(int i = 0; i < NEQ; i++) {\n"
-            "            //stores the old variables in a vector\n"
-            "            edos_old_aux_[i] = sv[i];\n"
-            "            //computes euler method\n"
-            "            edos_new_euler_[i] = _k1__[i] * dt + edos_old_aux_[i];\n"
-            "            //steps ahead to compute the rk2 method\n"
-            "            sv[i] = edos_new_euler_[i];\n"
-            "        }\n"
-            "\n"
-            "        time_new += dt;\n"
-            "        solve_model(time_new, sv, rDY);\n"
-            "        time_new -= dt;//step back\n"
-            "\n"
-            "        double greatestError = 0.0, auxError = 0.0;\n"
-            "        for(int i = 0; i < NEQ; i++) {\n"
-            "            // stores the new evaluation\n"
-            "            _k2__[i] = rDY[i];\n"
-            "            _aux_tol = fabs(edos_new_euler_[i]) * reltol;\n"
-            "            _tolerances_[i] = (abstol > _aux_tol) ? abstol : _aux_tol;\n"
-            "\n"
-            "            // finds the greatest error between  the steps\n"
-            "            auxError = fabs(((dt / 2.0) * (_k1__[i] - _k2__[i])) / _tolerances_[i]);\n"
-            "\n"
-            "            greatestError = (auxError > greatestError) ? auxError : greatestError;\n"
-            "        }\n"
-            "        ///adapt the time step\n"
-            "        greatestError += __tiny_;\n"
-            "        previous_dt = dt;\n"
-            "        ///adapt the time step\n"
-            "        dt = _beta_safety_ * dt * sqrt(1.0f/greatestError);\n"
-            "\n"
-            "        if (time_new + dt > final_time) {\n"
-            "            dt = final_time - time_new;\n"
-            "        }\n"
-            "\n"
-            "        //it doesn't accept the solution\n"
-            "        if ((greatestError >= 1.0f) && dt > 0.00000001) {\n"
-            "            //restore the old values to do it again\n"
-            "            for(int i = 0;  i < NEQ; i++) {\n"
-            "                sv[i] = edos_old_aux_[i];\n"
-            "            }\n"
-            "            //throw the results away and compute again\n"
-            "        } else{//it accepts the solutions\n"
-            "\n"
-            "            if (time_new + dt > final_time) {\n"
-            "                dt = final_time - time_new;\n"
-            "            }\n"
-            "\n"
-            "            _k_aux__ = _k2__;\n"
-            "            _k2__\t= _k1__;\n"
-            "            _k1__\t= _k_aux__;\n"
-            "\n"
-            "            //it steps the method ahead, with euler solution\n"
-            "            for(int i = 0; i < NEQ; i++){\n"
-            "                sv[i] = edos_new_euler_[i];\n"
-            "            }\n"
+            "    fprintf(f, %s);\n\n", out_header);
 
-            "            fprintf(f, \"%%lf \", time_new);\n"
-            "            for(int i = 0; i < NEQ; i++) {\n"
-            "                fprintf(f, \"%%lf \", sv[i]);\n"
-            "                if(sv[i] < min[i]) min[i] = sv[i];\n"
-            "                if(sv[i] > max[i]) max[i] = sv[i];\n"
-            "            }\n"
-            "\n"
-            "            fprintf(f, \"\\n\");\n"
+        fprintf(file, "    real min[NEQ];\n"
+        "    real max[NEQ];\n\n"
+        "    for(int i = 0; i < NEQ; i++) {\n"
+        "       min[i] = DBL_MAX;\n"
+        "       max[i] = DBL_MIN;\n"
+        "    }\n\n"
+        "    while(1) {\n"
+        "\n"
+        "        for(int i = 0; i < NEQ; i++) {\n"
+        "            //stores the old variables in a vector\n"
+        "            edos_old_aux_[i] = sv[i];\n"
+        "            //computes euler method\n"
+        "            edos_new_euler_[i] = _k1__[i] * dt + edos_old_aux_[i];\n"
+        "            //steps ahead to compute the rk2 method\n"
+        "            sv[i] = edos_new_euler_[i];\n"
+        "        }\n"
+        "\n"
+        "        time_new += dt;\n"
+        "        solve_model(time_new, sv, rDY);\n"
+        "        time_new -= dt;//step back\n"
+        "\n"
+        "        double greatestError = 0.0, auxError = 0.0;\n"
+        "        for(int i = 0; i < NEQ; i++) {\n"
+        "            // stores the new evaluation\n"
+        "            _k2__[i] = rDY[i];\n"
+        "            _aux_tol = fabs(edos_new_euler_[i]) * reltol;\n"
+        "            _tolerances_[i] = (abstol > _aux_tol) ? abstol : _aux_tol;\n"
+        "\n"
+        "            // finds the greatest error between  the steps\n"
+        "            auxError = fabs(((dt / 2.0) * (_k1__[i] - _k2__[i])) / _tolerances_[i]);\n"
+        "\n"
+        "            greatestError = (auxError > greatestError) ? auxError : greatestError;\n"
+        "        }\n"
+        "        ///adapt the time step\n"
+        "        greatestError += __tiny_;\n"
+        "        previous_dt = dt;\n"
+        "        ///adapt the time step\n"
+        "        dt = _beta_safety_ * dt * sqrt(1.0f/greatestError);\n"
+        "\n"
+        "        if (time_new + dt > final_time) {\n"
+        "            dt = final_time - time_new;\n"
+        "        }\n"
+        "\n"
+        "        //it doesn't accept the solution\n"
+        "        if ((greatestError >= 1.0f) && dt > 0.00000001) {\n"
+        "            //restore the old values to do it again\n"
+        "            for(int i = 0;  i < NEQ; i++) {\n"
+        "                sv[i] = edos_old_aux_[i];\n"
+        "            }\n"
+        "            //throw the results away and compute again\n"
+        "        } else{//it accepts the solutions\n"
+        "\n"
+        "            if (time_new + dt > final_time) {\n"
+        "                dt = final_time - time_new;\n"
+        "            }\n"
+        "\n"
+        "            _k_aux__ = _k2__;\n"
+        "            _k2__\t= _k1__;\n"
+        "            _k1__\t= _k_aux__;\n"
+        "\n"
+        "            //it steps the method ahead, with euler solution\n"
+        "            for(int i = 0; i < NEQ; i++){\n"
+        "                sv[i] = edos_new_euler_[i];\n"
+        "            }\n"
 
-            "\n"
-            "            if(time_new + previous_dt >= final_time) {\n"
-            "                if(final_time == time_new) {\n"
-            "                    break;\n"
-            "                } else if(time_new < final_time) {\n"
-            "                    dt = previous_dt = final_time - time_new;\n"
-            "                    time_new += previous_dt;\n"
-            "                    break;\n"
-            "                }\n"
-            "            } else {\n"
-            "                time_new += previous_dt;\n"
-            "            }\n"
-            "\n"
-            "        }\n"
-            "    }\n"
-            "\n"
-            "    char *min_max = malloc(strlen(file_name) + 9);\n"
+        "            fprintf(f, \"%%lf \", time_new);\n"
+        "            for(int i = 0; i < NEQ; i++) {\n"
+        "                fprintf(f, \"%%lf \", sv[i]);\n"
+        "                if(sv[i] < min[i]) min[i] = sv[i];\n"
+        "                %s\n"
+        "            }\n"
+        "\n"
+        "            fprintf(f, \"\\n\");\n"
 
-            "    sprintf(min_max, \"%%s_min_max\", file_name);\n"
-            "    FILE* min_max_file = fopen(min_max, \"w\");\n"
-            "    for(int i = 0; i < NEQ; i++) {\n"
-            "        fprintf(min_max_file, \"%%lf;%%lf\\n\", min[i], max[i]);\n"
-            "    }\n"
-            "    fclose(min_max_file);\n"
-            "    free(min_max);\n"
-            "    \n"
-            "    free(_k1__);\n"
-            "    free(_k2__);\n"
-            "}",  out_header);
+        "\n"
+        "            if(time_new + previous_dt >= final_time) {\n"
+        "                if(final_time == time_new) {\n"
+        "                    break;\n"
+        "                } else if(time_new < final_time) {\n"
+        "                    dt = previous_dt = final_time - time_new;\n"
+        "                    time_new += previous_dt;\n"
+        "                    break;\n"
+        "                }\n"
+        "            } else {\n"
+        "                time_new += previous_dt;\n"
+        "            }\n"
+        "\n"
+        "        }\n"
+        "    }\n"
+        "\n"
+        "    char *min_max = malloc(strlen(file_name) + 9);\n"
+
+        "    sprintf(min_max, \"%%s_min_max\", file_name);\n"
+        "    FILE* min_max_file = fopen(min_max, \"w\");\n"
+        "    for(int i = 0; i < NEQ; i++) {\n"
+        "        fprintf(min_max_file, \"%%lf;%%lf\\n\", min[i], max[i]);\n"
+        "    }\n"
+        "    fclose(min_max_file);\n"
+        "    free(min_max);\n"
+        "    \n"
+        "    free(_k1__);\n"
+        "    free(_k2__);\n"
+        "}", export_code);
+
+        sdsfree(export_code);
+
+    //TODO: call ts fn after solving a timestep
+    //for(int i = 0; i < arrlen(functions); i++) {
+    //    ast *a = functions[i];
+    //    if(a->function_stmt.is_ts_function) {
+    //        printf("%s\n", a->function_stmt.name->identifier.value);
+    //    }
+    //}
 
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
@@ -980,7 +1090,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "\n"
             "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
             "\n"
-            "\n"
+            "free(x0);\n"
             "\treturn (0);\n"
             "}");
 

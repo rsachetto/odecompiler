@@ -802,7 +802,7 @@ ast * parse_statement(parser *p) {
         return parse_while_statement(p);
     }
 
-    if(cur_token_is(p, FUNCTION)) {
+    if(cur_token_is(p, FUNCTION) || cur_token_is(p, TSFUNCTION)) {
         return parse_function_statement(p);
     }
 
