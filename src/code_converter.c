@@ -13,6 +13,7 @@ struct var_declared_entry_t {
 };
 
 struct var_declared_entry_t *var_declared = NULL;
+struct var_declared_entry_t *ode_position = NULL;
 
 static sds ast_to_c(ast *a);
 
@@ -95,7 +96,8 @@ static sds assignment_stmt_to_c(ast *a) {
 
             if(has_ode_symbol) {
                 int position = a->assignment_stmt.declaration_position;
-
+                sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
+                shput(ode_position, name, position);
                 if(solver == CVODE_SOLVER) {
                     sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;\n", indent_spaces[indentation_level], position-1, tmp);
@@ -342,21 +344,48 @@ static sds while_stmt_to_c(ast *a) {
 
     sds tmp;
 
-    buf = sdscat(buf, "while");
+    buf = sdscatfmt(buf, "%swhile", indent_spaces[indentation_level]);
     tmp = ast_to_c(a->while_stmt.condition);
-    buf = sdscatfmt(buf, "%s ", tmp);
+    buf = sdscatfmt(buf, "(%s) {\n", tmp);
     sdsfree(tmp);
 
-    buf = sdscat(buf, "{");
-
     int n = arrlen(a->while_stmt.body);
+    indentation_level++;
     for(int i = 0; i < n; i++) {
         tmp = ast_to_c(a->while_stmt.body[i]);
-        buf = sdscatfmt(buf, "%s\n", tmp);
+        buf = sdscatfmt(buf, "%s%s\n", tmp, indent_spaces[indentation_level]);
         sdsfree(tmp);
     }
 
-    buf = sdscat(buf, "}");
+    indentation_level--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    return buf;
+
+}
+
+static sds foreachstep_stmt_to_c(ast *a) {
+
+    sds buf = sdsempty();
+
+    sds tmp;
+
+    tmp = ast_to_c(a->foreachstep_stmt.identifier);
+
+    int position = shget(ode_position, tmp);
+
+    buf = sdscatfmt(buf, "%sfor(int i = 0; i < arrlength(%i); i++) {\n", indent_spaces[indentation_level], tmp, position);
+    sdsfree(tmp);
+
+    int n = arrlen(a->foreachstep_stmt.body);
+    indentation_level++;
+    for(int i = 0; i < n; i++) {
+        tmp = ast_to_c(a->while_stmt.body[i]);
+        buf = sdscatfmt(buf, "%s%s\n", tmp, indent_spaces[indentation_level]);
+        sdsfree(tmp);
+    }
+
+    indentation_level--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
     return buf;
 
 }
@@ -448,6 +477,10 @@ static sds ast_to_c(ast *a) {
 
     if(a->tag == ast_while_stmt) {
         return while_stmt_to_c(a);
+    }
+
+    if(a->tag == ast_foreachstep_stmt) {
+        return foreachstep_stmt_to_c(a);
     }
 
     if(a->tag == ast_call_expression) {
@@ -1133,6 +1166,7 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
     }
 
     sh_new_arena(var_declared);
+    sh_new_arena(ode_position);
 
     sds out_header = out_file_header(main_body);
 
@@ -1150,6 +1184,7 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
     sdsfree(out_header);
 
     shfree(var_declared);
+    shfree(ode_position);
     arrfree(main_body);
     arrfree(functions);
     arrfree(initial);

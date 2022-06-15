@@ -47,6 +47,15 @@ ast *make_while_stmt(const token *t) {
     return a;
 }
 
+ast *make_foreachstep_stmt(const token *t) {
+    ast *a = make_base_ast(t, ast_foreachstep_stmt);
+
+    if (a != NULL) {
+        a->while_stmt.body = NULL;
+    }
+
+    return a;
+}
 
 ast *make_identifier(const token *t) {
     ast *a = make_base_ast(t, ast_identifier);
@@ -132,11 +141,11 @@ ast *make_function_statement(const token *t) {
     if(a != NULL) {
         a->function_stmt.body = NULL;
         a->function_stmt.parameters = NULL;
-        if(t->type == TSFUNCTION) {
-            a->function_stmt.is_ts_fn = true;
+        if(t->type == ENDFUNCTION) {
+            a->function_stmt.is_end_fn = true;
         }
         else {
-            a->function_stmt.is_ts_fn = false;
+            a->function_stmt.is_end_fn = false;
         }
     }
     return a;
@@ -352,6 +361,33 @@ static sds while_stmt_to_str(ast *a) {
     return buf;
 }
 
+static sds foreach_stmt_to_str(ast *a) {
+
+    sds buf = sdsempty();
+    sds tmp;
+
+    buf = sdscat(buf, "for");
+
+    tmp = ast_to_string(a->foreachstep_stmt.identifier);
+    buf = sdscatfmt(buf, "%s ", tmp);
+    sdsfree(tmp);
+
+    buf = sdscat(buf, "{");
+
+    indentation_level++;
+    int n = arrlen(a->foreachstep_stmt.body);
+
+    for (int i = 0; i < n; i++) {
+        tmp = ast_to_string(a->foreachstep_stmt.body[i]);
+        buf = sdscatfmt(buf, "%s\n", tmp);
+        sdsfree(tmp);
+    }
+
+    indentation_level--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    return buf;
+}
+
 static sds function_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
@@ -501,6 +537,10 @@ sds ast_to_string(ast *a) {
 
     if (a->tag == ast_while_stmt) {
         return while_stmt_to_str(a);
+    }
+
+    if (a->tag == ast_foreachstep_stmt) {
+        return foreach_stmt_to_str(a);
     }
 
     if (a->tag == ast_function_statement) {

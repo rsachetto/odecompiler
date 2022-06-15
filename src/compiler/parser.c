@@ -373,6 +373,31 @@ ast *parse_while_statement(parser *p) {
     return exp;
 }
 
+ast *parse_foreachstep_statement(parser *p) {
+
+    ast *exp = make_foreachstep_stmt(&p->cur_token);
+
+    if(!expect_peek(p, LPAREN)) {
+        RETURN_ERROR("( expected\n");
+    }
+
+    advance_token(p);
+
+    exp->foreachstep_stmt.identifier = parse_identifier(p);
+
+    if(!expect_peek(p, RPAREN)) {
+        RETURN_ERROR(") expected\n");
+    }
+
+    if(!expect_peek(p, LBRACE)) {
+        RETURN_ERROR("{ expected\n");
+    }
+
+    exp->foreachstep_stmt.body = parse_block_statement(p);
+
+    return exp;
+}
+
 ast *parse_number_literal(parser *p) {
     ast *lit = make_number_literal(&p->cur_token);
     char *end;
@@ -802,7 +827,11 @@ ast * parse_statement(parser *p) {
         return parse_while_statement(p);
     }
 
-    if(cur_token_is(p, FUNCTION) || cur_token_is(p, TSFUNCTION)) {
+    if(cur_token_is(p, FOREACHSTEP)) {
+        return parse_foreachstep_statement(p);
+    }
+
+    if(cur_token_is(p, FUNCTION) || cur_token_is(p, ENDFUNCTION)) {
         return parse_function_statement(p);
     }
 

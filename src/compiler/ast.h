@@ -41,6 +41,11 @@ typedef struct while_statement_t {
     struct ast_t **body;
 } while_statement;
 
+typedef struct foreachstep_statement_t {
+    struct ast_t *identifier;
+    struct ast_t **body;
+} foreachstep_statement;
+
 typedef struct number_literal_t {
     double value;
 } number_literal;
@@ -81,7 +86,7 @@ typedef struct function_statement_t {
     struct ast_t **parameters;
     struct ast_t **body;
     int num_return_values;
-    bool is_ts_fn;
+    bool is_end_fn;
 } function_statement;
 
 typedef struct call_expression_t {
@@ -100,6 +105,7 @@ typedef enum ast_tag_t {
     ast_return_stmt,
     ast_expression_stmt,
     ast_while_stmt,
+    ast_foreachstep_stmt,
     ast_import_stmt,
     ast_prefix_expression,
     ast_infix_expression,
@@ -119,6 +125,7 @@ typedef struct ast_t {
         identifier_node identifier;
         assignment_statement assignment_stmt;
         while_statement while_stmt;
+        foreachstep_statement foreachstep_stmt;
         return_statement return_stmt;
         number_literal num_literal;
         prefix_expression prefix_expr;
@@ -143,6 +150,7 @@ ast *make_grouped_assignment_stmt(const token *t);
 ast *make_identifier(const token *t);
 ast *make_return_stmt(const token *t);
 ast *make_while_stmt(const token *t);
+ast *make_foreachstep_stmt(const token *t);
 ast *make_expression_stmt(const token *t);
 ast *make_number_literal(const token *t);
 ast *make_boolean_literal(const token *t, bool value);
