@@ -28,7 +28,7 @@ debug_set:
 bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/libfort.a
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
-bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/program.o build/ast.o build/token.o build/file_utils.o build/sds.o
+bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/program.o build/ast.o build/token.o build/file_utils.o build/sds.o build/string_utils.o
 	gcc ${OPT_FLAGS} $^ -o bin/odec
 
 build/token.o: src/compiler/token.c src/compiler/token.h src/compiler/token_enum.h

@@ -222,7 +222,23 @@ bool expect_peek(parser *p, token_type t) {
 }
 
 ast *parse_identifier(parser *p) {
-    return make_identifier(&p->cur_token);
+    ast *result = make_identifier(&p->cur_token);
+
+    char *id_name = result->identifier.value;
+
+    bool exported_value = string_ends_with(id_name, "__value");
+    bool exported_time = string_ends_with(id_name, "__time");
+
+    if(exported_time || exported_value) {
+        if(!p->inside_foreach) {
+            ADD_ERROR_WITH_LINE(result->token.line_number, result->token.file_name, "Identifier %s can only be used inside the foreachstep statement!\n",  id_name);
+            free_ast(result);
+            return NULL;
+        }
+    }
+
+    return result;
+
 }
 
 ast *parse_boolean_literal(parser *p) {
@@ -375,6 +391,7 @@ ast *parse_while_statement(parser *p) {
 
 ast *parse_foreachstep_statement(parser *p) {
 
+    p->inside_foreach = true;
     ast *exp = make_foreachstep_stmt(&p->cur_token);
 
     if(!expect_peek(p, LPAREN)) {
@@ -395,6 +412,7 @@ ast *parse_foreachstep_statement(parser *p) {
 
     exp->foreachstep_stmt.body = parse_block_statement(p);
 
+    p->inside_foreach = false;
     return exp;
 }
 

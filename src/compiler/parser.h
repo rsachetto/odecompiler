@@ -58,6 +58,7 @@ typedef struct parser_t {
     declared_variable_hash global_scope;
     declared_function_hash declared_functions;
     bool have_ode;
+    bool inside_foreach;
 } parser;
 
 parser * new_parser(lexer *l);
