@@ -6,6 +6,10 @@
 #include "token.h"
 #include "program.h"
 
+#define ODE_GET_VALUE "ode_get_value"
+#define ODE_GET_TIME "ode_get_time"
+#define ODE_GET_N_IT "ode_get_num_iterations"
+
 typedef struct declared_variable_entry_value_t {
     int  declaration_position;
     bool initialized;

@@ -43,7 +43,6 @@ BEGIN_ENUM(token_type) {
     DECL_ENUM_ELEMENT_STR(ELIF,               "elif")
     DECL_ENUM_ELEMENT_STR(RETURN_STMT,      "return")
     DECL_ENUM_ELEMENT_STR(WHILE,             "while")
-    DECL_ENUM_ELEMENT_STR(FOREACHSTEP, "foreachstep")
     DECL_ENUM_ELEMENT_STR(INITIAL,         "initial")
     DECL_ENUM_ELEMENT_STR(GLOBAL,           "global")
     DECL_ENUM_ELEMENT_STR(IMPORT,           "import")

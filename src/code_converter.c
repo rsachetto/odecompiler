@@ -11,12 +11,10 @@ struct var_declared_entry_t *ode_position = NULL;
 static sds ast_to_c(ast *a);
 
 static sds expression_stmt_to_c(ast *a) {
-
     if (a->expr_stmt != NULL) {
         return ast_to_c(a->expr_stmt);
     }
     return sdsempty();
-
 }
 
 static sds return_stmt_to_c(ast *a) {
@@ -69,7 +67,6 @@ static sds assignment_stmt_to_c(ast *a) {
 
             if(has_ode_symbol) {
                 int position = a->assignment_stmt.declaration_position;
-                sds name = sdscatprintf(sdsempty(), "%.*s", (int)strlen(a->assignment_stmt.name->identifier.value)-1, a->assignment_stmt.name->identifier.value);
                 if(solver == CVODE_SOLVER) {
                     sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;\n", indent_spaces[indentation_level], position-1, tmp);
@@ -200,33 +197,7 @@ static char* number_literal_to_c(ast *a) {
 
 static sds identifier_to_c(ast *a) {
     sds buf = sdsempty();
-
-    bool exported_value = string_ends_with(a->identifier.value, "__value");
-    bool exported_time = string_ends_with(a->identifier.value, "__time");
-
-
-    if(exported_time || exported_value) {
-
-        int num_tokens;
-        sds *tokens = sdssplit(a->identifier.value, "__", &num_tokens);
-
-        sds tmp = sdscatfmt(sdsempty(), "%s'", tokens[0]);
-        int position = shget(ode_position, tmp);
-        sdsfree(tmp);
-
-        //TODO: check for error if key not in hash
-        if(exported_value) {
-            buf = sdscatfmt(buf, EXPOSED_ODE_VALUES_NAME"[%i][i].value", position);
-        }
-        else {
-            buf = sdscatfmt(buf, EXPOSED_ODE_VALUES_NAME"[%i][i].timestep", position);
-        }
-        sdsfreesplitres(tokens, num_tokens);
-    }
-    else {
-        buf = sdscat(buf, a->identifier.value);
-    }
-
+    buf = sdscat(buf, a->identifier.value);
     return buf;
 }
 
@@ -361,50 +332,36 @@ static sds while_stmt_to_c(ast *a) {
 
 }
 
-static sds foreachstep_stmt_to_c(ast *a) {
-
-    sds buf = sdsempty();
-
-    sds tmp;
-
-    tmp = ast_to_c(a->foreachstep_stmt.identifier);
-    tmp = sdscat(tmp, "'");
-
-    int position = shget(ode_position, tmp);
-
-    buf = sdscatfmt(buf, "%sfor(int i = 0; i < arrlength(%s[%i]); i++) {\n", indent_spaces[indentation_level], EXPOSED_ODE_VALUES_NAME, position);
-    sdsfree(tmp);
-
-    int n = arrlen(a->foreachstep_stmt.body);
-    indentation_level++;
-    for(int i = 0; i < n; i++) {
-        tmp = ast_to_c(a->while_stmt.body[i]);
-        buf = sdscatfmt(buf, "%s%s\n", tmp, indent_spaces[indentation_level]);
-        sdsfree(tmp);
-    }
-
-    indentation_level--;
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
-
-    return buf;
-
-}
-
 static sds call_expr_to_c(ast *a) {
 
     sds buf = sdsempty();
-    sds tmp;
 
-    tmp = ast_to_c(a->call_expr.function_identifier);
-    buf = sdscat(buf, tmp);
+    sds fn_name = ast_to_c(a->call_expr.function_identifier);
+    buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], fn_name);
     buf = sdscat(buf, "(");
-    sdsfree(tmp);
 
     int n = arrlen(a->call_expr.arguments);
 
     if(n) {
-        tmp = ast_to_c(a->call_expr.arguments[0]);
-        buf = sdscat(buf, tmp);
+
+        bool is_export_fn = false;
+
+        if(STRING_EQUALS(fn_name, ODE_GET_VALUE) || STRING_EQUALS(fn_name, ODE_GET_TIME)  ) {
+            is_export_fn = true;
+        }
+
+        sds tmp = ast_to_c(a->call_expr.arguments[0]);
+        //TODO: this should only be allowed inside a endfn function
+        if(is_export_fn) {
+            sds ode_name = sdsdup(tmp);
+            ode_name = sdscat(ode_name, "'");
+            int position = shget(ode_position, ode_name);
+            sdsfree(ode_name);
+            buf = sdscatfmt(buf, "%i", position - 1);
+        }
+        else {
+            buf = sdscat(buf, tmp);
+        }
         sdsfree(tmp);
 
         for(int i = 1; i < n; i++) {
@@ -414,7 +371,8 @@ static sds call_expr_to_c(ast *a) {
         }
     }
 
-    buf = sdscat(buf, ")");
+    sdsfree(fn_name);
+    buf = sdscat(buf, ");");
 
     return buf;
 }
@@ -479,10 +437,6 @@ static sds ast_to_c(ast *a) {
         return while_stmt_to_c(a);
     }
 
-    if(a->tag == ast_foreachstep_stmt) {
-        return foreachstep_stmt_to_c(a);
-    }
-
     if(a->tag == ast_call_expression) {
         return call_expr_to_c(a);
     }
@@ -517,9 +471,27 @@ static bool create_dynamic_array_headers(FILE *f) {
 
     fprintf(f, "//------------------ Support functions and data ---------------\n\n");
 
+    fprintf(f, "#define print(X) \\\n");
+    fprintf(f, "_Generic((X), \\\n");
+    fprintf(f, "real: print_real, \\\n");
+    fprintf(f, "char*: print_string,  \\\n");
+    fprintf(f, "bool: print_boolean)(X)\n\n");
+
+    fprintf(f, "void print_string(char *c) {\n");
+    fprintf(f, "    printf(\"%%s\",c);\n");
+    fprintf(f, "}\n\n");
+
+    fprintf(f, "void print_real(real f) {\n");
+    fprintf(f, "    printf(\"%%lf\",f);\n");
+    fprintf(f, "}\n\n");
+
+    fprintf(f, "void print_boolean(bool b) {\n");
+    fprintf(f, "    printf(\"%%d\",b);\n");
+    fprintf(f, "}\n\n");
+
     fprintf(f, "typedef struct __exposed_ode_value__t {\n");
     fprintf(f, "    real value;\n");
-    fprintf(f, "    real timestep;\n");
+    fprintf(f, "    real time;\n");
     fprintf(f, "} __exposed_ode_value__;\n\n");
 
     fprintf(f, "typedef uint64_t u64;\n");
@@ -575,8 +547,24 @@ static bool create_dynamic_array_headers(FILE *f) {
     fprintf(f, "    return (char*) list + sizeof(struct header);\n");
     fprintf(f, "}\n\n");
     fprintf(f, "__exposed_ode_value__ **%s = NULL;\n", EXPOSED_ODE_VALUES_NAME);
+    fprintf(f, "static int __ode_last_iteration__ = 1;\n\n");
 
     return false;
+}
+
+static void create_export_functions(FILE *f) {
+    fprintf(f, "real %s(int ode_position, int timestep) {\n", ODE_GET_VALUE);
+    fprintf(f, "    return __exposed_odes_values__[ode_position][timestep].value;\n");
+    fprintf(f, "}\n\n");
+
+    fprintf(f, "real %s(int ode_position, int timestep) {\n", ODE_GET_TIME);
+    fprintf(f, "    return __exposed_odes_values__[ode_position][timestep].time;\n");
+    fprintf(f, "}\n\n");
+
+    fprintf(f, "int %s() {\n", ODE_GET_N_IT);
+    fprintf(f, "    return __ode_last_iteration__;\n");
+    fprintf(f, "}\n\n");
+
 }
 
 static sds generate_exposed_ode_values_for_loop() {
@@ -584,11 +572,11 @@ static sds generate_exposed_ode_values_for_loop() {
     sds code = sdsempty();
     code = sdscatfmt(code, "__exposed_ode_value__ tmp;\n");
     if (solver == EULER_ADPT_SOLVER) {
-        code = sdscatfmt(code, "                tmp.timestep = time_new;\n");
+        code = sdscatfmt(code, "                tmp.time = time_new;\n");
         code = sdscatfmt(code, "                tmp.value = sv[i];\n");
     }
     else {
-        code = sdscatfmt(code, "                tmp.timestep = t;\n");
+        code = sdscatfmt(code, "                tmp.time = t;\n");
         code = sdscatfmt(code, "                tmp.value = NV_Ith_S(y,i);\n");
     }
 
@@ -618,7 +606,7 @@ static bool generate_initial_conditions_values(program p, FILE *file) {
     fprintf(file, "        __exposed_ode_value__ __tmp__;\n");
     fprintf(file, "        append(__exposed_odes_values__, NULL);\n");
     fprintf(file, "        __tmp__.value = values[i];\n");
-    fprintf(file, "        __tmp__.timestep = 0;\n");
+    fprintf(file, "        __tmp__.time  = 0;\n");
     fprintf(file, "        append(__ode_values_array__, __tmp__);\n");
     fprintf(file, "        __exposed_odes_values__[i] = __ode_values_array__;\n");
     fprintf(file, "    }\n");
@@ -677,6 +665,7 @@ void write_variables_or_body(program p, FILE *file) {
             sds tmp = ast_to_c(a->assignment_stmt.value);
             sds name = ast_to_c(a->assignment_stmt.name);
             shput(ode_position, name, position);
+            sdsfree(name);
 
             if(solver == CVODE_SOLVER) {
                 fprintf(file, "    NV_Ith_S(rDY, %d) = %s;\n", position-1, tmp);
@@ -807,6 +796,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     fprintf(file, "typedef realtype real;\n");
 
     create_dynamic_array_headers(file);
+    create_export_functions(file);
 
     write_variables_or_body(globals, file);
     fprintf(file, "\n");
@@ -830,7 +820,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     write_variables_or_body(main_body, file);
     indentation_level--;
 
-    fprintf(file, "\n\treturn 0;  \n\n}\n\n");
+    fprintf(file, "\n    return 0;  \n\n}\n\n");
 
     sds export_code = generate_exposed_ode_values_for_loop();
 
@@ -863,7 +853,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "    return (0);\n"
             "}\n");
 
-    fprintf(file, "void solve_ode(N_Vector y, float final_t, char *file_name, SUNContext sunctx) {\n"
+    fprintf(file, "void solve_ode(N_Vector y, float final_t, FILE *f, char *file_name, SUNContext sunctx) {\n"
             "\n"
             "    void *cvode_mem = NULL;\n"
             "    int flag;\n"
@@ -903,10 +893,8 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "    realtype tout = dt;\n"
             "    int retval;\n"
             "    realtype t;\n"
-            "\n"
-            "    FILE *f = fopen(file_name, \"w\");\n"
-            "    fprintf(f, %s);\n", out_header);
-
+            "\n");
+ 
             fprintf(file, "    while(tout < final_t) {\n"
             "\n"
             "        retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);\n"
@@ -921,6 +909,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             "            fprintf(f, \"\\n\");\n"
             "\n"
             "            tout+=dt;\n"
+            "            __ode_last_iteration__+=1;\n"
             "        }\n"
             "\n"
             "    }\n"
@@ -937,21 +926,30 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     bool error;
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
-            "\tSUNContext sunctx;\n"
-            "\tSUNContext_Create(NULL, &sunctx);\n"
-            "\tN_Vector x0 = N_VNew_Serial(NEQ, sunctx);\n"
+            "    SUNContext sunctx;\n"
+            "    SUNContext_Create(NULL, &sunctx);\n"
+            "    N_Vector x0 = N_VNew_Serial(NEQ, sunctx);\n"
             "\n");
     error = generate_initial_conditions_values(initial, file);
 
     sds end_functions = generate_end_functions(functions);
-    fprintf(file, "\tset_initial_conditions(x0, values);\n"
+    fprintf(file, "    set_initial_conditions(x0, values);\n"
+            "    FILE *f = fopen(argv[2], \"w\");\n"
+            "    fprintf(f, %s);\n"
+            "    fprintf(f, \"0.0 \");\n"
+            "    for(int i = 0; i < NEQ; i++) {\n"
+            "        fprintf(f, \"%%lf \", NV_Ith_S(x0, i));\n"
+            "    }\n"
+            "    fprintf(f, \"\\n\");\n"
+            "\n\n", out_header);
+
+            fprintf(file, "    solve_ode(x0, strtod(argv[1], NULL), f, argv[2], sunctx);\n"
             "\n"
-            "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2], sunctx);\n"
-            "\n"
-            "\tfree(x0);\n"
-            "\t%s\n"
-            "\treturn (0);\n"
+            "    free(x0);\n"
+            "    %s\n"
+            "    return (0);\n"
             "}", end_functions);
+
     sdsfree(end_functions);
     return error;
 }
@@ -971,6 +969,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     fprintf(file, "typedef double real;\n");
 
     create_dynamic_array_headers(file);
+    create_export_functions(file);
 
     write_variables_or_body(globals, file);
     fprintf(file, "\n");
@@ -996,9 +995,9 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     sds export_code = generate_exposed_ode_values_for_loop();
 
-    fprintf(file, "\n\treturn 0;  \n\n}\n\n");
+    fprintf(file, "\n    return 0;  \n\n}\n\n");
 
-    fprintf(file, "void solve_ode(real *sv, float final_time, char *file_name) {\n"
+    fprintf(file, "void solve_ode(real *sv, float final_time, FILE *f, char *file_name) {\n"
             "\n"
             "    real rDY[NEQ];\n"
             "\n"
@@ -1031,10 +1030,8 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
             "    for(int i = 0; i < NEQ; i++){\n"
             "        _k1__[i] = rDY[i];\n"
             "    }\n"
-            "\n"
-            "    FILE *f = fopen(file_name, \"w\");\n"
-            "    fprintf(f, %s);\n\n", out_header);
-
+            "\n");
+            
     fprintf(file, "    real min[NEQ];\n"
         "    real max[NEQ];\n\n"
         "    for(int i = 0; i < NEQ; i++) {\n"
@@ -1092,8 +1089,8 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
         "            }\n"
         "\n"
         "            _k_aux__ = _k2__;\n"
-        "            _k2__\t= _k1__;\n"
-        "            _k1__\t= _k_aux__;\n"
+        "            _k2__    = _k1__;\n"
+        "            _k1__    = _k_aux__;\n"
         "\n"
         "            //it steps the method ahead, with euler solution\n"
         "            for(int i = 0; i < NEQ; i++){\n"
@@ -1107,6 +1104,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
         "                %s\n"
         "            }\n"
         "\n"
+        "            __ode_last_iteration__ += 1;\n"
         "            fprintf(f, \"\\n\");\n"
 
         "\n"
@@ -1139,26 +1137,33 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
         "    free(_k2__);\n"
         "}\n\n", export_code);
 
-
     sdsfree(export_code);
 
     write_functions(functions, file, true);
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
             "\n"
-            "\treal *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
+            "    real *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
             "\n");
 
     bool error = generate_initial_conditions_values(initial, file);
 
     sds end_functions = generate_end_functions(functions);
-    fprintf(file,"\tset_initial_conditions(x0, values);\n"
-            "\n"
-            "\tsolve_ode(x0, strtod(argv[1], NULL), argv[2]);\n"
-            "\n"
-            "\tfree(x0);\n"
-            "\t%s\n"
-            "\treturn (0);\n"
+    fprintf(file,
+            "    set_initial_conditions(x0, values);\n"
+            "    FILE *f = fopen(argv[2], \"w\");\n"
+            "    fprintf(f, %s);\n"
+            "    fprintf(f, \"0.0 \");\n"
+            "    for(int i = 0; i < NEQ; i++) {\n"
+            "        fprintf(f, \"%%lf \", x0[i]);\n"
+            "    }\n"
+            "    fprintf(f, \"\\n\");\n"
+            "\n\n", out_header);
+    fprintf(file, 
+            "    solve_ode(x0, strtod(argv[1], NULL), f, argv[2]);\n"
+            "    free(x0);\n"
+            "    %s\n"
+            "    return (0);\n"
             "}", end_functions);
 
     sdsfree(end_functions);

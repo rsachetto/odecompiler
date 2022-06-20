@@ -1511,8 +1511,8 @@ COMMAND_FUNCTION(unload) {
 
     bool is_current = (model_config == shell_state->current_model);
 
-    
-	struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
+
+    struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
     arrfree(entries);
 
     hmdel(shell_state->notify_entries, model_config->notify_code);
@@ -2086,7 +2086,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
         ADD_CMD(plotvar,       1, 3, "Plots the output of a model execution (one or more variables). "PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
         ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. "PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
         ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). "PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
-        ADD_CMD(closeplot,        0, 0, "Close the current plot");
+        ADD_CMD(closeplot,     0, 0, "Close the current plot");
     }
 
     ADD_CMD(pwd,              0, 0, "Shows the current directory");

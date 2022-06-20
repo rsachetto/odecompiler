@@ -20,7 +20,7 @@
     msg = sdscatprintf(msg, __VA_ARGS__); \
     arrput(p->errors, msg)
 
-#define RETURN_ERROR(...)                                              \
+#define RETURN_ERROR(...)                                                        \
     ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
     return NULL
 
@@ -101,7 +101,6 @@ static bool can_be_in_init(parser *p, const ast *a) {
 
 
 static void add_builtin_function(parser *p, char *name, int n_args) {
-
     declared_function_entry_value value = {1, n_args};
     shput(p->declared_functions, name, value);
 }
@@ -118,63 +117,67 @@ parser * new_parser(lexer *l) {
     sh_new_arena(p->declared_functions);
     shdefault(p->declared_functions, (declared_function_entry_value){0});
 
-    add_builtin_function(p, "acos",       1);
-    add_builtin_function(p, "asin",       1);
-    add_builtin_function(p, "atan",       1);
-    add_builtin_function(p, "atan2",      1);
-    add_builtin_function(p, "ceil",       1);
-    add_builtin_function(p, "cos",        1);
-    add_builtin_function(p, "cosh",       1);
-    add_builtin_function(p, "exp",        1);
-    add_builtin_function(p, "fabs",       1);
-    add_builtin_function(p, "floor",      1);
-    add_builtin_function(p, "fmod",       1);
-    add_builtin_function(p, "frexp",      1);
-    add_builtin_function(p, "ldexp",      1);
-    add_builtin_function(p, "log",        1);
-    add_builtin_function(p, "log10",      1);
-    add_builtin_function(p, "modf",       2);
-    add_builtin_function(p, "pow",        2);
-    add_builtin_function(p, "sin",        1);
-    add_builtin_function(p, "sinh",       1);
-    add_builtin_function(p, "sqrt",       1);
-    add_builtin_function(p, "tan",        1);
-    add_builtin_function(p, "tanh",       1);
-    add_builtin_function(p, "cosh",       1);
-    add_builtin_function(p, "asinh",      1);
-    add_builtin_function(p, "atanh",      1);
-    add_builtin_function(p, "cbrt",       1);
-    add_builtin_function(p, "copysign",   2);
-    add_builtin_function(p, "erf",        1);
-    add_builtin_function(p, "erfc",       1);
-    add_builtin_function(p, "exp2",       2);
-    add_builtin_function(p, "expm1",      2);
-    add_builtin_function(p, "fdim",       2);
-    add_builtin_function(p, "fma",        3);
-    add_builtin_function(p, "fmax",       2);
-    add_builtin_function(p, "fmin",       2);
-    add_builtin_function(p, "hypot",      2);
-    add_builtin_function(p, "ilogb",      1);
-    add_builtin_function(p, "lgamma",     1);
-    add_builtin_function(p, "llrint",     1);
-    add_builtin_function(p, "lrint",      1);
-    add_builtin_function(p, "llround",    1);
-    add_builtin_function(p, "lround",     1);
-    add_builtin_function(p, "log1p",      1);
-    add_builtin_function(p, "log2",       1);
-    add_builtin_function(p, "logb",       1);
-    add_builtin_function(p, "nan",        1);
-    add_builtin_function(p, "nearbyint",  1);
-    add_builtin_function(p, "nextafter",  2);
-    add_builtin_function(p, "nexttoward", 2);
-    add_builtin_function(p, "remainder",  1);
-    add_builtin_function(p, "remquo",     3);
-    add_builtin_function(p, "rint",       1);
-    add_builtin_function(p, "round",      1);
-    add_builtin_function(p, "scalbln",    2);
-    add_builtin_function(p, "scalbn",     2);
-    add_builtin_function(p, "tgamma",     1);
-    add_builtin_function(p, "trunc",      1);
+    add_builtin_function(p, "acos",          1);
+    add_builtin_function(p, "asin",          1);
+    add_builtin_function(p, "atan",          1);
+    add_builtin_function(p, "atan2",         1);
+    add_builtin_function(p, "ceil",          1);
+    add_builtin_function(p, "cos",           1);
+    add_builtin_function(p, "cosh",          1);
+    add_builtin_function(p, "exp",           1);
+    add_builtin_function(p, "fabs",          1);
+    add_builtin_function(p, "floor",         1);
+    add_builtin_function(p, "fmod",          1);
+    add_builtin_function(p, "frexp",         1);
+    add_builtin_function(p, "ldexp",         1);
+    add_builtin_function(p, "log",           1);
+    add_builtin_function(p, "log10",         1);
+    add_builtin_function(p, "modf",          2);
+    add_builtin_function(p, "pow",           2);
+    add_builtin_function(p, "sin",           1);
+    add_builtin_function(p, "sinh",          1);
+    add_builtin_function(p, "sqrt",          1);
+    add_builtin_function(p, "tan",           1);
+    add_builtin_function(p, "tanh",          1);
+    add_builtin_function(p, "cosh",          1);
+    add_builtin_function(p, "asinh",         1);
+    add_builtin_function(p, "atanh",         1);
+    add_builtin_function(p, "cbrt",          1);
+    add_builtin_function(p, "copysign",      2);
+    add_builtin_function(p, "erf",           1);
+    add_builtin_function(p, "erfc",          1);
+    add_builtin_function(p, "exp2",          2);
+    add_builtin_function(p, "expm1",         2);
+    add_builtin_function(p, "fdim",          2);
+    add_builtin_function(p, "fma",           3);
+    add_builtin_function(p, "fmax",          2);
+    add_builtin_function(p, "fmin",          2);
+    add_builtin_function(p, "hypot",         2);
+    add_builtin_function(p, "ilogb",         1);
+    add_builtin_function(p, "lgamma",        1);
+    add_builtin_function(p, "llrint",        1);
+    add_builtin_function(p, "lrint",         1);
+    add_builtin_function(p, "llround",       1);
+    add_builtin_function(p, "lround",        1);
+    add_builtin_function(p, "log1p",         1);
+    add_builtin_function(p, "log2",          1);
+    add_builtin_function(p, "logb",          1);
+    add_builtin_function(p, "nan",           1);
+    add_builtin_function(p, "nearbyint",     1);
+    add_builtin_function(p, "nextafter",     2);
+    add_builtin_function(p, "nexttoward",    2);
+    add_builtin_function(p, "remainder",     1);
+    add_builtin_function(p, "remquo",        3);
+    add_builtin_function(p, "rint",          1);
+    add_builtin_function(p, "round",         1);
+    add_builtin_function(p, "scalbln",       2);
+    add_builtin_function(p, "scalbn",        2);
+    add_builtin_function(p, "tgamma",        1);
+    add_builtin_function(p, "trunc",         1);
+    add_builtin_function(p, "print",         1);
+    add_builtin_function(p, ODE_GET_VALUE,   2);
+    add_builtin_function(p, ODE_GET_TIME,    2);
+    add_builtin_function(p, ODE_GET_N_IT,    0);
 
     sh_new_arena(p->declared_variables);
     shdefault(p->declared_variables, ((declared_variable_entry_value){0}));
@@ -210,7 +213,6 @@ bool peek_token_is(parser *p, token_type t) {
     return p->peek_token.type == t;
 }
 
-
 bool expect_peek(parser *p, token_type t) {
     if(peek_token_is(p, t)) {
         advance_token(p);
@@ -222,23 +224,7 @@ bool expect_peek(parser *p, token_type t) {
 }
 
 ast *parse_identifier(parser *p) {
-    ast *result = make_identifier(&p->cur_token);
-
-    char *id_name = result->identifier.value;
-
-    bool exported_value = string_ends_with(id_name, "__value");
-    bool exported_time = string_ends_with(id_name, "__time");
-
-    if(exported_time || exported_value) {
-        if(!p->inside_foreach) {
-            ADD_ERROR_WITH_LINE(result->token.line_number, result->token.file_name, "Identifier %s can only be used inside the foreachstep statement!\n",  id_name);
-            free_ast(result);
-            return NULL;
-        }
-    }
-
-    return result;
-
+    return make_identifier(&p->cur_token);
 }
 
 ast *parse_boolean_literal(parser *p) {
@@ -263,6 +249,9 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     }
 
     stmt->assignment_stmt.name = parse_identifier(p);
+    if(!stmt->assignment_stmt.name) {
+        return NULL;
+    }
 
     if(tag == ast_global_stmt) {
         int builtin = shgeti(p->declared_functions, stmt->assignment_stmt.name->identifier.value);
@@ -275,7 +264,6 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     if (!expect_peek(p, ASSIGN)) {
         RETURN_ERROR("= expected\n");
     }
-
 
     if(tag == ast_assignment_stmt) {
         declared_variable_entry_value value = {local_var_count, false, p->cur_token.line_number, tag};
@@ -386,33 +374,6 @@ ast *parse_while_statement(parser *p) {
 
     exp->while_stmt.body = parse_block_statement(p);
 
-    return exp;
-}
-
-ast *parse_foreachstep_statement(parser *p) {
-
-    p->inside_foreach = true;
-    ast *exp = make_foreachstep_stmt(&p->cur_token);
-
-    if(!expect_peek(p, LPAREN)) {
-        RETURN_ERROR("( expected\n");
-    }
-
-    advance_token(p);
-
-    exp->foreachstep_stmt.identifier = parse_identifier(p);
-
-    if(!expect_peek(p, RPAREN)) {
-        RETURN_ERROR(") expected\n");
-    }
-
-    if(!expect_peek(p, LBRACE)) {
-        RETURN_ERROR("{ expected\n");
-    }
-
-    exp->foreachstep_stmt.body = parse_block_statement(p);
-
-    p->inside_foreach = false;
     return exp;
 }
 
@@ -744,7 +705,6 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
 }
 
 ast *parse_call_expression(parser *p, ast *function) {
-
     ast *exp = make_call_expression(&p->cur_token, function);
     exp->call_expr.arguments = parse_expression_list(p, true);
     return exp;
@@ -845,10 +805,6 @@ ast * parse_statement(parser *p) {
         return parse_while_statement(p);
     }
 
-    if(cur_token_is(p, FOREACHSTEP)) {
-        return parse_foreachstep_statement(p);
-    }
-
     if(cur_token_is(p, FUNCTION) || cur_token_is(p, ENDFUNCTION)) {
         return parse_function_statement(p);
     }
@@ -919,6 +875,8 @@ static void check_declaration(parser *p, ast *src) {
                     }
                 }
             }
+
+            check_declaration(p, src->assignment_stmt.value);
         }
             break;
         case ast_ode_stmt:
@@ -1009,6 +967,15 @@ static void check_declaration(parser *p, ast *src) {
 
             break;
         case ast_function_statement:
+        {
+            int n = arrlen(src->function_stmt.body);
+
+            for(int i = 0; i < n; i++) {
+                check_declaration(p, src->function_stmt.body[i]);
+            }
+
+        }
+
             break;
         case ast_return_stmt:
             //TODO
@@ -1044,7 +1011,6 @@ static void check_declaration(parser *p, ast *src) {
 
             int num_expected_args = dv.value.n_args;
             int n_real_args = arrlen(src->call_expr.arguments);
-
             if(n_real_args != num_expected_args) {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Function %s expects %d parameters but %d are being passed!\n", f_name,
                           num_expected_args, n_real_args);

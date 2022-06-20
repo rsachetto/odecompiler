@@ -8,6 +8,7 @@
 
 static ast *make_base_ast(const token *t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
+
     if (a == NULL) {
         fprintf(stderr, "%s - Error allocating memory for the new ast node\n,", __FUNCTION__);
         return NULL;
@@ -39,16 +40,6 @@ ast *make_grouped_assignment_stmt(const token *t) {
 
 ast *make_while_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_while_stmt);
-
-    if (a != NULL) {
-        a->while_stmt.body = NULL;
-    }
-
-    return a;
-}
-
-ast *make_foreachstep_stmt(const token *t) {
-    ast *a = make_base_ast(t, ast_foreachstep_stmt);
 
     if (a != NULL) {
         a->while_stmt.body = NULL;
@@ -361,33 +352,6 @@ static sds while_stmt_to_str(ast *a) {
     return buf;
 }
 
-static sds foreach_stmt_to_str(ast *a) {
-
-    sds buf = sdsempty();
-    sds tmp;
-
-    buf = sdscat(buf, "for");
-
-    tmp = ast_to_string(a->foreachstep_stmt.identifier);
-    buf = sdscatfmt(buf, "%s ", tmp);
-    sdsfree(tmp);
-
-    buf = sdscat(buf, "{");
-
-    indentation_level++;
-    int n = arrlen(a->foreachstep_stmt.body);
-
-    for (int i = 0; i < n; i++) {
-        tmp = ast_to_string(a->foreachstep_stmt.body[i]);
-        buf = sdscatfmt(buf, "%s\n", tmp);
-        sdsfree(tmp);
-    }
-
-    indentation_level--;
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
-    return buf;
-}
-
 static sds function_stmt_to_str(ast *a) {
 
     sds buf = sdsempty();
@@ -537,10 +501,6 @@ sds ast_to_string(ast *a) {
 
     if (a->tag == ast_while_stmt) {
         return while_stmt_to_str(a);
-    }
-
-    if (a->tag == ast_foreachstep_stmt) {
-        return foreach_stmt_to_str(a);
     }
 
     if (a->tag == ast_function_statement) {
@@ -743,6 +703,7 @@ void free_ast(ast *src) {
             free_ast(src->expr_stmt);
             break;
         case ast_while_stmt:
+            free_ast(src->while_stmt.condition);
             free_asts(src->while_stmt.body);
             break;
         case ast_import_stmt:
