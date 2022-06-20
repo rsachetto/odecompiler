@@ -10,10 +10,14 @@ struct var_declared_entry_t *ode_position = NULL;
 
 static sds ast_to_c(ast *a);
 
+bool from_assignment = false;
+
 static sds expression_stmt_to_c(ast *a) {
+    from_assignment = true;
     if (a->expr_stmt != NULL) {
         return ast_to_c(a->expr_stmt);
     }
+    from_assignment = false;
     return sdsempty();
 }
 
@@ -45,6 +49,8 @@ static sds assignment_stmt_to_c(ast *a) {
 
     sds buf = sdsempty();
     char *var_type;
+
+    from_assignment = true;
 
     if (a->tag == ast_assignment_stmt) {
         if (a->assignment_stmt.value->tag == ast_boolean_literal || a->assignment_stmt.value->tag == ast_if_expr) {
@@ -186,6 +192,7 @@ static sds assignment_stmt_to_c(ast *a) {
         }
     }
 
+    from_assignment = false;
     return buf;
 }
 
@@ -337,7 +344,12 @@ static sds call_expr_to_c(ast *a) {
     sds buf = sdsempty();
 
     sds fn_name = ast_to_c(a->call_expr.function_identifier);
-    buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], fn_name);
+    if(!from_assignment) {
+        buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], fn_name);
+    }
+    else {
+        buf = sdscat(buf, fn_name);
+    }
     buf = sdscat(buf, "(");
 
     int n = arrlen(a->call_expr.arguments);
@@ -372,7 +384,11 @@ static sds call_expr_to_c(ast *a) {
     }
 
     sdsfree(fn_name);
-    buf = sdscat(buf, ");");
+    buf = sdscat(buf, ")");
+
+    if(!from_assignment) {
+        buf = sdscat(buf, ";");
+    }
 
     return buf;
 }

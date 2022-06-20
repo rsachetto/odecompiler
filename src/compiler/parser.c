@@ -14,7 +14,6 @@
     msg = sdscatprintf(msg, __VA_ARGS__); \
     arrput(p->errors, msg)
 
-
 #define ADD_ERROR_WITH_LINE(ln, fn, ...)  \
     sds msg = NEW_ERROR_PREFIX(ln, fn);   \
     msg = sdscatprintf(msg, __VA_ARGS__); \
@@ -197,6 +196,8 @@ void free_parser(parser *p) {
     shfree(p->declared_variables);
     shfree(p->declared_functions);
     shfree(p->global_scope);
+    shfree(p->local_scope);
+
     free(p);
 }
 
@@ -842,7 +843,13 @@ static void check_declaration(parser *p, ast *src) {
             bool is_global   = shgeti(p->global_scope, id_name) != -1;
             bool is_function = shgeti(p->declared_functions, id_name) != -1;
 
+            bool is_fn_param = false;
+
             if(!is_local && !is_global && !is_function) {
+                is_fn_param = shgeti(p->local_scope, id_name) != -1;
+            }
+
+            if(!is_local && !is_global && !is_function && !is_fn_param) {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Identifier %s not declared, assign a value to it before using!\n",
                                     id_name);
             }
@@ -970,10 +977,23 @@ static void check_declaration(parser *p, ast *src) {
         {
             int n = arrlen(src->function_stmt.body);
 
+            int np = arrlen(src->function_stmt.parameters);
+
+            for(int i = 0; i < np; i++) {
+                char *var_name = src->function_stmt.parameters[i]->identifier.value;
+                declared_variable_entry var_entry = {var_name, {0}};
+                shputs(p->local_scope, var_entry);
+            }
+
             for(int i = 0; i < n; i++) {
                 check_declaration(p, src->function_stmt.body[i]);
             }
 
+            for(int i = 0; i < np; i++) {
+                char *var_name = src->function_stmt.parameters[i]->identifier.value;
+                shdel(p->local_scope, var_name);
+            }
+            p->local_scope = NULL;
         }
 
             break;
@@ -984,7 +1004,11 @@ static void check_declaration(parser *p, ast *src) {
             check_declaration(p, src->expr_stmt);
             break;
         case ast_while_stmt:
-            //TODO
+            check_declaration(p, src->while_stmt.condition);
+            int n = arrlen(src->while_stmt.body);
+            for(int i = 0; i < n; i++) {
+                check_declaration(p, src->while_stmt.body[i]);
+            }
             break;
         case ast_import_stmt:
             break;

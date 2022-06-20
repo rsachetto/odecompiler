@@ -41,25 +41,26 @@ typedef struct ode_initialized_hash_entry_t {
 } ode_initialized_hash_entry;
 
 enum operator_precedence {
-	BLANK = 0,
-	LOWEST,
-	EQUALS,
+    BLANK = 0,
+    LOWEST,
+    EQUALS,
     ANDP,
     ORP,
-	LESSGREATER,
-	SUM,
-	PRODUCT,
-	PREFIX,
-	CALL
+    LESSGREATER,
+    SUM,
+    PRODUCT,
+    PREFIX,
+    CALL
 };
 
 typedef struct parser_t {
-	lexer *l;
-	char **errors;
-	token cur_token;
-	token peek_token;
+    lexer *l;
+    char **errors;
+    token cur_token;
+    token peek_token;
     declared_variable_hash declared_variables;
     declared_variable_hash global_scope;
+    declared_variable_hash local_scope;
     declared_function_hash declared_functions;
     bool have_ode;
     bool inside_foreach;
