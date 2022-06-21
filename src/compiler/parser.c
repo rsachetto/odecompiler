@@ -1,10 +1,10 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdio.h>
+#include "parser.h"
 #include "../file_utils/file_utils.h"
 #include "../stb/stb_ds.h"
-#include "parser.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define ERROR_PREFIX "Parse error on line %d of file %s: "
 #define NEW_ERROR_PREFIX(ln, fn) sdscatprintf(sdsempty(), ERROR_PREFIX, ln, fn)
@@ -27,13 +27,13 @@ static int global_count = 1;
 static int local_var_count = 1;
 static int ode_count = 1;
 
-ast ** parse_expression_list(parser *, bool);
+ast **parse_expression_list(parser *, bool);
 
 bool check_parser_errors(parser *p, bool exit_on_error) {
 
     int err_len = arrlen(p->errors);
 
-    if (!err_len) {
+    if(!err_len) {
         return false;
     }
 
@@ -45,8 +45,7 @@ bool check_parser_errors(parser *p, bool exit_on_error) {
 
     if(exit_on_error) {
         exit(1);
-    }
-    else {
+    } else {
         return true;
     }
 }
@@ -54,15 +53,14 @@ bool check_parser_errors(parser *p, bool exit_on_error) {
 static bool can_be_in_init(parser *p, const ast *a) {
 
     switch(a->tag) {
-        case ast_boolean_literal: //FIXME: this should not be allowed in init, maybe in function calls
+        case ast_boolean_literal://FIXME: this should not be allowed in init, maybe in function calls
         case ast_number_literal:
             return true;
 
         case ast_identifier:
             return shgeti(p->global_scope, a->identifier.value) != -1 || shgeti(p->declared_functions, a->identifier.value) != -1;
 
-        case ast_grouped_assignment_stmt:
-        {
+        case ast_grouped_assignment_stmt: {
             bool can = false;
             int n = arrlen(a->grouped_assignment_stmt.names);
 
@@ -71,7 +69,6 @@ static bool can_be_in_init(parser *p, const ast *a) {
                 if(!can) {
                     return false;
                 }
-
             }
 
             return can;
@@ -83,8 +80,7 @@ static bool can_be_in_init(parser *p, const ast *a) {
         case ast_infix_expression:
             return can_be_in_init(p, a->infix_expr.left) && can_be_in_init(p, a->infix_expr.right);
 
-        case ast_call_expression:
-        {
+        case ast_call_expression: {
             int n = arrlen(a->call_expr.arguments);
             for(int i = 0; i < n; i++) {
                 bool can = can_be_in_init(p, a->call_expr.arguments[i]);
@@ -93,9 +89,9 @@ static bool can_be_in_init(parser *p, const ast *a) {
 
             return true;
         }
+        default:
+            return false;
     }
-
-    return false;
 }
 
 
@@ -104,9 +100,9 @@ static void add_builtin_function(parser *p, char *name, int n_args) {
     shput(p->declared_functions, name, value);
 }
 
-parser * new_parser(lexer *l) {
+parser *new_parser(lexer *l) {
 
-    parser *p = (parser*)calloc(1, sizeof(parser));
+    parser *p = (parser *) calloc(1, sizeof(parser));
 
     if(p == NULL) {
         fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
@@ -116,67 +112,67 @@ parser * new_parser(lexer *l) {
     sh_new_arena(p->declared_functions);
     shdefault(p->declared_functions, (declared_function_entry_value){0});
 
-    add_builtin_function(p, "acos",          1);
-    add_builtin_function(p, "asin",          1);
-    add_builtin_function(p, "atan",          1);
-    add_builtin_function(p, "atan2",         1);
-    add_builtin_function(p, "ceil",          1);
-    add_builtin_function(p, "cos",           1);
-    add_builtin_function(p, "cosh",          1);
-    add_builtin_function(p, "exp",           1);
-    add_builtin_function(p, "fabs",          1);
-    add_builtin_function(p, "floor",         1);
-    add_builtin_function(p, "fmod",          1);
-    add_builtin_function(p, "frexp",         1);
-    add_builtin_function(p, "ldexp",         1);
-    add_builtin_function(p, "log",           1);
-    add_builtin_function(p, "log10",         1);
-    add_builtin_function(p, "modf",          2);
-    add_builtin_function(p, "pow",           2);
-    add_builtin_function(p, "sin",           1);
-    add_builtin_function(p, "sinh",          1);
-    add_builtin_function(p, "sqrt",          1);
-    add_builtin_function(p, "tan",           1);
-    add_builtin_function(p, "tanh",          1);
-    add_builtin_function(p, "cosh",          1);
-    add_builtin_function(p, "asinh",         1);
-    add_builtin_function(p, "atanh",         1);
-    add_builtin_function(p, "cbrt",          1);
-    add_builtin_function(p, "copysign",      2);
-    add_builtin_function(p, "erf",           1);
-    add_builtin_function(p, "erfc",          1);
-    add_builtin_function(p, "exp2",          2);
-    add_builtin_function(p, "expm1",         2);
-    add_builtin_function(p, "fdim",          2);
-    add_builtin_function(p, "fma",           3);
-    add_builtin_function(p, "fmax",          2);
-    add_builtin_function(p, "fmin",          2);
-    add_builtin_function(p, "hypot",         2);
-    add_builtin_function(p, "ilogb",         1);
-    add_builtin_function(p, "lgamma",        1);
-    add_builtin_function(p, "llrint",        1);
-    add_builtin_function(p, "lrint",         1);
-    add_builtin_function(p, "llround",       1);
-    add_builtin_function(p, "lround",        1);
-    add_builtin_function(p, "log1p",         1);
-    add_builtin_function(p, "log2",          1);
-    add_builtin_function(p, "logb",          1);
-    add_builtin_function(p, "nan",           1);
-    add_builtin_function(p, "nearbyint",     1);
-    add_builtin_function(p, "nextafter",     2);
-    add_builtin_function(p, "nexttoward",    2);
-    add_builtin_function(p, "remainder",     1);
-    add_builtin_function(p, "remquo",        3);
-    add_builtin_function(p, "rint",          1);
-    add_builtin_function(p, "round",         1);
-    add_builtin_function(p, "scalbln",       2);
-    add_builtin_function(p, "scalbn",        2);
-    add_builtin_function(p, "tgamma",        1);
-    add_builtin_function(p, "trunc",         1);
-    add_builtin_function(p, "print",         1);
-    add_builtin_function(p, ODE_GET_VALUE,   2);
-    add_builtin_function(p, ODE_GET_TIME,    2);
-    add_builtin_function(p, ODE_GET_N_IT,    0);
+    add_builtin_function(p, "acos", 1);
+    add_builtin_function(p, "asin", 1);
+    add_builtin_function(p, "atan", 1);
+    add_builtin_function(p, "atan2", 1);
+    add_builtin_function(p, "ceil", 1);
+    add_builtin_function(p, "cos", 1);
+    add_builtin_function(p, "cosh", 1);
+    add_builtin_function(p, "exp", 1);
+    add_builtin_function(p, "fabs", 1);
+    add_builtin_function(p, "floor", 1);
+    add_builtin_function(p, "fmod", 1);
+    add_builtin_function(p, "frexp", 1);
+    add_builtin_function(p, "ldexp", 1);
+    add_builtin_function(p, "log", 1);
+    add_builtin_function(p, "log10", 1);
+    add_builtin_function(p, "modf", 2);
+    add_builtin_function(p, "pow", 2);
+    add_builtin_function(p, "sin", 1);
+    add_builtin_function(p, "sinh", 1);
+    add_builtin_function(p, "sqrt", 1);
+    add_builtin_function(p, "tan", 1);
+    add_builtin_function(p, "tanh", 1);
+    add_builtin_function(p, "cosh", 1);
+    add_builtin_function(p, "asinh", 1);
+    add_builtin_function(p, "atanh", 1);
+    add_builtin_function(p, "cbrt", 1);
+    add_builtin_function(p, "copysign", 2);
+    add_builtin_function(p, "erf", 1);
+    add_builtin_function(p, "erfc", 1);
+    add_builtin_function(p, "exp2", 2);
+    add_builtin_function(p, "expm1", 2);
+    add_builtin_function(p, "fdim", 2);
+    add_builtin_function(p, "fma", 3);
+    add_builtin_function(p, "fmax", 2);
+    add_builtin_function(p, "fmin", 2);
+    add_builtin_function(p, "hypot", 2);
+    add_builtin_function(p, "ilogb", 1);
+    add_builtin_function(p, "lgamma", 1);
+    add_builtin_function(p, "llrint", 1);
+    add_builtin_function(p, "lrint", 1);
+    add_builtin_function(p, "llround", 1);
+    add_builtin_function(p, "lround", 1);
+    add_builtin_function(p, "log1p", 1);
+    add_builtin_function(p, "log2", 1);
+    add_builtin_function(p, "logb", 1);
+    add_builtin_function(p, "nan", 1);
+    add_builtin_function(p, "nearbyint", 1);
+    add_builtin_function(p, "nextafter", 2);
+    add_builtin_function(p, "nexttoward", 2);
+    add_builtin_function(p, "remainder", 1);
+    add_builtin_function(p, "remquo", 3);
+    add_builtin_function(p, "rint", 1);
+    add_builtin_function(p, "round", 1);
+    add_builtin_function(p, "scalbln", 2);
+    add_builtin_function(p, "scalbn", 2);
+    add_builtin_function(p, "tgamma", 1);
+    add_builtin_function(p, "trunc", 1);
+    add_builtin_function(p, "print", 1);
+    add_builtin_function(p, ODE_GET_VALUE, 2);
+    add_builtin_function(p, ODE_GET_TIME, 2);
+    add_builtin_function(p, ODE_GET_N_IT, 0);
 
     sh_new_arena(p->declared_variables);
     shdefault(p->declared_variables, ((declared_variable_entry_value){0}));
@@ -232,17 +228,17 @@ ast *parse_boolean_literal(parser *p) {
     return make_boolean_literal(&p->cur_token, cur_token_is(p, TRUE));
 }
 
-ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
+ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     ast *stmt = make_assignment_stmt(&p->cur_token, tag);
 
     if(!skip_ident) {
-        if (!expect_peek(p, IDENT)) {
+        if(!expect_peek(p, IDENT)) {
             RETURN_ERROR("identifier expected before assignment\n");
         }
     }
 
-    bool has_ode_symbol = (p->cur_token.literal[p->cur_token.literal_len-1] == '\'');
+    bool has_ode_symbol = (p->cur_token.literal[p->cur_token.literal_len - 1] == '\'');
     if(tag == ast_ode_stmt) {
         if(!has_ode_symbol) {
             RETURN_ERROR("ode identifiers needs to end with an ' \n");
@@ -258,11 +254,11 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         int builtin = shgeti(p->declared_functions, stmt->assignment_stmt.name->identifier.value);
 
         if(builtin != -1) {
-            RETURN_ERROR("%.*s is a function name and cannot be used as an global identifier\n",  p->cur_token.literal_len, p->cur_token.literal);
+            RETURN_ERROR("%.*s is a function name and cannot be used as an global identifier\n", p->cur_token.literal_len, p->cur_token.literal);
         }
     }
 
-    if (!expect_peek(p, ASSIGN)) {
+    if(!expect_peek(p, ASSIGN)) {
         RETURN_ERROR("= expected\n");
     }
 
@@ -273,15 +269,14 @@ ast * parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
             stmt->assignment_stmt.declaration_position = local_var_count;
             local_var_count++;
         }
-    }
-    else if(tag == ast_global_stmt) {
+    } else if(tag == ast_global_stmt) {
         declared_variable_entry_value value = {global_count, false, p->cur_token.line_number, tag};
         shput(p->global_scope, stmt->assignment_stmt.name->identifier.value, value);
         stmt->assignment_stmt.declaration_position = global_count;
         global_count++;
     } else if(tag == ast_ode_stmt) {
         p->have_ode = true;
-        char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int)strlen(stmt->assignment_stmt.name->identifier.value)-1);
+        char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int) strlen(stmt->assignment_stmt.name->identifier.value) - 1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
         shput(p->declared_variables, tmp, value);
@@ -334,13 +329,13 @@ ast *parse_import_statement(parser *p) {
     return stmt;
 }
 
-ast ** parse_block_statement(parser *p) {
+ast **parse_block_statement(parser *p) {
 
     ast **statements = NULL;
 
     advance_token(p);
 
-    while(!cur_token_is(p, RBRACE) && !cur_token_is(p, ENDOF) ) {
+    while(!cur_token_is(p, RBRACE) && !cur_token_is(p, ENDOF)) {
         ast *stmt = parse_statement(p);
 
         if(stmt) {
@@ -350,7 +345,6 @@ ast ** parse_block_statement(parser *p) {
     }
 
     return statements;
-
 }
 
 ast *parse_while_statement(parser *p) {
@@ -401,7 +395,6 @@ ast *parse_prefix_expression(parser *p) {
     expression->prefix_expr.right = parse_expression(p, PREFIX);
 
     return expression;
-
 }
 
 ast *parse_infix_expression(parser *p, ast *left) {
@@ -415,7 +408,6 @@ ast *parse_infix_expression(parser *p, ast *left) {
     expression->infix_expr.right = parse_expression(p, precedence);
 
     return expression;
-
 }
 
 ast *parse_grouped_expression(parser *p) {
@@ -433,7 +425,7 @@ ast *parse_grouped_expression(parser *p) {
 ast **parse_grouped_assignment_names(parser *p) {
     advance_token(p);
 
-    ast ** identifiers = NULL;
+    ast **identifiers = NULL;
 
     ast *ident = parse_identifier(p);
     arrput(identifiers, ident);
@@ -442,7 +434,7 @@ ast **parse_grouped_assignment_names(parser *p) {
 
     shput(p->declared_variables, ident->identifier.value, value);
 
-    while (peek_token_is(p, COMMA)) {
+    while(peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
         ident = parse_identifier(p);
@@ -458,17 +450,17 @@ ast *parse_grouped_assignment(parser *p) {
 
     ast *stmt = make_grouped_assignment_stmt(&p->cur_token);
 
-    if (peek_token_is(p, RBRACKET)) {
+    if(peek_token_is(p, RBRACKET)) {
         RETURN_ERROR("expected at least one identifier\n");
     }
 
     stmt->grouped_assignment_stmt.names = parse_grouped_assignment_names(p);
 
-    if (!expect_peek(p, RBRACKET)) {
+    if(!expect_peek(p, RBRACKET)) {
         RETURN_ERROR("] expected\n");
     }
 
-    if (!expect_peek(p, ASSIGN)) {
+    if(!expect_peek(p, ASSIGN)) {
         RETURN_ERROR("= expected\n");
     }
 
@@ -512,15 +504,15 @@ ast *parse_if_expression(parser *p) {
 
     exp->if_expr.consequence = parse_block_statement(p);
 
-    if (peek_token_is(p, ELSE)) {
+    if(peek_token_is(p, ELSE)) {
         advance_token(p);
-        if (!expect_peek(p, LBRACE)) {
+        if(!expect_peek(p, LBRACE)) {
             RETURN_ERROR("} expected\n");
         }
         exp->if_expr.alternative = parse_block_statement(p);
     }
 
-    else if (peek_token_is(p, ELIF)) {
+    else if(peek_token_is(p, ELIF)) {
         advance_token(p);
         exp->if_expr.elif_alternative = parse_if_expression(p);
     }
@@ -528,10 +520,10 @@ ast *parse_if_expression(parser *p) {
     return exp;
 }
 
-ast ** parse_function_parameters(parser *p) {
-    ast ** identifiers = NULL;
+ast **parse_function_parameters(parser *p) {
+    ast **identifiers = NULL;
 
-    if (peek_token_is(p, RPAREN)) {
+    if(peek_token_is(p, RPAREN)) {
         advance_token(p);
         return identifiers;
     }
@@ -542,29 +534,27 @@ ast ** parse_function_parameters(parser *p) {
 
     arrput(identifiers, ident);
 
-    while (peek_token_is(p, COMMA)) {
+    while(peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
         ident = parse_identifier(p);
         arrput(identifiers, ident);
     }
 
-    if (!expect_peek(p, RPAREN)) {
+    if(!expect_peek(p, RPAREN)) {
         RETURN_ERROR(") expected\n");
     }
 
     return identifiers;
-
 }
 
 void count_return(ast *a, program *return_stmts);
 
 static void count_in_expression(ast *a, program *stmts) {
 
-    if (a->expr_stmt != NULL) {
+    if(a->expr_stmt != NULL) {
         count_return(a->expr_stmt, stmts);
     }
-
 }
 
 static void count_in_if(ast *a, program *stmts) {
@@ -580,10 +570,7 @@ static void count_in_if(ast *a, program *stmts) {
         for(int i = 0; i < n; i++) {
             count_return(a->if_expr.alternative[i], stmts);
         }
-
     }
-
-
 }
 
 static void count_in_while(ast *a, program *stmts) {
@@ -592,7 +579,6 @@ static void count_in_while(ast *a, program *stmts) {
     for(int i = 0; i < n; i++) {
         count_return(a->while_stmt.body[i], stmts);
     }
-
 }
 
 void count_return(ast *a, program *stmts) {
@@ -602,7 +588,7 @@ void count_return(ast *a, program *stmts) {
     }
 
     if(a->tag == ast_expression_stmt) {
-        return count_in_expression(a,stmts);
+        return count_in_expression(a, stmts);
     }
 
     if(a->tag == ast_if_expr) {
@@ -616,7 +602,7 @@ void count_return(ast *a, program *stmts) {
 
 ast *parse_function_statement(parser *p) {
 
-    ast * stmt = make_function_statement(&p->cur_token);
+    ast *stmt = make_function_statement(&p->cur_token);
 
     if(!expect_peek(p, IDENT)) {
         RETURN_ERROR("expected identifier after fn statement\n");
@@ -657,7 +643,6 @@ ast *parse_function_statement(parser *p) {
 
             if(tmp != return_len) {
                 RETURN_ERROR("a function has always to return the same number of values\n");
-
             }
         }
     }
@@ -672,15 +657,14 @@ ast *parse_function_statement(parser *p) {
     shput(p->declared_functions, stmt->function_stmt.name->identifier.value, value);
 
     return stmt;
-
 }
 
-ast ** parse_expression_list(parser *p, bool with_paren) {
+ast **parse_expression_list(parser *p, bool with_paren) {
 
     ast **list = NULL;
 
-    if (with_paren) {
-        if (peek_token_is(p, RPAREN)) {
+    if(with_paren) {
+        if(peek_token_is(p, RPAREN)) {
             advance_token(p);
             return list;
         }
@@ -697,7 +681,7 @@ ast ** parse_expression_list(parser *p, bool with_paren) {
     }
 
     if(with_paren) {
-        if (!expect_peek(p, RPAREN)) {
+        if(!expect_peek(p, RPAREN)) {
             RETURN_ERROR(") expected\n");
         }
     }
@@ -719,9 +703,9 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     if(TOKEN_TYPE_EQUALS(p->cur_token, IDENT)) {
         left_expr = parse_identifier(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, NUMBER)) {
-        left_expr =  parse_number_literal(p);
+        left_expr = parse_number_literal(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, STRING)) {
-        left_expr =  parse_string_literal(p);
+        left_expr = parse_string_literal(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, TRUE) || TOKEN_TYPE_EQUALS(p->cur_token, FALSE)) {
         left_expr = parse_boolean_literal(p);
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, BANG) || TOKEN_TYPE_EQUALS(p->cur_token, MINUS)) {
@@ -737,21 +721,21 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     //infix expression
     while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
 
-        bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS)     ||
-            TOKEN_TYPE_EQUALS(p->peek_token, MINUS)    ||
-            TOKEN_TYPE_EQUALS(p->peek_token, SLASH)    ||
-            TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
-            TOKEN_TYPE_EQUALS(p->peek_token, EQ)       ||
-            TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ)   ||
-            TOKEN_TYPE_EQUALS(p->peek_token, LT)       ||
-            TOKEN_TYPE_EQUALS(p->peek_token, GT)       ||
-            TOKEN_TYPE_EQUALS(p->peek_token, LEQ)      ||
-            TOKEN_TYPE_EQUALS(p->peek_token, GEQ)      ||
-            TOKEN_TYPE_EQUALS(p->peek_token, AND)      ||
-            TOKEN_TYPE_EQUALS(p->peek_token, OR)       ||
-            TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
+        bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, MINUS) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, SLASH) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, EQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LT) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GT) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LEQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GEQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, AND) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, OR) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
 
-        if (!is_infix) {
+        if(!is_infix) {
             return left_expr;
         }
 
@@ -759,30 +743,27 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
 
         if(TOKEN_TYPE_EQUALS(p->cur_token, LPAREN)) {
             left_expr = parse_call_expression(p, left_expr);
-        }
-        else {
+        } else {
             left_expr = parse_infix_expression(p, left_expr);
         }
-
     }
 
     return left_expr;
-
 }
 
-ast * parse_expression_statement(parser *p) {
+ast *parse_expression_statement(parser *p) {
 
     ast *stmt = make_expression_stmt(&p->cur_token);
     stmt->expr_stmt = parse_expression(p, LOWEST);
-    if (peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
     return stmt;
 }
 
-ast * parse_statement(parser *p) {
+ast *parse_statement(parser *p) {
 
-    if(cur_token_is(p, IDENT) && peek_token_is(p, ASSIGN) ) {
+    if(cur_token_is(p, IDENT) && peek_token_is(p, ASSIGN)) {
         return parse_assignment_statement(p, ast_assignment_stmt, true);
     }
 
@@ -819,7 +800,6 @@ ast * parse_statement(parser *p) {
     }
 
     return parse_expression_statement(p);
-
 }
 
 static void check_variable_declarations(parser *p, program program);
@@ -828,19 +808,18 @@ static void check_declaration(parser *p, ast *src) {
 
     if(src == NULL) return;
 
-    switch (src->tag) {
+    switch(src->tag) {
 
         case ast_string_literal:
         case ast_number_literal:
         case ast_boolean_literal:
             break;
-        case ast_identifier:
-        {
+        case ast_identifier: {
 
             char *id_name = src->identifier.value;
 
-            bool is_local    = shgeti(p->declared_variables, id_name) != -1;
-            bool is_global   = shgeti(p->global_scope, id_name) != -1;
+            bool is_local = shgeti(p->declared_variables, id_name) != -1;
+            bool is_global = shgeti(p->global_scope, id_name) != -1;
             bool is_function = shgeti(p->declared_functions, id_name) != -1;
 
             bool is_fn_param = false;
@@ -854,41 +833,35 @@ static void check_declaration(parser *p, ast *src) {
                                     id_name);
             }
 
-        }
-            break;
-        case ast_assignment_stmt:
-        {
+        } break;
+        case ast_assignment_stmt: {
             char *id_name = src->assignment_stmt.name->identifier.value;
-            size_t s = strlen(id_name)-1;
+            size_t s = strlen(id_name) - 1;
             bool has_ode_symbol = (id_name[s] == '\'');
 
             if(has_ode_symbol) {
                 char *tmp = strndup(id_name, s);
-                
+
                 int i = shgeti(p->declared_variables, tmp);
-                
+
                 free(tmp);
 
                 if(i == -1) {
                     ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s not declared. Declare with 'ode %s = expr' before using!\n",
-                                    id_name, id_name);
-                }
-                else {
+                                        id_name, id_name);
+                } else {
                     if(p->declared_variables[i].value.line_number > src->token.line_number) {
                         ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s is being assigned before being declared!\n", id_name);
-                    }
-                    else {
+                    } else {
                         src->assignment_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
                     }
                 }
             }
 
             check_declaration(p, src->assignment_stmt.value);
-        }
-            break;
+        } break;
         case ast_ode_stmt:
-        case ast_global_stmt:
-        {
+        case ast_global_stmt: {
             check_declaration(p, src->assignment_stmt.value);
             if(src->assignment_stmt.value->tag == ast_call_expression) {
                 char *f_name = src->assignment_stmt.value->call_expr.function_identifier->identifier.value;
@@ -896,11 +869,10 @@ static void check_declaration(parser *p, ast *src) {
                 declared_function_entry dv = shgets(p->declared_functions, f_name);
                 int num_return_values = dv.value.n_returns;
 
-                if (num_return_values != 1) {
+                if(num_return_values != 1) {
                     ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Function %s returns %d values but 1 is being assigned!\n", f_name,
-                              num_return_values);
+                                        num_return_values);
                 }
-
             }
             if(src->tag == ast_assignment_stmt) {
 
@@ -909,14 +881,10 @@ static void check_declaration(parser *p, ast *src) {
                     printf("%s is global\n", src->assignment_stmt.name->identifier.value);
                     src->assignment_stmt.name->identifier.global = true;
                 }
-
-
             }
-        }
-            break;
+        } break;
 
-        case ast_initial_stmt:
-        {
+        case ast_initial_stmt: {
             check_declaration(p, src->assignment_stmt.value);
             if(!can_be_in_init(p, src->assignment_stmt.value)) {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n");
@@ -929,7 +897,7 @@ static void check_declaration(parser *p, ast *src) {
             if(i != -1) {
 
                 if(p->declared_variables[i].value.initialized) {
-                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Duplicate initialization ode variable %s\n",  ode_name);
+                    ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Duplicate initialization ode variable %s\n", ode_name);
                 }
 
                 if(p->declared_variables[i].value.tag != ast_ode_stmt) {
@@ -938,14 +906,11 @@ static void check_declaration(parser *p, ast *src) {
 
                 p->declared_variables[i].value.initialized = true;
                 src->assignment_stmt.declaration_position = p->declared_variables[i].value.declaration_position;
-            }
-            else {
+            } else {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE %s' not declared.\n", ode_name);
             }
-        }
-        break;
-        case ast_grouped_assignment_stmt:
-        {
+        } break;
+        case ast_grouped_assignment_stmt: {
             check_declaration(p, src->grouped_assignment_stmt.call_expr);
 
             int n = arrlen(src->grouped_assignment_stmt.names);
@@ -955,7 +920,6 @@ static void check_declaration(parser *p, ast *src) {
                 if(var_is_global) {
                     src->grouped_assignment_stmt.names[i]->identifier.global = true;
                 }
-
             }
 
             if(n > 1) {
@@ -967,14 +931,13 @@ static void check_declaration(parser *p, ast *src) {
 
                 if(n != num_expected_assignments) {
                     ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Function %s returns %d value(s) but %d are being assigned!\n", f_name,
-                            num_expected_assignments, n);
+                                        num_expected_assignments, n);
                 }
             }
         }
 
-            break;
-        case ast_function_statement:
-        {
+        break;
+        case ast_function_statement: {
             int n = arrlen(src->function_stmt.body);
 
             int np = arrlen(src->function_stmt.parameters);
@@ -996,7 +959,7 @@ static void check_declaration(parser *p, ast *src) {
             p->local_scope = NULL;
         }
 
-            break;
+        break;
         case ast_return_stmt:
             //TODO
             break;
@@ -1025,8 +988,7 @@ static void check_declaration(parser *p, ast *src) {
             check_variable_declarations(p, src->if_expr.alternative);
             check_declaration(p, src->if_expr.elif_alternative);
             break;
-        case ast_call_expression:
-        {
+        case ast_call_expression: {
             check_declaration(p, src->call_expr.function_identifier);
             check_variable_declarations(p, src->call_expr.arguments);
 
@@ -1037,12 +999,10 @@ static void check_declaration(parser *p, ast *src) {
             int n_real_args = arrlen(src->call_expr.arguments);
             if(n_real_args != num_expected_args) {
                 ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "Function %s expects %d parameters but %d are being passed!\n", f_name,
-                          num_expected_args, n_real_args);
+                                    num_expected_args, n_real_args);
             }
-        }
-            break;
+        } break;
     }
-
 }
 
 static void check_variable_declarations(parser *p, program program) {
@@ -1052,7 +1012,6 @@ static void check_variable_declarations(parser *p, program program) {
     for(int i = 0; i < n; i++) {
         check_declaration(p, program[i]);
     }
-
 }
 
 static void check_ode_initializations(parser *p, program program) {
@@ -1063,17 +1022,15 @@ static void check_ode_initializations(parser *p, program program) {
         if(program[i]->tag == ast_ode_stmt) {
 
             ast *src = program[i];
-            char *ode_name = strndup(src->assignment_stmt.name->identifier.value, (int)strlen(src->assignment_stmt.name->identifier.value)-1);
+            char *ode_name = strndup(src->assignment_stmt.name->identifier.value, (int) strlen(src->assignment_stmt.name->identifier.value) - 1);
             declared_variable_entry dv = shgets(p->declared_variables, ode_name);
 
             if(!dv.value.initialized) {
                 fprintf(stderr, "Warning - No initial condition provided for %s'!\n", ode_name);
             }
             free(ode_name);
-
         }
     }
-
 }
 
 static void process_imports(parser *p, program original_program) {
@@ -1106,27 +1063,23 @@ static void process_imports(parser *p, program original_program) {
                 int exists = shgeti(p->declared_functions, program_new[s]->function_stmt.name->identifier.value) != -1;
                 if(exists) {
                     ADD_ERROR("Function %s alread exists.\n", program_new[s]->function_stmt.name->identifier.value);
-                }
-                else {
+                } else {
                     declared_function_entry fn_entry = shgets(parser_new->declared_functions, program_new[s]->function_stmt.name->identifier.value);
                     shputs(p->declared_functions, fn_entry);
                     arrput(original_program, program_new[s]);
                 }
 
-            }
-            else if( program_new[s]->tag == ast_global_stmt) {
+            } else if(program_new[s]->tag == ast_global_stmt) {
                 int exists = shgeti(p->global_scope, program_new[s]->assignment_stmt.name->identifier.value) != -1;
                 if(exists) {
                     ADD_ERROR("Global variable %s alread exists.\n", program_new[s]->function_stmt.name->identifier.value);
-                }
-                else {
+                } else {
                     declared_variable_entry var_entry = shgets(parser_new->global_scope, program_new[s]->function_stmt.name->identifier.value);
                     shputs(p->global_scope, var_entry);
 
                     arrput(original_program, program_new[s]);
                 }
-            }
-            else {
+            } else {
                 free_ast(program_new[s]);
                 //TODO: add a warning to the parser
                 fprintf(stderr, "[WARN] - Importing from file %s in line %d. Currently, we only import functions or global variables. Nested imports will not be imported!\n", import_file_name, program_new[s]->token.line_number);
@@ -1137,7 +1090,6 @@ static void process_imports(parser *p, program original_program) {
         free_parser(parser_new);
         arrfree(program_new);
         munmap(source, file_size);
-
     }
 }
 
@@ -1147,11 +1099,11 @@ program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bo
     local_var_count = 1;
     ode_count = 1;
 
-    program  program = NULL;
+    program program = NULL;
 
     while(!TOKEN_TYPE_EQUALS(p->cur_token, ENDOF)) {
         ast *stmt = parse_statement(p);
-        if (stmt != NULL) {
+        if(stmt != NULL) {
             arrput(program, stmt);
         }
         advance_token(p);
@@ -1178,7 +1130,6 @@ program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bo
     }
 
     return program;
-
 }
 
 program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors) {
@@ -1190,13 +1141,12 @@ program parse_program(parser *p, bool proc_imports, bool check_errors) {
 }
 
 
-
 void peek_error(parser *p, token_type t) {
-    ADD_ERROR_WITH_LINE( p->cur_token.line_number, p->l->file_name, "expected next token to be %s, got %s instead\n",
-               get_string_token_type(t), get_string_token_type(p->peek_token.type));
+    ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, "expected next token to be %s, got %s instead\n",
+                        get_string_token_type(t), get_string_token_type(p->peek_token.type));
 }
 
-static enum operator_precedence get_precedence (token t) {
+static enum operator_precedence get_precedence(token t) {
 
     if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
         return EQUALS;
@@ -1214,7 +1164,7 @@ static enum operator_precedence get_precedence (token t) {
         return LESSGREATER;
     }
 
-    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS))  {
+    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS)) {
         return SUM;
     }
 
@@ -1227,7 +1177,6 @@ static enum operator_precedence get_precedence (token t) {
     }
 
     return LOWEST;
-
 }
 
 enum operator_precedence peek_precedence(parser *p) {
