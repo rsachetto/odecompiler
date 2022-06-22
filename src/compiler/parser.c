@@ -108,7 +108,7 @@ parser *new_parser(lexer *l) {
         fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
         return NULL;
     }
-
+    
     sh_new_arena(p->declared_functions);
     shdefault(p->declared_functions, (declared_function_entry_value){0});
 
@@ -954,9 +954,8 @@ static void check_declaration(parser *p, ast *src) {
 
             for(int i = 0; i < np; i++) {
                 char *var_name = src->function_stmt.parameters[i]->identifier.value;
-                shdel(p->local_scope, var_name);
+                (void)shdel(p->local_scope, var_name);
             }
-            p->local_scope = NULL;
         }
 
         break;
