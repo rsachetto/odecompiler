@@ -115,12 +115,12 @@ static sds assignment_stmt_to_c(ast *a) {
 
                 if(!declared) {
                     sds tmp = ast_to_c(call_expr);
-                    buf = sdscatfmt(buf, "%s%s %s = %s", indent_spaces[indentation_level], var_type, id_name, tmp);
+                    buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, id_name, tmp);
                     shput(var_declared, id_name, 1);
                     sdsfree(tmp);
                 } else {
                     sds tmp = ast_to_c(call_expr);
-                    buf = sdscatfmt(buf, "%s%s = %s", indent_spaces[indentation_level], id_name, tmp);
+                    buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], id_name, tmp);
                     sdsfree(tmp);
                 }
             }
@@ -136,7 +136,7 @@ static sds assignment_stmt_to_c(ast *a) {
                     int declared = shgeti(var_declared, id->identifier.value) != -1;
 
                     if(!declared) {
-                        buf = sdscatfmt(buf, "%s%s %s", indent_spaces[indentation_level], var_type, id->identifier.value);
+                        buf = sdscatfmt(buf, "%s%s %s;\n", indent_spaces[indentation_level], var_type, id->identifier.value);
                         shput(var_declared, id->identifier.value, 1);
                     }
                 }

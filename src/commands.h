@@ -21,6 +21,8 @@ typedef struct command_t {
 
 typedef enum cmd_type_t {
     CMD_PLOT,
+    CMD_CUSTOM_PLOT,
+    CMD_CUSTOM_REPLOT,
     CMD_REPLOT,
     CMD_PLOT_TERM,
     CMD_REPLOT_TERM,
