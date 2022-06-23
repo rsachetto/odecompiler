@@ -1,3 +1,7 @@
+endfn teste() {
+    print("END\n")
+}
+
 global n = 1000
 global init_i = 3
 

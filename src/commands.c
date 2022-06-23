@@ -135,6 +135,12 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
     }
 }
 
+static void check_and_print_execution_output(FILE *fp) {
+        char msg[PATH_MAX];
+    while (fgets(msg, PATH_MAX, fp) != NULL) {
+        printf("%s", msg);
+    }
+}
 
 static bool check_and_print_execution_errors(FILE *fp) {
 
@@ -582,8 +588,8 @@ COMMAND_FUNCTION(solve) {
     model_command = sdscatprintf(model_command, " %lf %s", simulation_steps, output_file);
 
     FILE *fp = popen(model_command, "r");
-    bool error = check_and_print_execution_errors(fp);
-    pclose(fp);
+    check_and_print_execution_output(fp);
+    bool error = WEXITSTATUS(pclose(fp)) != 0;
 
     if(!error) {
         printf("Model %s solved for %lf steps.\n", model_config->model_name, simulation_steps);
