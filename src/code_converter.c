@@ -1084,6 +1084,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
                   "            for(int i = 0; i < NEQ; i++) {\n"
                   "                fprintf(f, \"%%lf \", sv[i]);\n"
                   "                if(sv[i] < min[i]) min[i] = sv[i];\n"
+                  "                if(sv[i] > max[i]) max[i] = sv[i];\n"
                   "                %s\n"
                   "            }\n"
                   "\n"
