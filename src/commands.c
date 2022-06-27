@@ -1766,7 +1766,7 @@ COMMAND_FUNCTION(getruninfo) {
         if(var_index > 1) {
             double min_value = model_config->runs[run_number - 1].vars_min_value[var_index - 2];
             double max_value = model_config->runs[run_number - 1].vars_max_value[var_index - 2];
-            ft_printf_ln(table2, "%s|%lf|%lf", model_config->var_indexes[i].key, min_value, max_value);
+            ft_printf_ln(table2, "%s|%e|%e", model_config->var_indexes[i].key, min_value, max_value);
         }
     }
 

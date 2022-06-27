@@ -1112,7 +1112,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
                   "    sprintf(min_max, \"%%s_min_max\", file_name);\n"
                   "    FILE* min_max_file = fopen(min_max, \"w\");\n"
                   "    for(int i = 0; i < NEQ; i++) {\n"
-                  "        fprintf(min_max_file, \"%%lf;%%lf\\n\", min[i], max[i]);\n"
+                  "        fprintf(min_max_file, \"%%e;%%e\\n\", min[i], max[i]);\n"
                   "    }\n"
                   "    fclose(min_max_file);\n"
                   "    free(min_max);\n"
