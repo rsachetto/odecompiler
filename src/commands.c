@@ -973,6 +973,15 @@ COMMAND_FUNCTION(plotvars) {
 
     sds all_vars = sdscatfmt(sdsempty(), "%s", model_config->var_indexes[1].key);
 
+    if(len - 2 > 10) {
+        printf("\nModel %s has %d ODE's. Do you want to plot all of them? [y]: ", model_config->model_name, len-2);
+            char answer = (char) getchar();
+
+        if(answer != 'Y' && answer != 'y' && answer != '\r') {
+            return false;
+        }
+    }
+
     for(int i = 2; i < len; i++) {
         all_vars = sdscatfmt(all_vars, " %s", model_config->var_indexes[i].key);
     }
