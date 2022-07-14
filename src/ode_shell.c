@@ -130,7 +130,7 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
         return false;
     }
 
-    bool try_sixel = check_sixel_support() && shell_state->enable_sixel;
+    bool try_sixel = shell_state->enable_sixel && check_sixel_support();
 
     if(!try_sixel) {
         const int BUF_MAX = 1024;
@@ -155,18 +155,22 @@ static bool check_gnuplot_and_get_default_terminal(struct shell_variables *shell
             shell_state->default_gnuplot_term = strdup(tmp_tokens[3]);
             sdsfreesplitres(tmp_tokens, c);
             sdsfree(tmp);
-        }
-        else {
+        } else {
             //I think this will never happen
             shell_state->default_gnuplot_term = strdup("dummy");
         }
         pclose(f);
+
+        if(shell_state->enable_sixel) {
+            printf("Warning: sixel gnuplot terminal was requested, but your current terminal does not support sixel!\n");
+        }
+
     }
     else {
-        printf("Using sixel as gnuplot output.\n");
         shell_state->default_gnuplot_term = strdup("sixel");
     }
 
+    printf("Using %s as gnuplot terminal.\n", shell_state->default_gnuplot_term);
     return true;
 }
 
@@ -177,7 +181,7 @@ int main(int argc, char **argv) {
 
     struct arguments arguments = {0};
 
-    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     struct shell_variables shell_state = {0};
 

@@ -871,6 +871,10 @@ static sds get_plotvar_command(sds plot_command, struct shell_variables *shell_s
         ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
     }
 
+    if(ret == false) {
+        return NULL;
+    }
+
     sds output_file = get_model_output_file(model_config, run_number);
 
     char *first = "plot";
@@ -942,6 +946,10 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
     for(int i = 0; i < varcount; i++) {
         new_tokens[split_index] = vars_to_plot[i];
         gnuplot_cmd = get_plotvar_command(gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
+    }
+
+    if(gnuplot_cmd == NULL) {
+        return false;
     }
 
     command_type ct = CMD_CUSTOM_PLOT;
@@ -1913,6 +1921,7 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
     if(!STR_EQUALS(tokens[0], "loadcmds")) {
         pthread_mutex_lock(&shell_state->lock);
     }
+
     command.command_function(shell_state, tokens, num_args);
 
     if(!STR_EQUALS(tokens[0], "loadcmds")) {
