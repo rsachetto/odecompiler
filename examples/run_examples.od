@@ -1,5 +1,17 @@
-cd examples;load sird.ode;
-load sir
+cd examples;load courtemanche_ramirez_nattel_1998_version03_1.ode
+load courtemanche_ramirez_nattel_1998_version03.ode
+load faber_rudy_2000.ode
+load fhn.ode
+load hh.ode
+load home_heating.ode
+load lv.ode
+load michaelis_menten_dimensionless.ode
+load Ohara_Rudy_2011.ode
+load sird.ode
+load sir.ode
+load sirv_dimensionless.ode
+load ToRORd.ode
+
 solve sird 100
 setplotxlabel sird "Population"
 setplotylabel sird Day
@@ -11,7 +23,8 @@ replot sird
 setploty sird D
 replot sird
 saveplot sird.pdf
-#solve sir (last loaded model)
+#solve sir
+setcurrentmodel sir
 solve 100
 plotvar "S I R"
 plottofile "sir_S.pdf"
@@ -19,5 +32,4 @@ setploty I
 plottofile "sir_I.pdf"
 setploty R
 plottofile "sir_R.pdf"
-load lv.ode
 solve 100

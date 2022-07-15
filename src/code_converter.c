@@ -80,7 +80,7 @@ static sds assignment_stmt_to_c(ast *a) {
             } else {
                 if(!declared) {
                     sds tmp = ast_to_c(a->assignment_stmt.value);
-                    buf = sdscatfmt(buf, "%s%s %s = %s", indent_spaces[indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
+                    buf = sdscatfmt(buf, "%s%s %s = %s;", indent_spaces[indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
                     shput(var_declared, a->assignment_stmt.name->identifier.value, 1);
                     sdsfree(tmp);
                 } else {
@@ -178,7 +178,7 @@ static sds assignment_stmt_to_c(ast *a) {
                 }
             }
 
-            buf = sdscat(buf, ")");
+            buf = sdscat(buf, ");");
         }
     }
 
@@ -372,7 +372,7 @@ static sds global_variable_to_c(ast *a) {
 
     sds buf = sdsempty();
     sds tmp = ast_to_c(a->assignment_stmt.value);
-    buf = sdscatfmt(buf, "real %s = %s", a->assignment_stmt.name->identifier.value, tmp);
+    buf = sdscatfmt(buf, "real %s = %s;", a->assignment_stmt.name->identifier.value, tmp);
     sdsfree(tmp);
 
     return buf;
@@ -660,7 +660,7 @@ void write_variables_or_body(program p, FILE *file) {
             sdsfree(tmp);
         } else {
             sds buf = ast_to_c(a);
-            fprintf(file, "%s;\n", buf);
+            fprintf(file, "%s\n", buf);
             sdsfree(buf);
         }
     }
@@ -733,7 +733,13 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
         indentation_level++;
         for(int j = 0; j < n; j++) {
             sds tmp = ast_to_c(a->function_stmt.body[j]);
-            fprintf(file, "%s;\n", tmp);
+            ast *ast_a = a->function_stmt.body[j];
+            if ((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr && ast_a->tag == ast_while_stmt) || ast_a->tag == ast_return_stmt) {
+                fprintf(file, "%s\n", tmp);
+            }
+            else {
+                fprintf(file, "%s;\n", tmp);
+            }
             sdsfree(tmp);
         }
         indentation_level--;

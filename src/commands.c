@@ -842,7 +842,11 @@ COMMAND_FUNCTION(setplotlegend) {
     return setplot_helper(shell_state, tokens, CMD_SET_PLOT_TITLE, num_args);
 }
 
-static sds get_plotvar_command(sds plot_command, struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
+static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
+
+    if(plot_command == NULL || *plot_command == NULL) {
+        return false;
+    }
 
     uint run_number;
     char *model_name = NULL;
@@ -854,25 +858,25 @@ static sds get_plotvar_command(sds plot_command, struct shell_variables *shell_s
 
     if(!model_config) return false;
 
-    bool ret = false;
+    bool ret = true;
 
     if(num_args == 1) {
-        ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
+        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
     } else if(num_args == 2) {
         bool error;
         string_to_long(tokens[2], &error);
 
         if(!error) {
-            ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
+            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
         } else {
-            ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
+            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
         }
     } else if(num_args == 3) {
-        ret = setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
+        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
     }
 
     if(ret == false) {
-        return NULL;
+        return false;
     }
 
     sds output_file = get_model_output_file(model_config, run_number);
@@ -883,17 +887,17 @@ static sds get_plotvar_command(sds plot_command, struct shell_variables *shell_s
         first = "replot";
     }
 
-    if(sdslen(plot_command) > 0) first = ", ";
+    if(sdslen(*plot_command) > 0) first = ", ";
 
     char *title = get_var_name(model_config, model_config->plot_config.yindex);
 
-    plot_command = sdscatfmt(plot_command, "%s '%s' u %i:%i title '%s' w lines lw 2",
+    *plot_command = sdscatfmt(*plot_command, "%s '%s' u %i:%i title '%s' w lines lw 2",
                              first, output_file, model_config->plot_config.xindex,
                              model_config->plot_config.yindex, title);
 
     sdsfree(output_file);
 
-    return plot_command;
+    return true;
 }
 
 static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
@@ -945,11 +949,14 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
 
     for(int i = 0; i < varcount; i++) {
         new_tokens[split_index] = vars_to_plot[i];
-        gnuplot_cmd = get_plotvar_command(gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
-    }
+        bool success = get_plotvar_command(&gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
+        
+        if(!success) {
+            sdsfree(gnuplot_cmd);
+            sdsfreesplitres(vars_to_plot, varcount);
+            return false;
+        }
 
-    if(gnuplot_cmd == NULL) {
-        return false;
     }
 
     command_type ct = CMD_CUSTOM_PLOT;
