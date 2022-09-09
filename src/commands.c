@@ -124,7 +124,6 @@ static struct model_config *load_model_config_or_print_error(struct shell_variab
             return NULL;
         }
 
-
         struct model_config *model_config = shell_state->loaded_models[index].value;
         return model_config;
 
@@ -141,7 +140,6 @@ static void check_and_print_execution_output(FILE *fp) {
 }
 
 static bool check_and_print_execution_errors(FILE *fp) {
-
     bool error = false;
     char msg[PATH_MAX];
 
@@ -154,7 +152,6 @@ static bool check_and_print_execution_errors(FILE *fp) {
 }
 
 static bool compile_model(struct model_config *model_config) {
-
     sds modified_model_name = sdsnew(model_config->model_name);
     modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
 
@@ -1874,7 +1871,6 @@ void clean_and_exit(struct shell_variables *shell_state) {
 
     shfree(commands);
 
-
     n = hmlen(shell_state->notify_entries);
 
     for(int i = 0; i < n; i++) {
@@ -2060,7 +2056,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 
     sh_new_arena(commands);
 
-    arrsetcap(commands_sorted, 64);
+    arrsetcap(commands_sorted, 128);
 
     ADD_CMD(cd, 1, 1, "Changes the current directory.\n E.g., cd examples");
     ADD_CMD(quit, 0, 0, "Quits the shell (CTRL+d also quits).");

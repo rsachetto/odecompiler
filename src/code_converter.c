@@ -696,17 +696,11 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
 
         int n = arrlen(a->function_stmt.parameters);
 
-        //declared_variable_hash declared_variables_in_parameters_list = NULL;
-        //sh_new_arena(declared_variables_in_parameters_list);
-        //shdefault(declared_variables_in_parameters_list, 0);
-
         if(n) {
-            //  shput(declared_variables_in_parameters_list, a->function_stmt.parameters[0]->identifier.value, 1);
             sds tmp = ast_to_c(a->function_stmt.parameters[0]);
             fprintf(file, "real %s", tmp);
             sdsfree(tmp);
             for(int j = 1; j < n; j++) {
-                //    shput(declared_variables_in_parameters_list, a->function_stmt.parameters[j]->identifier.value, 1);
                 tmp = ast_to_c(a->function_stmt.parameters[j]);
                 fprintf(file, ", real %s", tmp);
                 sdsfree(tmp);
@@ -732,9 +726,10 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
         n = arrlen(a->function_stmt.body);
         indentation_level++;
         for(int j = 0; j < n; j++) {
-            sds tmp = ast_to_c(a->function_stmt.body[j]);
             ast *ast_a = a->function_stmt.body[j];
-            if ((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr && ast_a->tag == ast_while_stmt) || ast_a->tag == ast_return_stmt) {
+            sds tmp = ast_to_c(ast_a);
+
+            if ((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr) || ast_a->tag == ast_while_stmt || ast_a->tag == ast_return_stmt) {
                 fprintf(file, "%s\n", tmp);
             }
             else {
@@ -744,8 +739,6 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
         }
         indentation_level--;
         fprintf(file, "}\n\n");
-
-        //shfree(declared_variables_in_parameters_list);
     }
 }
 
