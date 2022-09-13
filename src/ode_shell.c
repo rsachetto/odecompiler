@@ -16,7 +16,7 @@
 
 #include <argp.h>
 
-const char *argp_program_version = "ode_shell 0.1";
+const char *argp_program_version = "ode_shell 0.2";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
 
 /* Program documentation. */
