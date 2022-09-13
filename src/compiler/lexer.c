@@ -18,8 +18,6 @@ lexer *new_lexer(const char *input, const char *file_name) {
     l->input_len = strlen(input);
     l->read_position = 0;
     l->current_line = 1;
-    l->file_name = NULL;
-
     l->file_name = file_name;
 
     read_char(l);
@@ -35,8 +33,7 @@ void read_char(lexer *l) {
 
     if(l->read_position > l->input_len) {
         l->ch = 0;
-    }
-    else {
+    } else {
         l->ch = l->input[l->read_position];
     }
 
@@ -47,14 +44,15 @@ char peek_char(lexer *l) {
 
     if(l->read_position > l->input_len) {
         return '\0';
-    }
-    else {
+    } else {
         return l->input[l->read_position];
     }
 }
 
 char *read_identifier(lexer *l, uint32_t *len) {
+
     int position = l->position;
+
     while(isalpha(l->ch) || isdigit(l->ch) || l->ch == '_' || l->ch == '\'') {
         read_char(l);
     }

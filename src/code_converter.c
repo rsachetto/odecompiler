@@ -745,8 +745,9 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
 static sds generate_end_functions(program functions) {
 
     sds result = sdsempty();
+    int len = arrlen(functions);
 
-    for(int i = 0; i < arrlen(functions); i++) {
+    for(int i = 0; i < len; i++) {
         ast *a = functions[i];
         if(a->function_stmt.is_end_fn) {
             result = sdscatfmt(result, "%s();\n", a->function_stmt.name->identifier.value);

@@ -8,9 +8,9 @@ typedef struct lexer_t {
     const char *input;
     const char *file_name;
     size_t input_len;
-    int position;
-    int read_position;
-    int current_line;
+    size_t position;
+    size_t read_position;
+    size_t current_line;
     char ch;
 } lexer;
 
