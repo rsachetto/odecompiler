@@ -1280,7 +1280,6 @@ static ptrdiff_t stbds_hm_find_slot(void *a, size_t elemsize, void *key, size_t 
 
 void * stbds_hmget_key_ts(void *a, size_t elemsize, void *key, size_t keysize, ptrdiff_t *temp, int mode)
 {
-  size_t keyoffset = 0;
   if (a == NULL) {
     // make it non-empty so we can return a temp
     a = stbds_arrgrowf(0, elemsize, 0, 1);
@@ -1297,7 +1296,7 @@ void * stbds_hmget_key_ts(void *a, size_t elemsize, void *key, size_t keysize, p
     if (table == 0) {
       *temp = -1;
     } else {
-      ptrdiff_t slot = stbds_hm_find_slot(a, elemsize, key, keysize, keyoffset, mode);
+      ptrdiff_t slot = stbds_hm_find_slot(a, elemsize, key, keysize, 0, mode);
       if (slot < 0) {
         *temp = STBDS_INDEX_EMPTY;
       } else {

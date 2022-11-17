@@ -157,7 +157,7 @@ int cell_printf(f_cell_t *cell, size_t row, f_conv_context_t *cntx, size_t vis_w
 
     size_t written = 0;
     size_t invisible_written = 0;
-    int tmp = 0;
+    int tmp;
 
     /* todo: Dirty hack with changing buf_len! need refactoring. */
     /* Also maybe it is better to move all struff with colors to buffers? */

@@ -1254,7 +1254,6 @@ int sdsTest(void) {
             memcmp(y,"\"\\a\\n\\x00foo\\r\"",15) == 0)
 
         {
-            unsigned int oldfree;
             char *p;
             int step = 10, j, i;
 
@@ -1273,7 +1272,6 @@ int sdsTest(void) {
                 test_cond("sdsMakeRoomFor() len", sdslen(x) == oldlen);
                 if (type != SDS_TYPE_5) {
                     test_cond("sdsMakeRoomFor() free", sdsavail(x) >= step);
-                    oldfree = sdsavail(x);
                 }
                 p = x+oldlen;
                 for (j = 0; j < step; j++) {
