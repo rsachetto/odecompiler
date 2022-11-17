@@ -11,7 +11,6 @@ struct var_declared_entry_t {
     int value;
 };
 
-
 typedef enum solver_type_t{
     CVODE_SOLVER,
     EULER_ADPT_SOLVER
