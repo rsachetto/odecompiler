@@ -1,5 +1,5 @@
-#ifndef __AST_H
-#define __AST_H
+#ifndef AST_H
+#define AST_H
 
 #include "../string/sds.h"
 #include "token.h"
@@ -150,7 +150,6 @@ ast *make_prefix_expression(const token *t);
 ast *make_infix_expression(const token *t, ast *left);
 ast *make_if_expression(const token *t);
 ast *make_function_statement(const token *t);
-ast *make_builtin_function_ast(char *name, int n_params);
 ast *make_call_expression(const token *t, ast *function);
 ast *make_import_stmt(const token *t);
 ast *make_string_literal(const token *t);
@@ -160,4 +159,4 @@ ast *copy_ast(ast *src);
 void free_ast(ast *src);
 void free_asts(ast **asts);
 
-#endif /* __AST_H */
+#endif /* AST_H */

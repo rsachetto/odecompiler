@@ -185,10 +185,10 @@ static sds assignment_stmt_to_c(ast *a) {
     return buf;
 }
 
-static char *number_literal_to_c(ast *a) {
-    char buf[128];
-    sprintf(buf, "%e", a->num_literal.value);
-    return sdsnew(buf);
+static sds number_literal_to_c(ast *a) {
+    sds buf = sdsempty();
+    buf = sdscatprintf(buf, "%e", a->num_literal.value);
+    return buf;
 }
 
 static sds identifier_to_c(ast *a) {

@@ -1,6 +1,5 @@
 #include "token.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 void copy_token(token *dest, const token *src) {

@@ -56,7 +56,7 @@ SOFTWARE.
 #define FT_INTERNAL static
 #else
 #define FT_INTERNAL
-#endif /* FT_AMALGAMED_SORCE */
+#endif /* FT_AMALGAMED_SOURCE */
 
 
 #define FORT_DEFAULT_COL_SEPARATOR '|'
@@ -121,7 +121,7 @@ enum f_string_type {
 #endif /* FT_HAVE_WCHAR */
 #ifdef FT_HAVE_UTF8
     UTF8_BUF,
-#endif /* FT_HAVE_WCHAR */
+#endif /* FT_HAVE_UTF8 */
 };
 
 struct f_string_view {
@@ -6626,7 +6626,7 @@ size_t buffer_text_visible_height(const f_string_buffer_t *buffer)
 #ifdef FT_HAVE_UTF8
     else if (buffer->type == UTF8_BUF)
         return 1 + utf8chr_count(buffer->str.u8str, '\n');
-#endif /* FT_HAVE_WCHAR */
+#endif /* FT_HAVE_UTF8 */
 
     assert(0);
     return 0;
@@ -6674,7 +6674,7 @@ size_t utf8_width(const void *beg, const void *end)
     F_FREE(tmp);
     return result;
 }
-#endif /* FT_HAVE_WCHAR */
+#endif /* FT_HAVE_UTF8 */
 
 FT_INTERNAL
 size_t buffer_text_visible_width(const f_string_buffer_t *buffer)
@@ -6723,7 +6723,7 @@ size_t buffer_text_visible_width(const f_string_buffer_t *buffer)
             max_length = MAX(max_length, (size_t)utf8_width(beg, end));
             ++n;
         }
-#endif /* FT_HAVE_WCHAR */
+#endif /* FT_HAVE_UTF8 */
     }
 
     return max_length; /* shouldn't be here */

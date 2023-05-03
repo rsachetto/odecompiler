@@ -35,11 +35,6 @@ typedef struct declared_function_entry_t {
 typedef declared_variable_entry * declared_variable_hash;
 typedef declared_function_entry * declared_function_hash;
 
-typedef struct ode_initialized_hash_entry_t {
-    char *key;
-    bool value;
-} ode_initialized_hash_entry;
-
 enum operator_precedence {
     BLANK = 0,
     LOWEST,
@@ -63,7 +58,6 @@ typedef struct parser_t {
     declared_variable_hash local_scope;
     declared_function_hash declared_functions;
     bool have_ode;
-    bool inside_foreach;
 } parser;
 
 parser * new_parser(lexer *l);

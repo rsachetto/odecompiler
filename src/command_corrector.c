@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <search.h>
-#include <stdbool.h>
 
 #include "command_corrector.h"
 

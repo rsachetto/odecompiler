@@ -19,7 +19,7 @@
 #define FT_INTERNAL static
 #else
 #define FT_INTERNAL
-#endif /* FT_AMALGAMED_SORCE */
+#endif /* FT_AMALGAMED_SOURCE */
 
 
 #define FORT_DEFAULT_COL_SEPARATOR '|'
@@ -84,7 +84,7 @@ enum f_string_type {
 #endif /* FT_HAVE_WCHAR */
 #ifdef FT_HAVE_UTF8
     UTF8_BUF,
-#endif /* FT_HAVE_WCHAR */
+#endif /* FT_HAVE_UTF8 */
 };
 
 struct f_string_view {
