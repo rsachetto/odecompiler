@@ -398,7 +398,9 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
         model_config->model_name = get_filename_without_ext(model_file);
 
-        if(shgeti(shell_state->loaded_models, model_config->model_name) != -1) {
+        int model_index = shgeti(shell_state->loaded_models, model_config->model_name);
+
+        if(model_index != -1) {
             printf("Model %s is alread loaded!\n", model_config->model_name);
             free_model_config(model_config);
             sdsfree(new_file);
@@ -1903,7 +1905,7 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
 
     if(index == -1) {
         printf("Invalid command: %s\n", tokens[0]);
-        char *suggested_command = correct(tokens[0], commands_sorted, arrlen(commands_sorted));
+        char *suggested_command = correct(tokens[0]);
         if(!STR_EQUALS(tokens[0], suggested_command)) {
             printf("Did you mean %s?\n", suggested_command);
         }
@@ -2117,4 +2119,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(converttoc, 1, 2, "Convert the current model to a C program.\nE.g., converttoc model_name.c or converttoc sir model_name.c");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
+
+    initialize_corrector(commands_sorted, arrlen(commands_sorted));
+
 }
