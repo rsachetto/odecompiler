@@ -1,7 +1,6 @@
 //Code converter
 TODO: remove the global keyword and declare every variable global in the C code.
 TODO: add a python src code generator and a monoalg3d generator (and more)
-TODO: free memory on odetolatex command
 
 //Maybes
 TODO: add imported functions to their own namespace: common.stim

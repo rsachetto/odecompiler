@@ -81,10 +81,14 @@ static sds return_stmt_to_latex(ast *a) {
 
     if(a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
-        buf = sdscat(buf, ast_to_latex(a->return_stmt.return_values[0]));
+        sds tmp = ast_to_latex(a->return_stmt.return_values[0]);
+        buf = sdscat(buf, tmp);
+        sdsfree(tmp);
 
         for(int i = 1; i < n; i++) {
-            buf = sdscatfmt(buf, ", %s", ast_to_latex(a->return_stmt.return_values[i]));
+            tmp = ast_to_latex(a->return_stmt.return_values[i]);
+            buf = sdscatfmt(buf, ", %s", tmp);
+            sdsfree(tmp);
         }
     }
 
@@ -123,7 +127,9 @@ static sds assignment_stmt_to_latex(ast *a) {
     buf = sdscat(buf, " = ");
 
     if(a->assignment_stmt.value != NULL) {
-        buf = sdscat(buf, ast_to_latex(a->assignment_stmt.value));
+        sds tmp = ast_to_latex(a->assignment_stmt.value);
+        buf = sdscat(buf, tmp);
+        sdsfree(tmp);
     }
 
     sdsfree(identifier);
@@ -171,7 +177,9 @@ static sds prefix_expr_to_latex(ast *a) {
 
     buf = sdscat(buf, "(");
     buf = sdscatfmt(buf, "%s", a->prefix_expr.op);
-    buf = sdscatfmt(buf, "%s", ast_to_latex(a->prefix_expr.right));
+    sds tmp = ast_to_latex(a->prefix_expr.right);
+    buf = sdscatfmt(buf, "%s", tmp);
+    sdsfree(tmp);
     buf = sdscat(buf, ")");
 
     return buf;
@@ -181,11 +189,16 @@ static sds prefix_expr_to_latex(ast *a) {
 static sds infix_expr_to_latex(ast *a) {
 
     sds buf = sdsempty();
+    sds tmp;
 
     buf = sdscat(buf, "(");
-    buf = sdscatfmt(buf, "%s", ast_to_latex(a->infix_expr.left));
+    tmp = ast_to_latex(a->infix_expr.left);
+    buf = sdscatfmt(buf, "%s", tmp);
+    sdsfree(tmp);
     buf = sdscatfmt(buf, "%s", a->infix_expr.op);
-    buf = sdscatfmt(buf, "%s", ast_to_latex(a->infix_expr.right));
+    tmp = ast_to_latex(a->infix_expr.right);
+    buf = sdscatfmt(buf, "%s", tmp);
+    sdsfree(tmp);
     buf = sdscat(buf, ")");
 
     return buf;
@@ -196,16 +209,22 @@ static sds call_expr_to_latex(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, ast_to_latex(a->call_expr.function_identifier));
+    sds tmp = ast_to_latex(a->call_expr.function_identifier);
+    buf = sdscat(buf, tmp);
     buf = sdscat(buf, "(");
+    sdsfree(tmp);
 
     int n = arrlen(a->call_expr.arguments);
 
     if(n) {
-        buf = sdscat(buf, ast_to_latex(a->call_expr.arguments[0]));
+        tmp = ast_to_latex(a->call_expr.arguments[0]);
+        buf = sdscat(buf, tmp);
+        sdsfree(tmp);
 
         for(int i = 1; i < n; i++) {
-            buf = sdscatfmt(buf, ", %s", ast_to_latex(a->call_expr.arguments[i]));
+            tmp = ast_to_latex(a->call_expr.arguments[i]);
+            buf = sdscatfmt(buf, ", %s", tmp);
+            sdsfree(tmp);
         }
     }
 
@@ -229,7 +248,9 @@ static sds grouped_assignment_stmt_to_latex(ast *a) {
 
     buf = sdscat(buf, " = ");
 
-    buf = sdscat(buf, ast_to_latex(a->grouped_assignment_stmt.call_expr));
+    sds tmp = ast_to_latex(a->grouped_assignment_stmt.call_expr);
+    buf = sdscat(buf, tmp);
+    sdsfree(tmp);
 
     return buf;
 
