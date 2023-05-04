@@ -10,6 +10,8 @@ struct var_declared_entry_t *ode_position = NULL;
 
 static sds ast_to_c(ast *a);
 
+extern int indentation_level;
+extern char *indent_spaces[];
 
 static sds expression_stmt_to_c(ast *a) {
     if(a->expr_stmt != NULL) {
@@ -1160,6 +1162,8 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 }
 
 bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
+
+    indentation_level = 0;
 
     solver = p_solver;
 

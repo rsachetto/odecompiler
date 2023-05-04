@@ -1,5 +1,4 @@
 #include "token.h"
-#include <stdio.h>
 #include <string.h>
 
 void copy_token(token *dest, const token *src) {
@@ -21,16 +20,17 @@ token new_token(token_type type, char *ch, uint32_t len, int line, const char *f
     token t;
     t.type = type;
     t.line_number = line;
-    t.file_name = (char *) file_name;
+    t.file_name = file_name;
     t.literal = ch;
     t.literal_len = len;
-
     return t;
 }
-
+#ifdef DEBUG_INFO
+#include <stdio.h>
 void print_token(const token *t) {
     printf("Type: %d - Literal: %s\n", t->type, t->literal);
 }
+#endif
 
 token_type lookup_ident(const token *t) {
 

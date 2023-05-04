@@ -5,6 +5,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+int indentation_level;
+
+//For printing
+#define NO_SPACES  ""
+#define _4SPACES   "    "
+#define _8SPACES  _4SPACES _4SPACES
+#define _12SPACES _8SPACES _4SPACES
+#define _16SPACES _12SPACES _4SPACES
+#define _20SPACES _16SPACES _4SPACES
+#define _24SPACES _20SPACES _4SPACES
+#define _28SPACES _24SPACES _4SPACES
+
+char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
 
 static ast *make_base_ast(const token *t, ast_tag tag) {
     ast *a = (ast *) malloc(sizeof(ast));
@@ -174,7 +187,7 @@ static sds return_stmt_to_str(ast *a) {
         tmp = ast_to_string(a->return_stmt.return_values[0]);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
-        
+
 
         for (int i = 1; i < n; i++) {
             tmp = ast_to_string(a->return_stmt.return_values[i]);
@@ -373,8 +386,8 @@ static sds function_stmt_to_str(ast *a) {
         buf = sdscatfmt(buf, "%s\n", tmp);
         sdsfree(tmp);
     }
-    indentation_level--;
 
+    indentation_level--;
     buf = sdscat(buf, "}\n");
 
 
@@ -385,7 +398,7 @@ static sds call_expr_to_str(ast *a) {
 
     sds buf = sdsempty();
 
-    buf = sdscat(buf, a->call_expr.function_identifier->identifier.value);
+    buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->call_expr.function_identifier->identifier.value);
     buf = sdscat(buf, "(");
 
     int n = arrlen(a->call_expr.arguments);
@@ -719,6 +732,6 @@ void free_ast(ast *src) {
     }
 
     free(src->token.literal);
-    free(src->token.file_name);
+    free( (char*) src->token.file_name);
     free(src);
 }

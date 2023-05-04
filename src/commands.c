@@ -1,15 +1,17 @@
 #include "commands.h"
 #include "code_converter.h"
 #include "file_utils/file_utils.h"
+#include "md5/md5.h"
 #include "model_config.h"
 #include "stb/stb_ds.h"
 #include "to_latex.h"
+#include "md5/md5.h"
 
-#include "hash/meow_hash_x64_aesni.h"
 #include <linux/limits.h>
 #include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include "command_corrector.h"
@@ -558,7 +560,7 @@ COMMAND_FUNCTION(solve) {
         sdsfree(min_max_filename);
     } else {
         model_config->num_runs--;
-        arrpop(model_config->runs);
+        (void) arrpop(model_config->runs);
     }
 
     sdsfree(model_command);
@@ -949,7 +951,7 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
     for(int i = 0; i < varcount; i++) {
         new_tokens[split_index] = vars_to_plot[i];
         bool success = get_plotvar_command(&gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
-        
+
         if(!success) {
             sdsfree(gnuplot_cmd);
             sdsfreesplitres(vars_to_plot, varcount);
@@ -1523,8 +1525,8 @@ COMMAND_FUNCTION(unload) {
     struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
     arrfree(entries);
 
-    hmdel(shell_state->notify_entries, model_config->notify_code);
-    shdel(shell_state->loaded_models, tokens[1]);
+    (void) hmdel(shell_state->notify_entries, model_config->notify_code);
+    (void) shdel(shell_state->loaded_models, tokens[1]);
 
     free_model_config(model_config);
 
@@ -1972,12 +1974,11 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
 
     size_t file_size;
     char *source = read_entire_file_with_mmap(model_config->model_file, &file_size);
-    meow_u128 hash = MeowHash(MeowDefaultSeed, file_size, source);
+    uint8_t hash[16];
+    md5Stringn(source, (uint8_t*)&hash, file_size);
     munmap(source, file_size);
 
-    int file_equals = MeowHashesAreEqual(hash, model_config->hash);
-
-    if(file_equals) {
+    if(memcmp(hash, model_config->hash, 16) == 0) {
         pthread_mutex_unlock(&shell_state->lock);
         return;
     }

@@ -3,6 +3,7 @@
 //
 
 #include "file_utils.h"
+#include <stddef.h>
 
 #define STB_DS_IMPLEMENTATION
 #include "../stb/stb_ds.h"
@@ -232,7 +233,7 @@ char *read_entire_file_with_mmap(const char *filename, size_t *size) {
 
     size_t to_page_size = *size;
 
-    int pagesize = getpagesize();
+    size_t pagesize = getpagesize();
     to_page_size += pagesize - (to_page_size % pagesize);
 
     f = (char *)mmap(0, to_page_size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -264,7 +265,7 @@ char *read_entire_file(const char *filename, size_t *size) {
 
     fseek(infile, 0L, SEEK_SET);
 
-    buffer = (char *)malloc(numbytes * sizeof(char));
+    buffer = (char *)malloc((numbytes + 1) * sizeof(char));
 
     if(buffer == NULL) {
         fclose(infile);
@@ -283,7 +284,7 @@ char *read_entire_file(const char *filename, size_t *size) {
     fclose(infile);
 
     *size = numbytes;
-
+    buffer[numbytes] = '\0';
     return buffer;
 }
 

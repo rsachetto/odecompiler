@@ -15,7 +15,7 @@ typedef struct token_t {
     char *literal;
     uint32_t literal_len;
     int line_number;
-    char *file_name;
+    const char *file_name;
 } token;
 
 token new_token(token_type type, char *ch, uint32_t len, int line, const char *file_name);

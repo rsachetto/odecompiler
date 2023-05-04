@@ -32,7 +32,6 @@ _Noreturn void *check_for_model_file_changes(void *args) {
         while (i < length) {
 
             struct inotify_event *event = (struct inotify_event *) &buffer[i];
-
             if (event->len) {
                 if ((event->mask & IN_MODIFY) || (event->mask & IN_MOVED_TO)) {
 

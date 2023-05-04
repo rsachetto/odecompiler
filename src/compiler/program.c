@@ -1,7 +1,8 @@
 #include "program.h"
 #include "../stb/stb_ds.h"
-
 #include <stdio.h>
+
+extern int indentation_level;
 
 void print_program(program p) {
 
@@ -26,7 +27,6 @@ sds *program_to_string(program p) {
 
     for (int i = 0; i < n_stmt; i++) {
         sds s = ast_to_string(p[i]);
-
         if (s) {
             arrput(return_str, s);
         }

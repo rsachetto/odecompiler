@@ -2,7 +2,7 @@
 #define __MODEL_CONFIG_H
 
 #include "compiler/parser.h"
-#include "hash/meow_hash_x64_aesni.h"
+#include <stdint.h>
 
 struct var_index_hash_entry {
     char *key;
@@ -39,7 +39,7 @@ struct model_config {
     bool should_reload;
     bool auto_reload;
     int notify_code;
-    meow_u128 hash;
+    uint8_t hash[16];
 };
 
 

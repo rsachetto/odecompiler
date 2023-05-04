@@ -201,7 +201,7 @@ token next_token(lexer *l) {
             tok.type = STRING;
             tok.literal = read_string(l, &tok.literal_len);
             tok.line_number = l->current_line;
-            tok.file_name =  (char*)l->file_name;
+            tok.file_name   =  l->file_name;
             break;
         case ',':
             tok = new_token(COMMA, ",", 1, l->current_line, l->file_name);
@@ -222,21 +222,21 @@ token next_token(lexer *l) {
             tok.literal = NULL;
             tok.type = ENDOF;
             tok.line_number = l->current_line;
-            tok.file_name   = (char*) l->file_name;
+            tok.file_name   = l->file_name;
             break;
         default:
             if(isalpha(l->ch) || l->ch == '_') {
                 tok.literal = read_identifier(l, &tok.literal_len);
                 tok.type = lookup_ident(&tok);
                 tok.line_number = l->current_line;
-                tok.file_name   = (char*) l->file_name;
+                tok.file_name   = l->file_name;
                 return tok;
             }
             else if(isdigit(l->ch)) {
                 tok.literal = read_number(l, &tok.literal_len);
                 tok.type = NUMBER;
                 tok.line_number = l->current_line;
-                tok.file_name   = (char*) l->file_name;
+                tok.file_name   = l->file_name;
 
                 if(tok.literal == NULL) {
                     tok = new_token(ILLEGAL, NULL, 1, l->current_line, l->file_name);

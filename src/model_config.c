@@ -1,9 +1,12 @@
 #include "model_config.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "ode_shell.h"
 #include "stb/stb_ds.h"
 #include "file_utils/file_utils.h"
+#include "md5/md5.h"
 
 #define MODEL_OUTPUT_TEMPLATE "/tmp/%s_%i_out.txt"
 
@@ -33,8 +36,7 @@ bool generate_model_program(struct model_config *model) {
 
     size_t file_size;
     char *source = read_entire_file_with_mmap(file_name, &file_size);
-
-    model->hash = MeowHash(MeowDefaultSeed, file_size, source);
+    md5Stringn(source, (uint8_t*) &model->hash, file_size);
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);

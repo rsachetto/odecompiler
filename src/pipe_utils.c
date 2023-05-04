@@ -99,7 +99,7 @@ int popen2(const char *cmdline, struct popen2 *childinfo) {
         close(PARENT_WRITE);
         close(PARENT_READ);
         remap_pipe_stdin_stdout(CHILD_READ, CHILD_WRITE, STDERR_FILENO);
-        execl("/bin/sh", "sh", "-c", cmdline, 0);
+        execl("/bin/sh", "sh", "-c", cmdline, (char*)0);
 
     } else {
         close(CHILD_READ);
