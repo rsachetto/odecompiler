@@ -197,7 +197,6 @@ void md5Step(uint32_t *buffer, uint32_t *input){
  * result should be able to store 16 bytes.
  */
 void md5String(char *input, uint8_t *result){
-    printf("%ld\n", strlen(input));
     md5Stringn(input, result, strlen(input));
 }
 

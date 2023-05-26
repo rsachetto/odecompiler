@@ -1,6 +1,5 @@
 //Code converter
 TODO: remove the global keyword and declare every variable global in the C code.
-TODO: make a string buffer to avoid mallocs and frees
 TODO: add a python src code generator and a monoalg3d generator (and more)
 
 //Maybes

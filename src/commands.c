@@ -1714,7 +1714,10 @@ COMMAND_FUNCTION(odestolatex) {
         } else {
             printf("%s\n", odes[i]);
         }
+        sdsfree(odes[i]);
     }
+
+    arrfree(odes);
 
     return true;
 }

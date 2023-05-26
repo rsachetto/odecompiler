@@ -36,16 +36,6 @@ static void *checked_malloc(size_t len) {
     return ret;
 }
 
-/**
- * Takes a part of the source string and appends it to the destination string.
- *
- * @param     dst       Destination string to append to.
- * @param     dstLen    Current length of the destination string.  This will
- *                      be updated with the new length after appending.
- * @param     src       Source string.
- * @param     srcBegin  Starting index in the source string to copy from.
- * @param     len       Length of portion to copy.
- */
 static void append(char *dst, int *dstLen, const char *src, int srcBegin, int len) {
     if (len > 0) {
         memcpy(&dst[*dstLen], &src[srcBegin], len);
