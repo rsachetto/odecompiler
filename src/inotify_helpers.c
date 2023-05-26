@@ -25,13 +25,13 @@ _Noreturn void *check_for_model_file_changes(void *args) {
     while (1) {
 
         size_t i = 0;
-        char buffer[BUF_LEN];
+        char ibuffer[BUF_LEN];
 
-        size_t length = read(shell_state->fd_notify, buffer, BUF_LEN);
+        size_t length = read(shell_state->fd_notify, ibuffer, BUF_LEN);
 
         while (i < length) {
 
-            struct inotify_event *event = (struct inotify_event *) &buffer[i];
+            struct inotify_event *event = (struct inotify_event *) &ibuffer[i];
             if (event->len) {
                 if ((event->mask & IN_MODIFY) || (event->mask & IN_MOVED_TO)) {
 

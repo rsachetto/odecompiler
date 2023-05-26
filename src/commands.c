@@ -5,13 +5,11 @@
 #include "model_config.h"
 #include "stb/stb_ds.h"
 #include "to_latex.h"
-#include "md5/md5.h"
 
 #include <linux/limits.h>
 #include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <stdint.h>
 #include <unistd.h>
 
 #include "command_corrector.h"
