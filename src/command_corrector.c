@@ -173,7 +173,7 @@ static char **known_edits2(char **array, int rows, int *e2_rows) {
                 }
 
                 void *tmp = realloc(res, sizeof(char *) * res_max);
-                
+
                 if(tmp == NULL) {
                     fprintf(stderr, "Error allocating memory in %d of %s", __LINE__, __FILE__);
                     free(res);

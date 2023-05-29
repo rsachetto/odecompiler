@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
-    bool quit;
+    bool quit = false;
 
     while ((line = readline(PROMPT)) != 0) {
         //We do not want blank lines in the history

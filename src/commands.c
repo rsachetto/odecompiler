@@ -682,11 +682,10 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
 
     const char *command = tokens[0];
     char *model_name;
-    char *file_name;
+    char *file_name = NULL;
     uint run_number;
 
     get_model_name_and_n_run_one_to_three_args(tokens, num_args, &model_name, &run_number, &file_name);
-
 
     struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, command, model_name, run_number);
 
@@ -710,6 +709,12 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
         command = "plot";
     } else {
         command = "replot";
+    }
+
+    if(file_name == NULL) {
+        //This should not happen
+        printf("Error executing command %s. Invalid model file_name!\n", command);
+        return false;
     }
 
     const char *ext = get_filename_ext(file_name);
@@ -902,7 +907,7 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
 static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
     int varcount = 0;
-    sds *vars_to_plot;
+    sds *vars_to_plot = NULL;
     int split_index;
 
     if(num_args == 1) {
@@ -1592,9 +1597,11 @@ COMMAND_FUNCTION(setshouldreload) {
 COMMAND_FUNCTION(savemodeloutput) {
 
     const char *command = tokens[0];
+
     char *model_name = NULL;
+    char *file_name  = NULL;
+
     uint run_number = 0;
-    char *file_name;
 
     if(!get_model_name_and_n_run_one_to_three_args(tokens, num_args, &model_name, &run_number, &file_name)) {
         return false;
@@ -1606,7 +1613,7 @@ COMMAND_FUNCTION(savemodeloutput) {
 
     sds output_file = get_model_output_file(model_config, run_number);
 
-    if(cp_file(file_name, output_file, true) == -1) {
+    if(file_name == NULL || cp_file(file_name, output_file, true) == -1) {
         printf("Error executing command %s. Could not copy %s to %s\n", command, output_file, file_name);
         sdsfree(output_file);
         return false;

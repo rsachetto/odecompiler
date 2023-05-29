@@ -1175,8 +1175,6 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
 
     int n_stmt = arrlen(prog);
 
-    int ode_count = 0;
-
     bool error = false;
 
     for(int i = 0; i < n_stmt; i++) {
@@ -1190,9 +1188,6 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
         } else if(a->tag == ast_import_stmt) {
             arrput(imports, a);
         } else {
-            if(a->tag == ast_ode_stmt) {
-                ode_count++;
-            }
             arrput(main_body, a);
         }
     }
