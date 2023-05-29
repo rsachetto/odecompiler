@@ -16,6 +16,11 @@ struct watch_entry {
     struct model_config **value;
 };
 
+struct model_hash_entry {
+    char *key;
+    struct model_config *value;
+};
+
 struct shell_variables {
     struct model_hash_entry *loaded_models;
     struct model_config *current_model;
@@ -29,11 +34,6 @@ struct shell_variables {
     char *last_dir;
     bool never_reload;
     bool enable_sixel;
-};
-
-struct model_hash_entry {
-    char *key;
-    struct model_config *value;
 };
 
 #define PROMPT "ode_shell> "

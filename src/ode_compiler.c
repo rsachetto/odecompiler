@@ -3,7 +3,7 @@
 
 #include "compiler/parser.h"
 #include "code_converter.h"
-
+#include "string_utils.h"
 #include "file_utils/file_utils.h"
 #include <argp.h>
 

@@ -12,18 +12,16 @@
 #include "ode_shell.h"
 #include "stb/stb_ds.h"
 #include "string/sds.h"
-#include "string_utils.h"
 
 #include <argp.h>
 
-const char *argp_program_version = "ode_shell 0.2";
+const char *argp_program_version = "ode_shell 0.3";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
 
 /* Program documentation. */
-static char doc[] = "A simple command line utility to play with Ordinary Differential Equations (ODEs).";
+static char doc[] = "A simple command line utility to play with Ordinary Differential Equations.";
 
-/* A description of the arguments we accept. */
-static char args_doc[] = "FILE - A file with command to be executed.";
+static char args_doc[] = "";
 
 /* The options we understand. */
 static struct argp_option options[] = {

@@ -266,8 +266,7 @@ void print_path_contents(const char *path) {
         return;
     }
 
-    while((myfile = readdir(mydir)) != NULL)
-    {
+    while((myfile = readdir(mydir)) != NULL) {
         sprintf(buf, "%s/%s", path, myfile->d_name);
         stat(buf, &mystat);
         if(myfile->d_name[0] != '.' && strcmp(myfile->d_name, ".") != 0 && strcmp(myfile->d_name, "..") != 0) {

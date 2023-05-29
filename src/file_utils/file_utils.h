@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <sys/mman.h>
-#include "../string_utils.h"
 
 #define FILE_HAS_EXTENSION(file_ext__, ext__) (strcmp(file_ext__, ext__) == 0)
 

@@ -14,6 +14,7 @@
 
 #include "command_corrector.h"
 #include "libfort/src/fort.h"
+#include "string_utils.h"
 
 static command *commands = NULL;
 static string_array commands_sorted = NULL;
