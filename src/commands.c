@@ -1832,6 +1832,10 @@ COMMAND_FUNCTION(resetruns) {
 }
 
 COMMAND_FUNCTION(closeplot) {
+
+    (void) tokens;
+    (void) num_args;
+
     if(shell_state->gnuplot_handle == NULL || !have_gnuplot(shell_state)) {
         return false;
     }
