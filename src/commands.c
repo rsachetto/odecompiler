@@ -10,6 +10,7 @@
 #include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include "command_corrector.h"
@@ -224,11 +225,66 @@ static char *autocomplete_command(const char *text, int state) {
 }
 
 static bool should_complete_model(const char *c) {
-    return STR_EQUALS(c, "editmodel") || STR_EQUALS(c, "getglobalvalues") || STR_EQUALS(c, "getinitialvalues") || STR_EQUALS(c, "getinitialvalue") || STR_EQUALS(c, "getodevalues") || STR_EQUALS(c, "getparamvalues") || STR_EQUALS(c, "getplotconfig") || STR_EQUALS(c, "odestolatex") || STR_EQUALS(c, "plot") || STR_EQUALS(c, "plottofile") || STR_EQUALS(c, "plottoterm") || STR_EQUALS(c, "printmodel") || STR_EQUALS(c, "replot") || STR_EQUALS(c, "replottofile") || STR_EQUALS(c, "replottoterm") || STR_EQUALS(c, "savemodeloutput") || STR_EQUALS(c, "setautolreload") || STR_EQUALS(c, "setcurrentmodel") || STR_EQUALS(c, "setplotlegend") || STR_EQUALS(c, "setplotxlabel") || STR_EQUALS(c, "setplotylabel") || STR_EQUALS(c, "setshouldreload") || STR_EQUALS(c, "solve") || STR_EQUALS(c, "solveplot") || STR_EQUALS(c, "unload") || STR_EQUALS(c, "vars");
+
+    static char *autocompletable_commands[] = {
+            "editmodel",
+            "getglobalvalues",
+            "getinitialvalues",
+            "getinitialvalue",
+            "getodevalues",
+            "getparamvalues",
+            "getplotconfig",
+            "odestolatex",
+            "plot",
+            "plottofile",
+            "plottoterm",
+            "printmodel",
+            "replot",
+            "replottofile",
+            "replottoterm",
+            "savemodeloutput",
+            "setautolreload",
+            "setcurrentmodel",
+            "setplotlegend",
+            "setplotxlabel",
+            "setplotylabel",
+            "setshouldreload",
+            "solve",
+            "solveplot",
+            "unload",
+            "vars",
+            "plotvars"
+    };
+
+    size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
+    for(int i = 0; i < len; i++) {
+        if(STR_EQUALS(c, autocompletable_commands[i])) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
+
 static bool should_complete_model_and_var(const char *c) {
-    return STR_EQUALS(c, "getodevalue") || STR_EQUALS(c, "setodevalue") || STR_EQUALS(c, "setplotx") || STR_EQUALS(c, "setploty") || STR_EQUALS(c, "plotvar") || STR_EQUALS(c, "replotvar");
+
+    static char *autocompletable_commands[] = {
+            "getodevalue",
+            "setodevalue",
+            "setplotx",
+            "setploty",
+            "plotvar",
+            "replotvar"};
+
+    size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
+    for(int i = 0; i < len; i++) {
+        if(STR_EQUALS(c, autocompletable_commands[i])) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 #define FIND_MODEL()                                            \
@@ -288,9 +344,7 @@ static char *autocomplete_command_params(const char *text, int state) {
     }
 
     if(!c.key || STR_EQUALS(c.key, "list") || STR_EQUALS(c.key, "pwd") || STR_EQUALS(c.key, "quit") || STR_EQUALS(c.key, "setglobalreload")) {
-
         //Do nothing
-
     } else if(should_complete_model(c.key)) {
         if(count <= 2) {
             FIND_MODEL();
@@ -1008,8 +1062,11 @@ COMMAND_FUNCTION(plotvars) {
 
     sds new_tokens[4] = {sdsnew("plotvar"), NULL, NULL, NULL};
 
+    uint8_t to_free = 1;
+
     if(num_args == 0) {
         new_tokens[1] = all_vars;
+        to_free = 1;
     } else if(num_args == 1) {
         bool model_name_only;
         string_to_long(tokens[1], &model_name_only);
@@ -1017,21 +1074,25 @@ COMMAND_FUNCTION(plotvars) {
         if(model_name_only) {
             new_tokens[1] = tokens[1];
             new_tokens[2] = all_vars;
+            to_free = 2;
         } else {
             new_tokens[1] = all_vars;
             new_tokens[2] = tokens[1];
+            to_free = 1;
         }
     } else {
         new_tokens[1] = tokens[1];
         new_tokens[2] = all_vars;
         new_tokens[3] = tokens[2];
+        to_free = 2;
     }
 
     plotvar(shell_state, new_tokens, num_args + 1);
 
-    for(int i = 0; i < 4; i++) {
-        sdsfree(new_tokens[i]);
-    }
+    //The tokens variable will be freed on the parse_and_execute_command function
+    //so we can free when new_tokens = tokens[x]
+    sdsfree(new_tokens[0]);
+    sdsfree(new_tokens[to_free]);
 
     return false;
 }
@@ -1949,6 +2010,7 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
     }
 
     sdsfreesplitres(tokens, token_count);
+
     return false;
 
 dealloc_vars:
