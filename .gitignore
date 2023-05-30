@@ -23,3 +23,5 @@ project.error
 project.tasks
 strace_out
 .vscode/
+.kdev4/
+*.kdev4
