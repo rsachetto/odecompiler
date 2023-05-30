@@ -28,7 +28,7 @@ struct run_info {
 struct model_config {
     char *model_name;
     char *model_file;
-    char *model_command;
+    sds   model_command;
     uint version;
     uint num_runs;
     struct run_info *runs;
@@ -62,4 +62,5 @@ char *get_var_name(struct model_config *model_config, int index);
 void free_model_config(struct model_config *model_config);
 bool generate_model_program(struct model_config *model);
 sds get_model_output_file(struct model_config *model_config, uint run_number);
+bool compile_model(struct model_config *model_config);
 #endif /* __MODEL_CONFIG_H */

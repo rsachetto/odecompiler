@@ -2,11 +2,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #include "stb/stb_ds.h"
 #include "file_utils/file_utils.h"
 #include "md5/md5.h"
+#include "code_converter.h"
 
 #define MODEL_OUTPUT_TEMPLATE "/tmp/%s_%i_out.txt"
+#define COMPILED_MODEL_NAME_TEMPLATE "/tmp/%s_auto_compiled_model_tmp_file"
+#define COMPILE_FILE_TEMPLATE "/tmp/%s_XXXXXX.c"
+#define C_COMPILER "gcc"
+
+static bool check_and_print_execution_errors(FILE *fp) {
+    bool error = false;
+    char msg[PATH_MAX];
+
+    while(fgets(msg, PATH_MAX, fp) != NULL) {
+        printf("%s", msg);
+        if(!error) error = true;
+    }
+
+    return error;
+}
 
 sds get_model_output_file(struct model_config *model_config, uint run_number) {
 
@@ -140,7 +157,7 @@ void free_model_config(struct model_config *model_config) {
     free(model_config->plot_config.xlabel);
     free(model_config->plot_config.ylabel);
 
-    free(model_config->model_command);
+    sdsfree(model_config->model_command);
     free_program(model_config->program);
     arrfree(model_config->runs);
 
@@ -161,5 +178,45 @@ char *get_var_name(struct model_config *model_config, int index) {
     }
 
     return NULL;
+
+}
+
+bool compile_model(struct model_config *model_config) {
+
+    sds modified_model_name = sdsnew(model_config->model_name);
+    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
+
+    sdsfree(model_config->model_command);
+    model_config->model_command = sdscatfmt(sdsempty(), COMPILED_MODEL_NAME_TEMPLATE, modified_model_name);
+
+    sds compiled_file = sdscatfmt(sdsempty(), COMPILE_FILE_TEMPLATE, modified_model_name);
+
+    int fd = mkstemps(compiled_file, 2);
+
+    FILE *outfile = fdopen(fd, "w");
+    bool error = convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
+    fclose(outfile);
+
+    if(!error) {
+
+        sds compiler_command = sdsnew(C_COMPILER);
+#ifdef DEBUG_INFO
+        compiler_command = sdscatfmt(compiler_command, " -g3 %s -o %s -lm", compiled_file, model_config->model_command);
+#else
+        compiler_command = sdscatfmt(compiler_command, " -O2 %s -o %s -lm", compiled_file, model_config->model_command);
+#endif
+        FILE *fp = popen(compiler_command, "r");
+        error = check_and_print_execution_errors(fp);
+
+        pclose(fp);
+        unlink(compiled_file);
+        sdsfree(compiler_command);
+    }
+
+    //Clean
+    sdsfree(compiled_file);
+    sdsfree(modified_model_name);
+
+    return error;
 
 }

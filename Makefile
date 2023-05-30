@@ -25,7 +25,7 @@ debug_set:
 	$(eval OPT_FLAGS = -DDEBUG_INFO -g3 -fsanitize=address -Wall -Wno-switch -Wno-misleading-indentation)
 	$(eval OPT_TYPE=debug)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/md5.o  build/libfort.a
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/md5.o build/gnuplot_utils.o build/libfort.a
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
 bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/program.o build/ast.o build/token.o build/file_utils.o build/sds.o build/string_utils.o
@@ -81,6 +81,9 @@ build/command_corrector.o: src/command_corrector.c src/command_corrector.h
 
 build/md5.o: src/md5/md5.c src/md5/md5.h
 	gcc ${OPT_FLAGS} -c src/md5/md5.c -o build/md5.o
+
+build/gnuplot_utils.o: src/gnuplot_utils.c src/gnuplot_utils.h
+	gcc ${OPT_FLAGS} -c src/gnuplot_utils.c -o build/gnuplot_utils.o
 
 build/libfort.a:
 	cd src/libfort/src/ && ${MAKE} ${OPT_TYPE}

@@ -5,6 +5,7 @@
 #include "model_config.h"
 #include "stb/stb_ds.h"
 #include "to_latex.h"
+#include "gnuplot_utils.h"
 
 #include <linux/limits.h>
 #include <math.h>
@@ -31,7 +32,7 @@ static struct shell_variables *global_state;
     printf("%s", ft_to_string((table))); \
     ft_destroy_table(table)
 
-bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, uint *run_number) {
+static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, uint *run_number) {
     *model_name = NULL;
     *run_number = 0;
 
@@ -54,7 +55,7 @@ bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char *
     return true;
 }
 
-bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char **model_name, uint *run_number, char **arg) {
+static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char **model_name, uint *run_number, char **arg) {
 
     *model_name = NULL;
     *run_number = 0;
@@ -78,32 +79,6 @@ bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char 
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
             return false;
         }
-    }
-
-    return true;
-}
-
-static void gnuplot_cmd(struct popen2 *handle, char const *cmd, ...) {
-    va_list ap;
-
-    va_start(ap, cmd);
-    vdprintf(handle->to_child, cmd, ap);
-    va_end(ap);
-
-    dprintf(handle->to_child, "\nprint \"done\"\n");
-
-    char msg[6];
-    read(handle->from_child, msg, 6);
-}
-
-static void reset_terminal(struct popen2 *handle, const char *default_term) {
-    gnuplot_cmd(handle, "set terminal %s", default_term);
-}
-
-static bool have_gnuplot(struct shell_variables *shell_state) {
-    if(!shell_state->default_gnuplot_term) {
-        printf("Error - gnuplot not installed or not in path\n");
-        return false;
     }
 
     return true;
@@ -139,60 +114,6 @@ static void check_and_print_execution_output(FILE *fp) {
     while(fgets(msg, PATH_MAX, fp) != NULL) {
         printf("%s", msg);
     }
-}
-
-static bool check_and_print_execution_errors(FILE *fp) {
-    bool error = false;
-    char msg[PATH_MAX];
-
-    while(fgets(msg, PATH_MAX, fp) != NULL) {
-        printf("%s", msg);
-        if(!error) error = true;
-    }
-
-    return error;
-}
-
-static bool compile_model(struct model_config *model_config) {
-    sds modified_model_name = sdsnew(model_config->model_name);
-    modified_model_name = sdsmapchars(modified_model_name, "/", ".", 1);
-
-    sds compiled_model_name = sdscatfmt(sdsempty(), "/tmp/%s_auto_compiled_model_tmp_file", modified_model_name);
-
-    free(model_config->model_command);
-    model_config->model_command = strdup(compiled_model_name);
-
-    sds compiled_file;
-    compiled_file = sdscatfmt(sdsempty(), "/tmp/%s_XXXXXX.c", modified_model_name);
-
-    int fd = mkstemps(compiled_file, 2);
-
-    FILE *outfile = fdopen(fd, "w");
-    bool error = convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
-    fclose(outfile);
-
-    if(!error) {
-
-        sds compiler_command = sdsnew("gcc");
-#ifdef DEBUG_INFO
-        compiler_command = sdscatfmt(compiler_command, " -g3 %s -o %s -lm", compiled_file, model_config->model_command);
-#else
-        compiler_command = sdscatfmt(compiler_command, " -O2 %s -o %s -lm", compiled_file, model_config->model_command);
-#endif
-        FILE *fp = popen(compiler_command, "r");
-        error = check_and_print_execution_errors(fp);
-
-        pclose(fp);
-        unlink(compiled_file);
-        sdsfree(compiler_command);
-    }
-
-    //Clean
-    sdsfree(compiled_file);
-    sdsfree(compiled_model_name);
-    sdsfree(modified_model_name);
-
-    return error;
 }
 
 static char *autocomplete_command(const char *text, int state) {
@@ -648,6 +569,8 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
         if(strcmp(shell_state->default_gnuplot_term, "sixel") == 0) {
             gnuplot_cmd(shell_state->gnuplot_handle, "set term sixel");
         }
+
+        gnuplot_cmd(shell_state->gnuplot_handle, "set term push");
     }
 
     command = "plot";
@@ -679,7 +602,7 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
     sdsfree(output_file);
 
     if(c_type == CMD_PLOT_TERM || c_type == CMD_REPLOT_TERM) {
-        reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
+        reset_terminal(shell_state->gnuplot_handle);
     }
 
     return true;
@@ -758,6 +681,12 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
             return false;
         }
         popen2("gnuplot", shell_state->gnuplot_handle);
+
+        if(strcmp(shell_state->default_gnuplot_term, "sixel") == 0) {
+            gnuplot_cmd(shell_state->gnuplot_handle, "set term sixel");
+        }
+
+        gnuplot_cmd(shell_state->gnuplot_handle, "set term push");
     }
 
     if(c_type == CMD_PLOT_FILE) {
@@ -792,7 +721,7 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
 
     sdsfree(output_file);
 
-    reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
+    reset_terminal(shell_state->gnuplot_handle);
 
     return true;
 }
@@ -1508,7 +1437,7 @@ COMMAND_FUNCTION(saveplot) {
     gnuplot_cmd(shell_state->gnuplot_handle, "set output \"%s", file_name);
     gnuplot_cmd(shell_state->gnuplot_handle, "replot");
 
-    reset_terminal(shell_state->gnuplot_handle, shell_state->default_gnuplot_term);
+    reset_terminal(shell_state->gnuplot_handle);
 
     return true;
 }
