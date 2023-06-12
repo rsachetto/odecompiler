@@ -21,17 +21,14 @@ static sds expression_stmt_to_c(ast *a) {
 }
 
 static sds return_stmt_to_c(ast *a) {
-
     sds buf = sdsempty();
 
     if(a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
 
         if(n == 1) {
-            buf = sdscatfmt(buf, "%sreturn ", indent_spaces[indentation_level]);
             sds tmp = ast_to_c(a->return_stmt.return_values[0]);
-            buf = sdscat(buf, tmp);
-            buf = sdscat(buf, ";");
+            buf = sdscatprintf(buf, "%sreturn %s;", indent_spaces[indentation_level], tmp);
             sdsfree(tmp);
         } else {
             for(int i = 0; i < n; i++) {
@@ -41,6 +38,7 @@ static sds return_stmt_to_c(ast *a) {
             }
         }
     }
+
     return buf;
 }
 
