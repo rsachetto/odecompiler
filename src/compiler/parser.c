@@ -29,24 +29,31 @@ static int ode_count = 1;
 
 ast **parse_expression_list(parser *, bool);
 
-bool check_parser_errors(parser *p, bool exit_on_error) {
+static inline void advance_token(parser *p) {
+    p->cur_token = p->peek_token;
+    p->peek_token = next_token(p->l);
+}
 
-    int err_len = arrlen(p->errors);
+static inline bool cur_token_is(parser *p, token_type t) {
+    return p->cur_token.type == t;
+}
 
-    if(!err_len) {
-        return false;
-    }
+static inline bool peek_token_is(parser *p, token_type t) {
+    return p->peek_token.type == t;
+}
 
-    fprintf(stderr, "parser has %d errors\n", err_len);
+static void peek_error(parser *p, token_type t) {
+    ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, "expected next token to be %s, got %s instead\n",
+                        get_string_token_type(t), get_string_token_type(p->peek_token.type));
+}
 
-    for(int i = 0; i < err_len; i++) {
-        fprintf(stderr, "%s", p->errors[i]);
-    }
-
-    if(exit_on_error) {
-        exit(1);
-    } else {
+static inline bool expect_peek(parser *p, token_type t) {
+    if(peek_token_is(p, t)) {
+        advance_token(p);
         return true;
+    } else {
+        peek_error(p, t);
+        return false;
     }
 }
 
@@ -98,6 +105,48 @@ static bool can_be_in_init(parser *p, const ast *a) {
 static void add_builtin_function(parser *p, char *name, int n_args) {
     declared_function_entry_value value = {1, n_args};
     shput(p->declared_functions, name, value);
+}
+
+static enum operator_precedence get_precedence(token t) {
+
+    if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
+        return EQUALS;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, AND)) {
+        return ANDP;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, OR)) {
+        return ORP;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT) || TOKEN_TYPE_EQUALS(t, LEQ) || TOKEN_TYPE_EQUALS(t, GEQ)) {
+        return LESSGREATER;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS)) {
+        return SUM;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, SLASH) || TOKEN_TYPE_EQUALS(t, ASTERISK)) {
+        return PRODUCT;
+    }
+
+    if(TOKEN_TYPE_EQUALS(t, LPAREN)) {
+        return CALL;
+    }
+
+    return LOWEST;
+}
+
+
+static enum operator_precedence peek_precedence(parser *p) {
+    return get_precedence(p->peek_token);
+}
+
+static enum operator_precedence cur_precedence(parser *p) {
+    return get_precedence(p->cur_token);
 }
 
 parser *new_parser(lexer *l) {
@@ -197,26 +246,24 @@ void free_parser(parser *p) {
     free(p);
 }
 
-void advance_token(parser *p) {
-    p->cur_token = p->peek_token;
-    p->peek_token = next_token(p->l);
-}
+bool check_parser_errors(parser *p, bool exit_on_error) {
 
-bool cur_token_is(parser *p, token_type t) {
-    return p->cur_token.type == t;
-}
+    int err_len = arrlen(p->errors);
 
-bool peek_token_is(parser *p, token_type t) {
-    return p->peek_token.type == t;
-}
-
-bool expect_peek(parser *p, token_type t) {
-    if(peek_token_is(p, t)) {
-        advance_token(p);
-        return true;
-    } else {
-        peek_error(p, t);
+    if(!err_len) {
         return false;
+    }
+
+    fprintf(stderr, "parser has %d errors\n", err_len);
+
+    for(int i = 0; i < err_len; i++) {
+        fprintf(stderr, "%s", p->errors[i]);
+    }
+
+    if(exit_on_error) {
+        exit(1);
+    } else {
+        return true;
     }
 }
 
@@ -1092,7 +1139,7 @@ static void process_imports(parser *p, program original_program) {
     }
 }
 
-program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bool exit_on_error) {
+static program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bool exit_on_error) {
 
     global_count = 1;
     local_var_count = 1;
@@ -1137,51 +1184,4 @@ program parse_program_without_exiting_on_error(parser *p, bool proc_imports, boo
 
 program parse_program(parser *p, bool proc_imports, bool check_errors) {
     return parse_program_helper(p, proc_imports, check_errors, true);
-}
-
-
-void peek_error(parser *p, token_type t) {
-    ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, "expected next token to be %s, got %s instead\n",
-                        get_string_token_type(t), get_string_token_type(p->peek_token.type));
-}
-
-static enum operator_precedence get_precedence(token t) {
-
-    if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
-        return EQUALS;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, AND)) {
-        return ANDP;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, OR)) {
-        return ORP;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT) || TOKEN_TYPE_EQUALS(t, LEQ) || TOKEN_TYPE_EQUALS(t, GEQ)) {
-        return LESSGREATER;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS)) {
-        return SUM;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, SLASH) || TOKEN_TYPE_EQUALS(t, ASTERISK)) {
-        return PRODUCT;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, LPAREN)) {
-        return CALL;
-    }
-
-    return LOWEST;
-}
-
-enum operator_precedence peek_precedence(parser *p) {
-    return get_precedence(p->peek_token);
-}
-
-enum operator_precedence cur_precedence(parser *p) {
-    return get_precedence(p->cur_token);
 }
