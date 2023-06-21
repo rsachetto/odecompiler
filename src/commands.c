@@ -1507,6 +1507,41 @@ COMMAND_FUNCTION(editmodel) {
     return true;
 }
 
+COMMAND_FUNCTION(unloadall) {
+
+    (void) tokens;
+    (void) num_args;
+
+    int len = shlen(shell_state->loaded_models);
+
+    if(len == 0) {
+        CREATE_TABLE(table);
+        ft_set_cell_prop(table, FT_ANY_COLUMN, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+        ft_set_cell_prop(table, FT_ANY_COLUMN, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+        ft_printf_ln(table, "No models loaded");
+        PRINT_AND_FREE_TABLE(table);
+
+    } else {
+
+        for(int i = 0; i < len; i++) {
+            char *name = shell_state->loaded_models[i].key;
+            struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens[0], name);
+            struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
+            arrfree(entries);
+
+            (void) hmdel(shell_state->notify_entries, model_config->notify_code);
+            (void) shdel(shell_state->loaded_models, name);
+
+            free_model_config(model_config);
+
+        }
+
+        shell_state->current_model = NULL;
+    }
+    return true;
+
+}
+
 COMMAND_FUNCTION(unload) {
 
     struct model_config *model_config = NULL;
@@ -1514,7 +1549,6 @@ COMMAND_FUNCTION(unload) {
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
     bool is_current = (model_config == shell_state->current_model);
-
 
     struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
     arrfree(entries);
@@ -2073,6 +2107,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
     ADD_CMD(load, 1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
     ADD_CMD(listruns, 0, 1, "List all runs of a model." NO_ARGS " listruns sir");
     ADD_CMD(unload, 1, 1, "Unloads previously loaded model." NO_ARGS " unload sir");
+    ADD_CMD(unloadall, 0, 0, "Unloads all previously loaded models.");
     ADD_CMD(ls, 0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
