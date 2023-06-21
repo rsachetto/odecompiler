@@ -55,7 +55,7 @@ bool generate_model_program(struct model_config *model) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program_without_exiting_on_error(p, true, true);
+    program program = parse_program_without_exiting_on_error(p, true, true, NULL);
 
     if(program) {
         shfree(model->var_indexes);

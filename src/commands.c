@@ -1271,7 +1271,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                 if(action == CMD_SET) {
                     lexer *l = new_lexer(new_value, model_config->model_name);
                     parser *p = new_parser(l);
-                    program program = parse_program(p, false, false);
+                    program program = parse_program(p, false, false, NULL);
 
                     sds tmp1 = ast_to_string(a->assignment_stmt.value);
                     sds tmp2 = ast_to_string(program[0]);

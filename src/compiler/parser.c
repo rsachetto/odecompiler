@@ -1079,7 +1079,7 @@ static void check_ode_initializations(parser *p, program program) {
     }
 }
 
-static void process_imports(parser *p, program original_program) {
+static void process_imports(parser *p, program original_program, char *import_path) {
 
     int n = arrlen(original_program);
 
@@ -1088,19 +1088,27 @@ static void process_imports(parser *p, program original_program) {
 
         if(a->tag != ast_import_stmt) continue;
 
-        const char *import_file_name = a->import_stmt.filename->identifier.value;
+        sds import_file_name;
+
+        if(import_path == NULL) {
+            import_file_name = sdsnew(a->import_stmt.filename->identifier.value);
+        } else {
+            import_file_name = sdscatprintf(sdsempty(), "%s/%s", import_path, a->import_stmt.filename->identifier.value);
+        }
+
         size_t file_size;
 
         char *source = read_entire_file_with_mmap(import_file_name, &file_size);
 
         if(!source) {
             fprintf(stderr, "Error importing file %s.\n", import_file_name);
+            sdsfree(import_file_name);
             exit(0);
         }
 
         lexer *l = new_lexer(source, import_file_name);
         parser *parser_new = new_parser(l);
-        program program_new = parse_program(parser_new, false, true);
+        program program_new = parse_program(parser_new, false, true, NULL);
 
         int n_stmt = arrlen(program_new);
         for(int s = 0; s < n_stmt; s++) {
@@ -1132,6 +1140,7 @@ static void process_imports(parser *p, program original_program) {
             }
         }
 
+        sdsfree(import_file_name);
         free_lexer(l);
         free_parser(parser_new);
         arrfree(program_new);
@@ -1139,7 +1148,7 @@ static void process_imports(parser *p, program original_program) {
     }
 }
 
-static program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bool exit_on_error) {
+static program parse_program_helper(parser *p, bool proc_imports, bool check_errors, bool exit_on_error, char *import_path) {
 
     global_count = 1;
     local_var_count = 1;
@@ -1156,7 +1165,7 @@ static program parse_program_helper(parser *p, bool proc_imports, bool check_err
     }
 
     if(proc_imports) {
-        process_imports(p, program);
+        process_imports(p, program, import_path);
     }
 
     check_variable_declarations(p, program);
@@ -1178,10 +1187,10 @@ static program parse_program_helper(parser *p, bool proc_imports, bool check_err
     return program;
 }
 
-program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors) {
-    return parse_program_helper(p, proc_imports, check_errors, false);
+program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors, char *import_path) {
+    return parse_program_helper(p, proc_imports, check_errors, false, import_path);
 }
 
-program parse_program(parser *p, bool proc_imports, bool check_errors) {
-    return parse_program_helper(p, proc_imports, check_errors, true);
+program parse_program(parser *p, bool proc_imports, bool check_errors, char *import_path) {
+    return parse_program_helper(p, proc_imports, check_errors, true, import_path);
 }

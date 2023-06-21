@@ -62,8 +62,8 @@ typedef struct parser_t {
 
 parser * new_parser(lexer *l);
 void free_parser(parser *p);
-program parse_program(parser *p, bool process_imports, bool check_errors);
-program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors);
+program parse_program(parser *p, bool process_imports, bool check_errors, char *import_path);
+program parse_program_without_exiting_on_error(parser *p, bool proc_imports, bool check_errors, char *import_path);
 ast *parse_prefix_expression(parser *p);
 ast *parse_infix_expression(parser *p, ast *left);
 ast *parse_expression(parser *p, enum operator_precedence precedence);

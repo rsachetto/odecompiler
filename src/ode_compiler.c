@@ -20,6 +20,7 @@ static char args_doc[] = "";
 static struct argp_option options[] = {
   {"input",        'i', "FILE", 0, "Input .ode FILE" },
   {"output",       'o', "FILE", 0, "Output FILE" },
+  {"import_path",  'I', "PATH", 0, "PATH to search for imported files" },
   {"solver_impl",  't', "IMPL", 0, "Solver implementation. Available options: cvode, euler. Default: euler"},
   { 0 }
 };
@@ -29,6 +30,7 @@ struct arguments {
   char *input_file;
   char *output_file;
   char *solver_impl;
+  char *import_path;
 };
 
 /* Parse a single option. */
@@ -39,6 +41,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'i':
             arguments->input_file = arg;
+            break;
+        case 'I':
+            arguments->import_path = arg;
             break;
         case 'o':
             arguments->output_file = arg;
@@ -81,7 +86,7 @@ int main(int argc, char **argv) {
 
     lexer *l = new_lexer(source, file_name);
     parser *p = new_parser(l);
-    program program = parse_program(p, true, true);
+    program program = parse_program(p, true, true, arguments.import_path);
 
     check_parser_errors(p, true);
 
