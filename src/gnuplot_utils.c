@@ -49,8 +49,10 @@ void gnuplot_cmd(struct popen2 *handle, char const *cmd, ...) {
 
     dprintf(handle->to_child, "\nprint \"done\"\n");
 
-    char msg[6];
-    read(handle->from_child, msg, 6);
+    //To avoid plot and shell text overwriting when using sixel terminal
+    char msg[20];
+    read(handle->from_child, msg, 20);
+
 }
 
 void reset_terminal(struct popen2 *handle) {

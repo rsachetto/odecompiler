@@ -734,7 +734,7 @@ COMMAND_FUNCTION(replottofile) {
     return plot_file_helper(shell_state, tokens, CMD_REPLOT_FILE, num_args);
 }
 
-static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
+static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args, bool quiet) {
 
     if(!have_gnuplot(shell_state)) return false;
 
@@ -772,10 +772,12 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
         CREATE_TABLE(table);
         if(c_type == CMD_SET_PLOT_X) {
             model_config->plot_config.xindex = index;
-            if(index_as_str) {
-                ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", cmd_param);
-            } else {
-                ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
+            if (!quiet) {
+                if(index_as_str) {
+                    ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", cmd_param);
+                } else {
+                    ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
+                }
             }
         } else {
 
@@ -788,7 +790,9 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
                 model_config->plot_config.title = strdup(var_name);
             }
 
-            ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", model_config->plot_config.title);
+            if(!quiet) {
+                ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", model_config->plot_config.title);
+            }
         }
 
         PRINT_AND_FREE_TABLE(table);
@@ -811,23 +815,23 @@ static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, com
 }
 
 COMMAND_FUNCTION(setplotx) {
-    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_X, num_args);
+    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_X, num_args, false);
 }
 
 COMMAND_FUNCTION(setploty) {
-    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, num_args);
+    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, num_args, false);
 }
 
 COMMAND_FUNCTION(setplotxlabel) {
-    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_X_LABEL, num_args);
+    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_X_LABEL, num_args, false);
 }
 
 COMMAND_FUNCTION(setplotylabel) {
-    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y_LABEL, num_args);
+    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y_LABEL, num_args, false);
 }
 
 COMMAND_FUNCTION(setplotlegend) {
-    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_TITLE, num_args);
+    return setplot_helper(shell_state, tokens, CMD_SET_PLOT_TITLE, num_args, false);
 }
 
 static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
@@ -849,18 +853,18 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
     bool ret = true;
 
     if(num_args == 1) {
-        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
+        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1, true);
     } else if(num_args == 2) {
         bool error;
         string_to_long(tokens[2], &error);
 
         if(!error) {
-            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1);
+            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1, true);
         } else {
-            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
+            ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2, true);
         }
     } else if(num_args == 3) {
-        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2);
+        ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 2, true);
     }
 
     if(ret == false) {
