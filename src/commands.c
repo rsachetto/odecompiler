@@ -545,8 +545,6 @@ COMMAND_FUNCTION(solve) {
 
 static bool plot_helper(struct shell_variables *shell_state, const char *command, command_type c_type, char *model_name, uint run_number, sds custom_gnuplot_cmd) {
 
-    if(!have_gnuplot(shell_state)) return false;
-
     struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, command, model_name, run_number);
 
     if(!model_config) return false;
@@ -656,8 +654,6 @@ COMMAND_FUNCTION(replottoterm) {
 
 static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
-    if(!have_gnuplot(shell_state)) return false;
-
     const char *command = tokens[0];
     char *model_name;
     char *file_name = NULL;
@@ -735,8 +731,6 @@ COMMAND_FUNCTION(replottofile) {
 }
 
 static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args, bool quiet) {
-
-    if(!have_gnuplot(shell_state)) return false;
 
     const char *command = tokens[0];
 
@@ -1423,8 +1417,6 @@ COMMAND_FUNCTION(saveplot) {
 
     const char *file_name = tokens[1];
 
-    if(!have_gnuplot(shell_state)) return false;
-
     if(shell_state->gnuplot_handle == NULL) {
         printf("Error executing command %s. No previous plot. plot the model first using \"plot modelname\" or list loaded models using \"list\"\n", command);
         return false;
@@ -1864,7 +1856,7 @@ COMMAND_FUNCTION(closeplot) {
     (void) tokens;
     (void) num_args;
 
-    if(shell_state->gnuplot_handle == NULL || !have_gnuplot(shell_state)) {
+    if(shell_state->gnuplot_handle == NULL || shell_state->enable_sixel) {
         return false;
     }
 
