@@ -3,6 +3,16 @@
 #include "string_utils.h"
 #include <assert.h>
 
+#define COMMON_INCLUDES "#include <math.h>\n"    \
+                        "#include <stdbool.h>\n" \
+                        "#include <stdint.h>\n"  \
+                        "#include <stdio.h>\n"   \
+                        "#include <stdlib.h>\n"  \
+                        "#include <float.h>\n"   \
+                        "#include <string.h>\n"
+
+#define WRITE_NEQ fprintf(file, "#define NEQ %d\n", (int) arrlen(initial));
+
 static solver_type solver = EULER_ADPT_SOLVER;
 
 struct var_declared_entry_t *var_declared = NULL;
@@ -759,20 +769,17 @@ static sds generate_end_functions(program functions) {
 
 bool write_cvode_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header) {
 
-    fprintf(file, "#include <cvode/cvode.h>\n"
-                  "#include <math.h>\n"
+    fprintf(file, COMMON_INCLUDES
+                  "#include <cvode/cvode.h>\n"
                   "#include <nvector/nvector_serial.h>\n"
-                  "#include <stdbool.h>\n"
-                  "#include <stdint.h>\n"
-                  "#include <stdio.h>\n"
-                  "#include <stdlib.h>\n"
                   "#include <sundials/sundials_dense.h>\n"
                   "#include <sundials/sundials_types.h>\n"
                   "#include <sunlinsol/sunlinsol_dense.h> \n"
                   "#include <sunmatrix/sunmatrix_dense.h>"
                   " \n\n");
 
-    fprintf(file, "#define NEQ %d\n", (int) arrlen(initial));
+
+    WRITE_NEQ
     fprintf(file, "typedef realtype real;\n");
 
     create_dynamic_array_headers(file);
@@ -939,16 +946,9 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
 
 bool write_adpt_euler_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header) {
 
-    fprintf(file, "#include <math.h>\n"
-                  "#include <stdbool.h>\n"
-                  "#include <stdint.h>\n"
-                  "#include <stdio.h>\n"
-                  "#include <stdlib.h>\n"
-                  "#include <float.h>\n"
-                  "#include <string.h>\n"
-                  " \n\n");
+    fprintf(file, COMMON_INCLUDES " \n\n");
 
-    fprintf(file, "#define NEQ %d\n", (int) arrlen(initial));
+    WRITE_NEQ
     fprintf(file, "typedef double real;\n");
 
     create_dynamic_array_headers(file);
