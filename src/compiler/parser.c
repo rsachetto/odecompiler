@@ -157,7 +157,7 @@ parser *new_parser(lexer *l) {
         fprintf(stderr, "%s - Error allocating memory for the parser!\n", __FUNCTION__);
         return NULL;
     }
-    
+
     sh_new_arena(p->declared_functions);
     shdefault(p->declared_functions, (declared_function_entry_value){0});
 
@@ -337,7 +337,22 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     stmt->assignment_stmt.value = parse_expression(p, LOWEST);
 
+    //TODO ignoring unit declarations for now
+    if(peek_token_is(p, UNIT_DECL)) {
+        stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
+        advance_token(p);
+    }
+
     if(peek_token_is(p, SEMICOLON)) {
+        advance_token(p);
+    }
+
+    //TODO ignoring unit declarations for now
+    if(peek_token_is(p, UNIT_DECL)) {
+        if (stmt->assignment_stmt.unit != NULL) {
+            //TODO: warning about unit definition
+        }
+        stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
         advance_token(p);
     }
 

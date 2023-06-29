@@ -38,7 +38,9 @@ ast *make_import_stmt(const token *t) {
 }
 
 ast *make_assignment_stmt(const token *t, ast_tag tag) {
-    return make_base_ast(t, tag);
+    ast *a = make_base_ast(t, tag);
+    a->assignment_stmt.unit = NULL;
+    return a;
 }
 
 ast *make_grouped_assignment_stmt(const token *t) {

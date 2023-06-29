@@ -6,7 +6,7 @@ global n = 1000
 global init_i = 3
 
 beta = 0.4/n
-gamma = 0.04
+gamma = 0.04 $dimensionless
 
 #Variables used in initial condition have to be marked as global
 initial S = n - init_i

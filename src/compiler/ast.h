@@ -9,6 +9,7 @@ typedef struct assignment_statement_t {
     struct ast_t *name;
     struct ast_t *value;
     int declaration_position;
+    char *unit;
 } assignment_statement;
 
 typedef struct grouped_assignment_statement_t {

@@ -260,7 +260,7 @@ token next_token(lexer *l) {
             if(peek_char(l) == '=') {
                 read_char(l);
                 tok = new_token(GEQ, ">=", 2, l->current_line, l->file_name);
-            }else {
+            } else {
                 tok = new_token(GT, ">", 1, l->current_line, l->file_name);
             }
             break;
@@ -293,6 +293,14 @@ token next_token(lexer *l) {
             break;
         case ']':
             tok = new_token(RBRACKET, "]", 1, l->current_line, l->file_name);
+            break;
+        case '$':
+            //skip $
+            read_char(l);
+            tok.type = UNIT_DECL;
+            tok.line_number = l->current_line;
+            tok.file_name   = l->file_name;
+            tok.literal = read_identifier(l, &tok.literal_len);
             break;
         case '\0':
             tok.literal = NULL;
