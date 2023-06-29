@@ -339,8 +339,8 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     //TODO ignoring unit declarations for now
     if(peek_token_is(p, UNIT_DECL)) {
-        stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
         advance_token(p);
+        stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
     }
 
     if(peek_token_is(p, SEMICOLON)) {
@@ -349,11 +349,11 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     //TODO ignoring unit declarations for now
     if(peek_token_is(p, UNIT_DECL)) {
+        advance_token(p);
         if (stmt->assignment_stmt.unit != NULL) {
             //TODO: warning about unit definition
         }
         stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
-        advance_token(p);
     }
 
     return stmt;

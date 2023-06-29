@@ -91,6 +91,9 @@ static sds assignment_stmt_to_c(ast *a) {
                 if(!declared) {
                     sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatfmt(buf, "%s%s %s = %s;", indent_spaces[indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
+                    if(a->assignment_stmt.unit != NULL) {
+                        buf = sdscatfmt(buf, " //%s", a->assignment_stmt.unit);
+                    }
                     shput(var_declared, a->assignment_stmt.name->identifier.value, 1);
                     sdsfree(tmp);
                 } else {

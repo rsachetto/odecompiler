@@ -125,7 +125,12 @@ char peek_char(lexer *l) {
     }
 }
 
-char *read_identifier(lexer *l, uint32_t *len) {
+static char *read_identifier(lexer *l, uint32_t *len, bool for_unit) {
+
+    if(for_unit) {
+        //skip $
+        read_char(l);
+    }
 
     int position = l->position;
 
@@ -295,12 +300,10 @@ token next_token(lexer *l) {
             tok = new_token(RBRACKET, "]", 1, l->current_line, l->file_name);
             break;
         case '$':
-            //skip $
-            read_char(l);
             tok.type = UNIT_DECL;
             tok.line_number = l->current_line;
             tok.file_name   = l->file_name;
-            tok.literal = read_identifier(l, &tok.literal_len);
+            tok.literal = read_identifier(l, &tok.literal_len, true);
             break;
         case '\0':
             tok.literal = NULL;
@@ -310,7 +313,7 @@ token next_token(lexer *l) {
             break;
         default:
             if(isalpha(l->ch) || l->ch == '_') {
-                tok.literal = read_identifier(l, &tok.literal_len);
+                tok.literal = read_identifier(l, &tok.literal_len, false);
                 tok.type = lookup_ident(&tok);
                 tok.line_number = l->current_line;
                 tok.file_name   = l->file_name;
