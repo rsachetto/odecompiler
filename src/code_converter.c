@@ -127,6 +127,10 @@ static sds assignment_stmt_to_c(ast *a) {
                 if(!declared) {
                     sds tmp = ast_to_c(call_expr);
                     buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, id_name, tmp);
+                    if(a->assignment_stmt.unit != NULL) {
+                        tmp = sdscatfmt(tmp, " //%s", a->assignment_stmt.unit);
+                    }
+
                     shput(var_declared, id_name, 1);
                     sdsfree(tmp);
                 } else {
@@ -463,9 +467,18 @@ void write_initial_conditions(program p, FILE *file) {
         int position = a->assignment_stmt.declaration_position;
 
         if(solver == CVODE_SOLVER) {
-            fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value);
+            if(a->assignment_stmt.unit != NULL) {
+                fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s %s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value, a->assignment_stmt.unit);
+            }
+            else {
+                fprintf(file, "    NV_Ith_S(x0, %d) = values[%d]; //%s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value);
+            }
         } else if(solver == EULER_ADPT_SOLVER) {
-            fprintf(file, "    x0[%d] = values[%d]; //%s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value);
+            if(a->assignment_stmt.unit != NULL) {
+                fprintf(file, "    x0[%d] = values[%d]; //%s %s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value, a->assignment_stmt.value);
+            } else {
+                fprintf(file, "    x0[%d] = values[%d]; //%s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value);
+            }
         }
     }
 }
