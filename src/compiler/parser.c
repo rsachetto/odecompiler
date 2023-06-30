@@ -337,7 +337,6 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
 
     stmt->assignment_stmt.value = parse_expression(p, LOWEST);
 
-    //TODO ignoring unit declarations for now
     if(peek_token_is(p, UNIT_DECL)) {
         advance_token(p);
         stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
@@ -347,7 +346,6 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         advance_token(p);
     }
 
-    //TODO ignoring unit declarations for now
     if(peek_token_is(p, UNIT_DECL)) {
         advance_token(p);
         if (stmt->assignment_stmt.unit != NULL) {

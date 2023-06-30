@@ -121,9 +121,7 @@ static sds assignment_stmt_to_c(ast *a) {
                 sds tmp = ast_to_c(call_expr);
                 buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], id_name, tmp);
                 sdsfree(tmp);
-            }
-
-            else {
+            } else {
                 int declared = shgeti(var_declared, id_name) != -1;
 
                 if(!declared) {
@@ -386,6 +384,11 @@ static sds global_variable_to_c(ast *a) {
     sds buf = sdsempty();
     sds tmp = ast_to_c(a->assignment_stmt.value);
     buf = sdscatfmt(buf, "real %s = %s;", a->assignment_stmt.name->identifier.value, tmp);
+
+    if(a->assignment_stmt.unit != NULL) {
+        buf = sdscatfmt(buf, " //%s", a->assignment_stmt.unit);
+    }
+
     sdsfree(tmp);
 
     return buf;

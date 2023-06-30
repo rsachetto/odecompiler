@@ -689,6 +689,7 @@ void free_ast(ast *src) {
         case ast_initial_stmt:
             free_ast(src->assignment_stmt.name);
             free_ast(src->assignment_stmt.value);
+            free(src->assignment_stmt.unit);
             break;
         case ast_grouped_assignment_stmt:
             free_asts(src->grouped_assignment_stmt.names);
