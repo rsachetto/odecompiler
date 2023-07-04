@@ -108,36 +108,31 @@ static void add_builtin_function(parser *p, char *name, int n_args) {
 }
 
 static enum operator_precedence get_precedence(token t) {
+    switch(t.type) {
+        case EQ:
+        case NOT_EQ:
+            return EQUALS;
+        case AND:
+            return ANDP;
+       case OR:
+            return ORP;
+       case LT:
+       case GT:
+       case LEQ:
+       case GEQ:
+            return LESSGREATER;
+       case PLUS:
+       case MINUS:
+            return SUM;
+       case SLASH:
+       case ASTERISK:
+            return PRODUCT;
+       case LPAREN:
+            return CALL;
+       default:
+            return LOWEST;
 
-    if(TOKEN_TYPE_EQUALS(t, EQ) || TOKEN_TYPE_EQUALS(t, NOT_EQ)) {
-        return EQUALS;
     }
-
-    if(TOKEN_TYPE_EQUALS(t, AND)) {
-        return ANDP;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, OR)) {
-        return ORP;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, LT) || TOKEN_TYPE_EQUALS(t, GT) || TOKEN_TYPE_EQUALS(t, LEQ) || TOKEN_TYPE_EQUALS(t, GEQ)) {
-        return LESSGREATER;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, PLUS) || TOKEN_TYPE_EQUALS(t, MINUS)) {
-        return SUM;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, SLASH) || TOKEN_TYPE_EQUALS(t, ASTERISK)) {
-        return PRODUCT;
-    }
-
-    if(TOKEN_TYPE_EQUALS(t, LPAREN)) {
-        return CALL;
-    }
-
-    return LOWEST;
 }
 
 
