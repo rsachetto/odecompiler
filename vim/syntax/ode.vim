@@ -1,6 +1,7 @@
-syn keyword odeStatement     return global ode
+syn keyword odeStatement     return global ode initial
 syn keyword odeStatement     fn nextgroup=odeFunction skipwhite
 syn keyword odeStatement     endfn nextgroup=odeFunction skipwhite
+syn match   odeStatement     '\$.*$' display
 
 syn keyword odeRepeat        while
 syn keyword odeConditional   if else
@@ -16,9 +17,9 @@ syn match   odeComment       '#.*$' display contains=odeTodo,@Spell
 syn keyword odeTodo          TODO FIXME XXX contained
 
 " Match strings
-syntax region odeString start=/"/ skip=/\\"/ end=/"/ oneline contains=odeInterpolatedWrapper
-syntax region odeInterpolatedWrapper start="\v\\\(\s*" end="\v\s*\)" contained containedin=odeString contains=odeInterpolatedString
-syntax match odeInterpolatedString "\v\w+(\(\))?" contained containedin=odeInterpolatedWrapper
+syn region odeString start=/"/ skip=/\\"/ end=/"/ oneline contains=odeInterpolatedWrapper
+syn region odeInterpolatedWrapper start="\v\\\(\s*" end="\v\s*\)" contained containedin=odeString contains=odeInterpolatedString
+syn match odeInterpolatedString "\v\w+(\(\))?" contained containedin=odeInterpolatedWrapper
 
 syn match   odeNumber      '\<\d[lL]\=\>' display
 syn match   odeNumber      '\<[0-9]\d\+[lL]\=\>' display
