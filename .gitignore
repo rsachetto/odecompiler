@@ -25,3 +25,6 @@ strace_out
 .vscode/
 .kdev4/
 *.kdev4
+
+tests/converted.c
+tests/test
