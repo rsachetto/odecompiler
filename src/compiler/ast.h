@@ -119,7 +119,6 @@ typedef struct ast_t {
         call_expression call_expr;
         import_statement import_stmt;
         grouped_assignment_statement grouped_assignment_stmt;
-
         struct ast_t *expr_stmt;
     };
 
