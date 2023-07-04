@@ -7,7 +7,7 @@
 #include "file_utils/file_utils.h"
 #include <argp.h>
 
-const char *argp_program_version = "odecompiler 0.1";
+const char *argp_program_version = "odecompiler 0.2";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
 
 /* Program documentation. */

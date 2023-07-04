@@ -78,6 +78,7 @@ static sds assignment_stmt_to_c(ast *a) {
 
             if(has_ode_symbol) {
                 int position = a->assignment_stmt.declaration_position;
+                //TODO: remove the global solve dependency for this function
                 if(solver == CVODE_SOLVER) {
                     sds tmp = ast_to_c(a->assignment_stmt.value);
                     buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;", indent_spaces[indentation_level], position - 1, tmp);
