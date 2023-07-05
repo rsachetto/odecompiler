@@ -11,10 +11,10 @@
 #include "../src/code_converter.h"
 #include "../src/stb/stb_ds.h"
 
-program create_parse_program(char *input) {
+program create_parse_program(char *input, bool check_error) {
     lexer *l = new_lexer(input, "test");
     parser *p = new_parser(l);
-    program prog = parse_program(p, false, false, NULL);
+    program prog = parse_program(p, false, check_error, NULL);
 
     cr_assert(prog != NULL);
 
@@ -30,7 +30,7 @@ void test_identifier(ast *ident, char *expected) {
     }
 }
 
-void test_literal_expression(ast *exp, void *expected) {
+void test_literal_expr(ast *exp, void *expected) {
 
     switch(exp->tag) {
         case ast_identifier:
@@ -44,6 +44,10 @@ void test_literal_expression(ast *exp, void *expected) {
             cr_assert_eq(exp->num_literal.value, value);
             break;
         }
+        case ast_string_literal: {
+            char *value = (char*) expected;
+            cr_assert_str_eq(exp->str_literal.value, value);
+        }
     }
 }
 
@@ -51,9 +55,9 @@ void test_infix_expression(ast *exp, void *l, char *op, void *r) {
 
     cr_assert_eq(exp->tag, ast_infix_expression);
 
-    test_literal_expression(exp->infix_expr.left, l);
+    test_literal_expr(exp->infix_expr.left, l);
     cr_assert_str_eq(exp->infix_expr.op, op);
-    test_literal_expression(exp->infix_expr.right, r);
+    test_literal_expr(exp->infix_expr.right, r);
 
 }
 
@@ -100,7 +104,7 @@ Test(parser, return_statement) {
                     return 993322";
 
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
 
@@ -119,9 +123,9 @@ Test(parser, return_statement) {
 }
 
 Test(parser, assignment_statement) {
-    char *input = "foobar = 1";
+    char *input = "foobar = 1 $kg";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
 
@@ -133,6 +137,7 @@ Test(parser, assignment_statement) {
 
     char *literal = a->assignment_stmt.name->identifier.value;
     cr_assert_str_eq(literal, "foobar");
+    cr_assert_str_eq(a->assignment_stmt.unit, "kg");
 
     cr_assert_eq(a->assignment_stmt.value->num_literal.value, 1);
 }
@@ -140,7 +145,7 @@ Test(parser, assignment_statement) {
 Test(parser, literal_expression) {
     char *input = "5";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
 
@@ -168,9 +173,10 @@ Test(parser, prefix_expressions) {
 
     } prefix_tests[] = {{"!5", "!", {5}}, {"-15", "-", {15}}, {"!true", "!", {true}}, {"!false", "!", {false}}};
 
+    int len = sizeof(prefix_tests)/sizeof(prefix_tests[0]);
 
-    for(int i = 0; i < 4; i++) {
-        program prog = create_parse_program(prefix_tests[i].input);
+    for(int i = 0; i < len; i++) {
+        program prog = create_parse_program(prefix_tests[i].input, true);
 
         int len = arrlen(prog);
 
@@ -192,9 +198,10 @@ Test(parser, prefix_expressions) {
 }
 
 Test(parser, if_expression) {
+    //TODO: check how to avoid declaring the variables (x and y)
     char *input = "x = 1\ny = 2\nif (x < y) { x }";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
     cr_assert_eq(len, 3);
@@ -219,7 +226,7 @@ Test(parser, if_expression) {
 Test(parser, if_else_expression) {
     char *input = "x = 1\ny = 2\nif (x < y) { x } else {y}";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
     cr_assert_eq(len, 3);
@@ -245,7 +252,7 @@ Test(parser, if_else_expression) {
 Test(parser, function_literal) {
     char *input = "fn func(x, y) {x + y}";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, true);
 
     int len = arrlen(prog);
 
@@ -256,8 +263,8 @@ Test(parser, function_literal) {
     cr_expect_eq(a->tag, ast_function_statement);
     cr_expect_eq(arrlen(a->function_stmt.parameters), 2);
 
-    test_literal_expression(a->function_stmt.parameters[0], "x");
-    test_literal_expression(a->function_stmt.parameters[1], "y");
+    test_literal_expr(a->function_stmt.parameters[0], "x");
+    test_literal_expr(a->function_stmt.parameters[1], "y");
 
     cr_expect_eq(arrlen(a->function_stmt.body), 1);
     cr_expect_eq(a->function_stmt.body[0]->tag, ast_expression_stmt);
@@ -266,15 +273,11 @@ Test(parser, function_literal) {
 
 }
 
-//TODO: TestFunctionParameterParsing
-Test(parser, function_parameter) {
-}
-
 Test(parser, call_expression) {
 
     char *input = "add(1, 2 * 3, 4 + 5)";
 
-    program prog = create_parse_program(input);
+    program prog = create_parse_program(input, false);
     int len = arrlen(prog);
     cr_expect_eq(len, 1);
 
@@ -287,7 +290,7 @@ Test(parser, call_expression) {
 
     int l = 1;
     int r;
-    test_literal_expression(a->expr_stmt->call_expr.arguments[0], (void*)&l);
+    test_literal_expr(a->expr_stmt->call_expr.arguments[0], (void*)&l);
 
     l = 2;
     r = 3;
@@ -296,6 +299,22 @@ Test(parser, call_expression) {
     l = 4;
     r = 5;
     test_infix_expression(a->expr_stmt->call_expr.arguments[2], (void*)&l, "+", (void*)&r);
+}
+
+Test(parser, string_literal_expression) {
+    char *input = "\"hello world\"";
+
+    program prog = create_parse_program(input, true);
+    int len = arrlen(prog);
+    cr_expect_eq(len, 1);
+
+    ast *a = prog[0];
+
+    cr_assert_eq(a->tag, ast_expression_stmt);
+    cr_assert_eq(a->expr_stmt->tag, ast_string_literal);
+
+    test_literal_expr(a->expr_stmt, "hello world");
 
 }
+
 
