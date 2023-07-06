@@ -3,7 +3,6 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <setjmp.h>
-#include <signal.h>
 #include <stdbool.h>
 
 #include "commands.h"
@@ -15,6 +14,16 @@
 #include "gnuplot_utils.h"
 
 #include <argp.h>
+
+#include <termios.h>
+#include <unistd.h>
+#include <signal.h>
+
+static struct termios termios_save;
+
+void reset_the_terminal() {
+    tcsetattr(0, 0, &termios_save );
+}
 
 const char *argp_program_version = "ode_shell 0.3";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
@@ -146,6 +155,23 @@ int main(int argc, char **argv) {
     }
 
     bool quit = false;
+
+    ///////////////////////////////////////////////////////////////////
+    //all of this is to avoid printing ^C after the user press crtl+c//
+    ///////////////////////////////////////////////////////////////////
+    struct termios termios_new;
+
+    int rc = tcgetattr(0, &termios_save );
+    if (rc) {perror("tcgetattr"); exit(1); }
+
+    rc = atexit(reset_the_terminal);
+    if (rc) {perror("atexit"); exit(1); }
+
+    termios_new = termios_save;
+    termios_new.c_lflag &= ~ECHOCTL;
+    rc = tcsetattr(0, 0, &termios_new );
+    if (rc) {perror("tcsetattr"); exit(1);}
+    ////////////////////////////////////////////////////////////////////
 
     while ((line = readline(PROMPT)) != 0) {
         //We do not want blank lines in the history
