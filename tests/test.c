@@ -198,15 +198,14 @@ Test(parser, prefix_expressions) {
 }
 
 Test(parser, if_expression) {
-    //TODO: check how to avoid declaring the variables (x and y)
-    char *input = "x = 1\ny = 2\nif (x < y) { x }";
+    char *input = "if (x < y) {x}";
 
-    program prog = create_parse_program(input, true);
+    program prog = create_parse_program(input, false);
 
     int len = arrlen(prog);
-    cr_assert_eq(len, 3);
+    cr_assert_eq(len, 1);
 
-    ast *a = prog[2];
+    ast *a = prog[0];
     cr_assert_eq(a->tag, ast_expression_stmt);
     cr_assert_eq(a->expr_stmt->tag, ast_if_expr);
 
@@ -224,14 +223,14 @@ Test(parser, if_expression) {
 }
 
 Test(parser, if_else_expression) {
-    char *input = "x = 1\ny = 2\nif (x < y) { x } else {y}";
+    char *input = "if (x < y) {x} else {y}";
 
-    program prog = create_parse_program(input, true);
+    program prog = create_parse_program(input, false);
 
     int len = arrlen(prog);
-    cr_assert_eq(len, 3);
+    cr_assert_eq(len, 1);
 
-    ast *a = prog[2];
+    ast *a = prog[0];
     cr_assert_eq(a->tag, ast_expression_stmt);
     cr_assert_eq(a->expr_stmt->tag, ast_if_expr);
 
