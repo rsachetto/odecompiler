@@ -476,7 +476,7 @@ void write_initial_conditions(program p, FILE *file) {
             }
         } else if(solver == EULER_ADPT_SOLVER) {
             if(a->assignment_stmt.unit != NULL) {
-                fprintf(file, "    x0[%d] = values[%d]; //%s %s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value, a->assignment_stmt.value);
+                fprintf(file, "    x0[%d] = values[%d]; //%s %s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value, a->assignment_stmt.unit);
             } else {
                 fprintf(file, "    x0[%d] = values[%d]; //%s\n", position - 1, position - 1, a->assignment_stmt.name->identifier.value);
             }
