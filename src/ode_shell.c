@@ -22,7 +22,7 @@
 static struct termios termios_save;
 
 void reset_the_terminal() {
-    tcsetattr(0, 0, &termios_save );
+    tcsetattr(0, 0, &termios_save);
 }
 
 const char *argp_program_version = "ode_shell 0.3";
