@@ -2012,7 +2012,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
     md5Stringn(source, (uint8_t*)&hash, file_size);
     munmap(source, file_size);
 
-    if(memcmp(hash, model_config->hash, 16) == 0) {
+    if(memcmp(hash, model_config->hash, sizeof(model_config->hash)) == 0) {
         pthread_mutex_unlock(&shell_state->lock);
         return;
     }
