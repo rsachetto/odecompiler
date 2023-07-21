@@ -1,8 +1,11 @@
 #include "model_config.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <linux/limits.h>
+
 #include "stb/stb_ds.h"
 #include "file_utils/file_utils.h"
 #include "md5/md5.h"
