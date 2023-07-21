@@ -25,7 +25,7 @@ static bool check_and_print_execution_errors(FILE *fp) {
     return error;
 }
 
-sds get_model_output_file(struct model_config *model_config, uint run_number) {
+sds get_model_output_file(struct model_config *model_config, unsigned int run_number) {
 
     if(run_number == 0) {
         run_number = model_config->num_runs;

@@ -29,8 +29,8 @@ struct model_config {
     char *model_name;
     char *model_file;
     sds   model_command;
-    uint version;
-    uint num_runs;
+    unsigned int version;
+    unsigned int num_runs;
     struct run_info *runs;
     program program;
     struct var_index_hash_entry *var_indexes;
@@ -61,6 +61,6 @@ struct model_config *new_config_from_parent(struct model_config *parent_model_co
 char *get_var_name(struct model_config *model_config, int index);
 void free_model_config(struct model_config *model_config);
 bool generate_model_program(struct model_config *model);
-sds get_model_output_file(struct model_config *model_config, uint run_number);
+sds get_model_output_file(struct model_config *model_config, unsigned int run_number);
 bool compile_model(struct model_config *model_config);
 #endif /* __MODEL_CONFIG_H */

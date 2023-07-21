@@ -32,13 +32,13 @@ static struct shell_variables *global_state;
     printf("%s", ft_to_string((table))); \
     ft_destroy_table(table)
 
-static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, uint *run_number) {
+static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args, char **model_name, unsigned int *run_number) {
     *model_name = NULL;
     *run_number = 0;
 
     if(num_args == 1) {
         bool error = false;
-        *run_number = (uint) string_to_long(tokens[1], &error);
+        *run_number = (unsigned int) string_to_long(tokens[1], &error);
 
         if(error) {
             *model_name = tokens[1];
@@ -46,7 +46,7 @@ static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args,
     } else if(num_args == 2) {
         *model_name = tokens[1];
         bool error = false;
-        *run_number = (uint) string_to_long(tokens[2], &error);
+        *run_number = (unsigned int) string_to_long(tokens[2], &error);
         if(error) {
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
             return false;
@@ -55,7 +55,7 @@ static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args,
     return true;
 }
 
-static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char **model_name, uint *run_number, char **arg) {
+static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args, char **model_name, unsigned int *run_number, char **arg) {
 
     *model_name = NULL;
     *run_number = 0;
@@ -64,7 +64,7 @@ static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args
         *arg = tokens[1];
     } else if(num_args == 2) {
         bool error = false;
-        *run_number = (uint) string_to_long(tokens[2], &error);
+        *run_number = (unsigned int) string_to_long(tokens[2], &error);
         if(error) {
             *model_name = tokens[1];
             *arg = tokens[2];
@@ -74,7 +74,7 @@ static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args
     } else if(num_args == 3) {
         bool error = false;
         *model_name = tokens[1];
-        *run_number = (uint) string_to_long(tokens[3], &error);
+        *run_number = (unsigned int) string_to_long(tokens[3], &error);
         if(error) {
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
             return false;
@@ -316,7 +316,7 @@ static bool check_command_number_argument(const char *command, int expected_args
     return true;
 }
 
-static struct model_config *get_model_and_n_runs_for_plot_cmds(struct shell_variables *shell_state, const char *command, const char *model_name, uint run_number) {
+static struct model_config *get_model_and_n_runs_for_plot_cmds(struct shell_variables *shell_state, const char *command, const char *model_name, unsigned int run_number) {
 
     struct model_config *model_config = NULL;
 
@@ -543,7 +543,7 @@ COMMAND_FUNCTION(solve) {
     return true;
 }
 
-static bool plot_helper(struct shell_variables *shell_state, const char *command, command_type c_type, char *model_name, uint run_number, sds custom_gnuplot_cmd) {
+static bool plot_helper(struct shell_variables *shell_state, const char *command, command_type c_type, char *model_name, unsigned int run_number, sds custom_gnuplot_cmd) {
 
     struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, command, model_name, run_number);
 
@@ -609,7 +609,7 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
 COMMAND_FUNCTION(plot) {
 
     char *model_name = NULL;
-    uint run_number = 0;
+    unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
         return false;
@@ -620,7 +620,7 @@ COMMAND_FUNCTION(plot) {
 COMMAND_FUNCTION(replot) {
 
     char *model_name = NULL;
-    uint run_number = 0;
+    unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
         return false;
@@ -631,7 +631,7 @@ COMMAND_FUNCTION(replot) {
 COMMAND_FUNCTION(plottoterm) {
 
     char *model_name = NULL;
-    uint run_number = 0;
+    unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
         return false;
@@ -642,7 +642,7 @@ COMMAND_FUNCTION(plottoterm) {
 
 COMMAND_FUNCTION(replottoterm) {
     char *model_name = NULL;
-    uint run_number = 0;
+    unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
         return false;
@@ -657,7 +657,7 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
     const char *command = tokens[0];
     char *model_name;
     char *file_name = NULL;
-    uint run_number;
+    unsigned int run_number;
 
     get_model_name_and_n_run_one_to_three_args(tokens, num_args, &model_name, &run_number, &file_name);
 
@@ -834,7 +834,7 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
         return false;
     }
 
-    uint run_number;
+    unsigned int run_number;
     char *model_name = NULL;
     char *tmp;
 
@@ -919,7 +919,7 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
         new_tokens[i] = tokens[i];
     }
 
-    uint run_number;
+    unsigned int run_number;
     char *model_name = NULL;
     char *tmp;
 
@@ -961,7 +961,7 @@ COMMAND_FUNCTION(plotvar) {
 
 COMMAND_FUNCTION(plotvars) {
 
-    uint run_number;
+    unsigned int run_number;
     char *model_name;
 
     get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number);
@@ -1622,7 +1622,7 @@ COMMAND_FUNCTION(savemodeloutput) {
     char *model_name = NULL;
     char *file_name  = NULL;
 
-    uint run_number = 0;
+    unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_one_to_three_args(tokens, num_args, &model_name, &run_number, &file_name)) {
         return false;
@@ -1756,7 +1756,7 @@ COMMAND_FUNCTION(listruns) {
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    uint n_runs = model_config->num_runs;
+    unsigned int n_runs = model_config->num_runs;
 
     struct run_info *run_info = model_config->runs;
 
@@ -1768,7 +1768,7 @@ COMMAND_FUNCTION(listruns) {
         ft_printf_ln(table, "Run|Time|Output File");
     }
 
-    for(uint i = 0; i < n_runs; i++) {
+    for(unsigned int i = 0; i < n_runs; i++) {
         if(run_info[i].saved) {
             ft_printf_ln(table, "%d|%lf|%s", i + 1, run_info[i].time, run_info[i].filename);
         } else {
@@ -1783,7 +1783,7 @@ COMMAND_FUNCTION(listruns) {
 
 COMMAND_FUNCTION(getruninfo) {
 
-    uint run_number;
+    unsigned int run_number;
     char *model_name = NULL;
 
     get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number);
@@ -1834,7 +1834,7 @@ COMMAND_FUNCTION(resetruns) {
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    for(uint r = 0; r < model_config->num_runs; r++) {
+    for(unsigned int r = 0; r < model_config->num_runs; r++) {
 
         free(model_config->runs[r].filename);
         free(model_config->runs[r].vars_max_value);
