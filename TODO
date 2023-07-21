@@ -3,7 +3,7 @@ TODO: remove the global keyword and declare every variable global in the C code.
 TODO: add a python src code generator and a monoalg3d generator (and more)
 
 //Compiler
-Add an include path option to search for includes
+Add types (bool, string or double) to identifiers
 
 //Maybes
 TODO: add imported functions to their own namespace: common.stim
