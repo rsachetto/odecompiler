@@ -18,11 +18,11 @@ build_dir:
 	@${MKDIR_P} build
 
 release_set:
-	$(eval OPT_FLAGS = -O2)
+	$(eval OPT_FLAGS = -O3)
 	$(eval OPT_TYPE=release)
 
 debug_set:
-	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=address -Wall -Wno-switch -Wno-misleading-indentation)
+	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -Wall -Wno-switch -Wno-misleading-indentation)
 	$(eval OPT_TYPE=debug)
 
 bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/md5.o build/gnuplot_utils.o build/libfort.a
