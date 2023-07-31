@@ -2,6 +2,7 @@
 #include "stb/stb_ds.h"
 #include "string_utils.h"
 #include <assert.h>
+#include <sys/types.h>
 
 #define COMMON_INCLUDES "#include <math.h>\n"    \
                         "#include <stdbool.h>\n" \
@@ -18,32 +19,31 @@ static solver_type solver = EULER_ADPT_SOLVER;
 struct var_declared_entry_t *var_declared = NULL;
 struct var_declared_entry_t *ode_position = NULL;
 
-static sds ast_to_c(ast *a);
+static sds ast_to_c(ast *a, unsigned int *indentation_level);
 
-extern int indentation_level;
 extern char *indent_spaces[];
 
-static sds expression_stmt_to_c(ast *a) {
+static sds expression_stmt_to_c(ast *a, unsigned int *indentation_level) {
     if(a->expr_stmt != NULL) {
-        return ast_to_c(a->expr_stmt);
+        return ast_to_c(a->expr_stmt, indentation_level);
     }
     return sdsempty();
 }
 
-static sds return_stmt_to_c(ast *a) {
+static sds return_stmt_to_c(ast *a, unsigned int *indentation_level) {
     sds buf = sdsempty();
 
     if(a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
 
         if(n == 1) {
-            sds tmp = ast_to_c(a->return_stmt.return_values[0]);
-            buf = sdscatprintf(buf, "%sreturn %s;", indent_spaces[indentation_level], tmp);
+            sds tmp = ast_to_c(a->return_stmt.return_values[0], indentation_level);
+            buf = sdscatprintf(buf, "%sreturn %s;", indent_spaces[*indentation_level], tmp);
             sdsfree(tmp);
         } else {
             for(int i = 0; i < n; i++) {
-                sds tmp = ast_to_c(a->return_stmt.return_values[i]);
-                buf = sdscatfmt(buf, "%s*ret_val_%i = %s;\n", indent_spaces[indentation_level], i, tmp);
+                sds tmp = ast_to_c(a->return_stmt.return_values[i], indentation_level);
+                buf = sdscatfmt(buf, "%s*ret_val_%i = %s;\n", indent_spaces[*indentation_level], i, tmp);
                 sdsfree(tmp);
             }
         }
@@ -52,7 +52,7 @@ static sds return_stmt_to_c(ast *a) {
     return buf;
 }
 
-static sds assignment_stmt_to_c(ast *a) {
+static sds assignment_stmt_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     char *var_type;
@@ -69,8 +69,8 @@ static sds assignment_stmt_to_c(ast *a) {
         int global = a->assignment_stmt.name->identifier.global;
 
         if(global) {
-            sds tmp = ast_to_c(a->assignment_stmt.value);
-            buf = sdscatfmt(buf, "%s%s = %s", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value, tmp);
+            sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+            buf = sdscatfmt(buf, "%s%s = %s", indent_spaces[*indentation_level], a->assignment_stmt.name->identifier.value, tmp);
             sdsfree(tmp);
         } else {
             int declared = shgeti(var_declared, a->assignment_stmt.name->identifier.value) != -1;
@@ -80,26 +80,26 @@ static sds assignment_stmt_to_c(ast *a) {
                 int position = a->assignment_stmt.declaration_position;
                 //TODO: remove the global solve dependency for this function
                 if(solver == CVODE_SOLVER) {
-                    sds tmp = ast_to_c(a->assignment_stmt.value);
-                    buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;", indent_spaces[indentation_level], position - 1, tmp);
+                    sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+                    buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;", indent_spaces[*indentation_level], position - 1, tmp);
                     sdsfree(tmp);
                 } else if(solver == EULER_ADPT_SOLVER) {
-                    sds tmp = ast_to_c(a->assignment_stmt.value);
-                    buf = sdscatprintf(buf, "%srDY[%d] = %s;", indent_spaces[indentation_level], position - 1, tmp);
+                    sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+                    buf = sdscatprintf(buf, "%srDY[%d] = %s;", indent_spaces[*indentation_level], position - 1, tmp);
                     sdsfree(tmp);
                 }
             } else {
                 if(!declared) {
-                    sds tmp = ast_to_c(a->assignment_stmt.value);
-                    buf = sdscatfmt(buf, "%s%s %s = %s;", indent_spaces[indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
+                    sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+                    buf = sdscatfmt(buf, "%s%s %s = %s;", indent_spaces[*indentation_level], var_type, a->assignment_stmt.name->identifier.value, tmp);
                     if(a->assignment_stmt.unit != NULL) {
                         buf = sdscatfmt(buf, " //%s", a->assignment_stmt.unit);
                     }
                     shput(var_declared, a->assignment_stmt.name->identifier.value, 1);
                     sdsfree(tmp);
                 } else {
-                    sds tmp = ast_to_c(a->assignment_stmt.value);
-                    buf = sdscatfmt(buf, "%s%s = %s;", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value, tmp);
+                    sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+                    buf = sdscatfmt(buf, "%s%s = %s;", indent_spaces[*indentation_level], a->assignment_stmt.name->identifier.value, tmp);
                     sdsfree(tmp);
                 }
             }
@@ -119,15 +119,15 @@ static sds assignment_stmt_to_c(ast *a) {
             int global = variables[0]->identifier.global;
 
             if(global) {
-                sds tmp = ast_to_c(call_expr);
-                buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], id_name, tmp);
+                sds tmp = ast_to_c(call_expr, indentation_level);
+                buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[*indentation_level], id_name, tmp);
                 sdsfree(tmp);
             } else {
                 int declared = shgeti(var_declared, id_name) != -1;
 
                 if(!declared) {
-                    sds tmp = ast_to_c(call_expr);
-                    buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[indentation_level], var_type, id_name, tmp);
+                    sds tmp = ast_to_c(call_expr, indentation_level);
+                    buf = sdscatfmt(buf, "%s%s %s = %s;\n", indent_spaces[*indentation_level], var_type, id_name, tmp);
                     if(a->assignment_stmt.unit != NULL) {
                         tmp = sdscatfmt(tmp, " //%s", a->assignment_stmt.unit);
                     }
@@ -135,8 +135,8 @@ static sds assignment_stmt_to_c(ast *a) {
                     shput(var_declared, id_name, 1);
                     sdsfree(tmp);
                 } else {
-                    sds tmp = ast_to_c(call_expr);
-                    buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[indentation_level], id_name, tmp);
+                    sds tmp = ast_to_c(call_expr, indentation_level);
+                    buf = sdscatfmt(buf, "%s%s = %s;\n", indent_spaces[*indentation_level], id_name, tmp);
                     sdsfree(tmp);
                 }
             }
@@ -152,7 +152,7 @@ static sds assignment_stmt_to_c(ast *a) {
                     int declared = shgeti(var_declared, id->identifier.value) != -1;
 
                     if(!declared) {
-                        buf = sdscatfmt(buf, "%s%s %s;\n", indent_spaces[indentation_level], var_type, id->identifier.value);
+                        buf = sdscatfmt(buf, "%s%s %s;\n", indent_spaces[*indentation_level], var_type, id->identifier.value);
                         shput(var_declared, id->identifier.value, 1);
                     }
                 }
@@ -163,18 +163,18 @@ static sds assignment_stmt_to_c(ast *a) {
 
             int n_real_args = arrlen(b->call_expr.arguments);
 
-            sds tmp = ast_to_c(b->call_expr.function_identifier);
-            buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], tmp);
+            sds tmp = ast_to_c(b->call_expr.function_identifier, indentation_level);
+            buf = sdscatfmt(buf, "%s%s", indent_spaces[*indentation_level], tmp);
             sdsfree(tmp);
             buf = sdscat(buf, "(");
 
             if(n_real_args) {
-                tmp = ast_to_c(b->call_expr.arguments[0]);
+                tmp = ast_to_c(b->call_expr.arguments[0], indentation_level);
                 buf = sdscat(buf, tmp);
                 sdsfree(tmp);
 
                 for(int i = 1; i < n_real_args; i++) {
-                    tmp = ast_to_c(b->call_expr.arguments[i]);
+                    tmp = ast_to_c(b->call_expr.arguments[i], indentation_level);
                     buf = sdscatfmt(buf, ", %s", tmp);
                     sdsfree(tmp);
                 }
@@ -225,14 +225,14 @@ static sds string_literal_to_c(ast *a) {
     return buf;
 }
 
-static sds prefix_expr_to_c(ast *a) {
+static sds prefix_expr_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
     buf = sdscat(buf, "(");
     buf = sdscatfmt(buf, "%s", a->prefix_expr.op);
 
-    sds tmp = ast_to_c(a->prefix_expr.right);
+    sds tmp = ast_to_c(a->prefix_expr.right, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     sdsfree(tmp);
     buf = sdscat(buf, ")");
@@ -240,13 +240,13 @@ static sds prefix_expr_to_c(ast *a) {
     return buf;
 }
 
-static sds infix_expr_to_c(ast *a) {
+static sds infix_expr_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     sds tmp;
 
     buf = sdscat(buf, "(");
-    tmp = ast_to_c(a->infix_expr.left);
+    tmp = ast_to_c(a->infix_expr.left, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     sdsfree(tmp);
 
@@ -258,7 +258,7 @@ static sds infix_expr_to_c(ast *a) {
         buf = sdscatfmt(buf, "%s", a->infix_expr.op);
     }
 
-    tmp = ast_to_c(a->infix_expr.right);
+    tmp = ast_to_c(a->infix_expr.right, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     buf = sdscat(buf, ")");
     sdsfree(tmp);
@@ -266,45 +266,45 @@ static sds infix_expr_to_c(ast *a) {
     return buf;
 }
 
-static sds if_expr_to_c(ast *a) {
+static sds if_expr_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
     sds tmp;
 
-    buf = sdscatfmt(buf, "%sif", indent_spaces[indentation_level]);
+    buf = sdscatfmt(buf, "%sif", indent_spaces[*indentation_level]);
 
-    tmp = ast_to_c(a->if_expr.condition);
+    tmp = ast_to_c(a->if_expr.condition, indentation_level);
     buf = sdscatfmt(buf, "%s {\n", tmp);
     sdsfree(tmp);
 
-    indentation_level++;
+    (*indentation_level)++;
     int n = arrlen(a->if_expr.consequence);
     for(int i = 0; i < n; i++) {
-        tmp = ast_to_c(a->if_expr.consequence[i]);
+        tmp = ast_to_c(a->if_expr.consequence[i], indentation_level);
         buf = sdscatfmt(buf, "%s\n", tmp);
         sdsfree(tmp);
     }
-    indentation_level--;
+    (*indentation_level)--;
 
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    buf = sdscatfmt(buf, "%s}", indent_spaces[*indentation_level]);
 
     n = arrlen(a->if_expr.alternative);
 
     if(n) {
         buf = sdscat(buf, " else {\n");
-        indentation_level++;
+        (*indentation_level)++;
         for(int i = 0; i < n; i++) {
-            tmp = ast_to_c(a->if_expr.alternative[i]);
+            tmp = ast_to_c(a->if_expr.alternative[i], indentation_level);
             buf = sdscatfmt(buf, "%s\n", tmp);
             sdsfree(tmp);
         }
-        indentation_level--;
+        (*indentation_level)--;
 
-        buf = sdscatfmt(buf, "%s}\n", indent_spaces[indentation_level]);
+        buf = sdscatfmt(buf, "%s}\n", indent_spaces[*indentation_level]);
 
     } else if(a->if_expr.elif_alternative) {
-        tmp = ast_to_c(a->if_expr.elif_alternative);
+        tmp = ast_to_c(a->if_expr.elif_alternative, indentation_level);
         buf = sdscatfmt(buf, " else %s", tmp);
         sdsfree(tmp);
     } else {
@@ -314,36 +314,36 @@ static sds if_expr_to_c(ast *a) {
     return buf;
 }
 
-static sds while_stmt_to_c(ast *a) {
+static sds while_stmt_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
     sds tmp;
 
-    buf = sdscatfmt(buf, "%swhile", indent_spaces[indentation_level]);
-    tmp = ast_to_c(a->while_stmt.condition);
+    buf = sdscatfmt(buf, "%swhile", indent_spaces[*indentation_level]);
+    tmp = ast_to_c(a->while_stmt.condition, indentation_level);
     buf = sdscatfmt(buf, "(%s) {\n", tmp);
     sdsfree(tmp);
 
     int n = arrlen(a->while_stmt.body);
-    indentation_level++;
+    (*indentation_level)++;
     for(int i = 0; i < n; i++) {
-        tmp = ast_to_c(a->while_stmt.body[i]);
-        buf = sdscatfmt(buf, "%s%s\n", tmp, indent_spaces[indentation_level]);
+        tmp = ast_to_c(a->while_stmt.body[i], indentation_level);
+        buf = sdscatfmt(buf, "%s%s\n", tmp, indent_spaces[*indentation_level]);
         sdsfree(tmp);
     }
 
-    indentation_level--;
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    (*indentation_level)--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[*indentation_level]);
     return buf;
 }
 
-static sds call_expr_to_c(ast *a) {
+static sds call_expr_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
 
-    sds fn_name = ast_to_c(a->call_expr.function_identifier);
+    sds fn_name = ast_to_c(a->call_expr.function_identifier, indentation_level);
 
     buf = sdscat(buf, fn_name);
     buf = sdscat(buf, "(");
@@ -358,7 +358,7 @@ static sds call_expr_to_c(ast *a) {
             is_export_fn = true;
         }
 
-        sds tmp = ast_to_c(a->call_expr.arguments[0]);
+        sds tmp = ast_to_c(a->call_expr.arguments[0], indentation_level);
         //TODO: this should only be allowed inside a endfn function
         if(is_export_fn) {
             sds ode_name = sdsdup(tmp);
@@ -372,7 +372,7 @@ static sds call_expr_to_c(ast *a) {
         sdsfree(tmp);
 
         for(int i = 1; i < n; i++) {
-            tmp = ast_to_c(a->call_expr.arguments[i]);
+            tmp = ast_to_c(a->call_expr.arguments[i], indentation_level);
             buf = sdscatfmt(buf, ", %s", tmp);
             sdsfree(tmp);
         }
@@ -384,10 +384,10 @@ static sds call_expr_to_c(ast *a) {
     return buf;
 }
 
-static sds global_variable_to_c(ast *a) {
+static sds global_variable_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
-    sds tmp = ast_to_c(a->assignment_stmt.value);
+    sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
     buf = sdscatfmt(buf, "real %s = %s;", a->assignment_stmt.name->identifier.value, tmp);
 
     if(a->assignment_stmt.unit != NULL) {
@@ -399,22 +399,22 @@ static sds global_variable_to_c(ast *a) {
     return buf;
 }
 
-static sds ast_to_c(ast *a) {
+static sds ast_to_c(ast *a, unsigned int *indentation_level) {
 
     if(a->tag == ast_assignment_stmt || a->tag == ast_grouped_assignment_stmt || a->tag == ast_ode_stmt) {
-        return assignment_stmt_to_c(a);
+        return assignment_stmt_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_global_stmt) {
-        return global_variable_to_c(a);
+        return global_variable_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_return_stmt) {
-        return return_stmt_to_c(a);
+        return return_stmt_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_expression_stmt) {
-        return expression_stmt_to_c(a);
+        return expression_stmt_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_number_literal) {
@@ -433,23 +433,23 @@ static sds ast_to_c(ast *a) {
     }
 
     if(a->tag == ast_prefix_expression) {
-        return prefix_expr_to_c(a);
+        return prefix_expr_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_infix_expression) {
-        return infix_expr_to_c(a);
+        return infix_expr_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_if_expr) {
-        return if_expr_to_c(a);
+        return if_expr_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_while_stmt) {
-        return while_stmt_to_c(a);
+        return while_stmt_to_c(a, indentation_level);
     }
 
     if(a->tag == ast_call_expression) {
-        return call_expr_to_c(a);
+        return call_expr_to_c(a, indentation_level);
     }
 
     printf("[WARN] Line %d of file %s - to_c not implemented to operator %d\n", a->token.line_number, a->token.file_name, a->tag);
@@ -601,7 +601,7 @@ static sds generate_exposed_ode_values_for_loop() {
 }
 
 
-static bool generate_initial_conditions_values(program p, FILE *file) {
+static bool generate_initial_conditions_values(program p, FILE *file, unsigned int *indentation_level) {
 
     int n_stmt = arrlen(p);
 
@@ -611,7 +611,7 @@ static bool generate_initial_conditions_values(program p, FILE *file) {
         ast *a = p[i];
 
         int position = a->assignment_stmt.declaration_position;
-        sds value = ast_to_c(a->assignment_stmt.value);
+        sds value = ast_to_c(a->assignment_stmt.value, indentation_level);
         fprintf(file, "    values[%d] = %s; //%s\n", position - 1, value, a->assignment_stmt.name->identifier.value);
         sdsfree(value);
     }
@@ -670,14 +670,14 @@ sds out_file_header(program p) {
     return ret;
 }
 
-void write_variables_or_body(program p, FILE *file) {
+void write_variables_or_body(program p, FILE *file, unsigned int *indentation_level) {
     int n_stmt = arrlen(p);
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
         if(a->tag == ast_ode_stmt) {
             int position = a->assignment_stmt.declaration_position;
-            sds tmp = ast_to_c(a->assignment_stmt.value);
-            sds name = ast_to_c(a->assignment_stmt.name);
+            sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
+            sds name = ast_to_c(a->assignment_stmt.name, indentation_level);
             shput(ode_position, name, position);
             sdsfree(name);
 
@@ -689,14 +689,14 @@ void write_variables_or_body(program p, FILE *file) {
 
             sdsfree(tmp);
         } else {
-            sds buf = ast_to_c(a);
+            sds buf = ast_to_c(a, indentation_level);
             fprintf(file, "%s\n", buf);
             sdsfree(buf);
         }
     }
 }
 
-static void write_functions(program p, FILE *file, bool write_end_functions) {
+static void write_functions(program p, FILE *file, bool write_end_functions, unsigned int *indentation_level) {
 
     int n_stmt = arrlen(p);
 
@@ -727,11 +727,11 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
         int n = arrlen(a->function_stmt.parameters);
 
         if(n) {
-            sds tmp = ast_to_c(a->function_stmt.parameters[0]);
+            sds tmp = ast_to_c(a->function_stmt.parameters[0], indentation_level);
             fprintf(file, "real %s", tmp);
             sdsfree(tmp);
             for(int j = 1; j < n; j++) {
-                tmp = ast_to_c(a->function_stmt.parameters[j]);
+                tmp = ast_to_c(a->function_stmt.parameters[j], indentation_level);
                 fprintf(file, ", real %s", tmp);
                 sdsfree(tmp);
             }
@@ -754,10 +754,10 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
         fprintf(file, ") {\n");
 
         n = arrlen(a->function_stmt.body);
-        indentation_level++;
+        (*indentation_level)++;
         for(int j = 0; j < n; j++) {
             ast *ast_a = a->function_stmt.body[j];
-            sds tmp = ast_to_c(ast_a);
+            sds tmp = ast_to_c(ast_a, indentation_level);
 
             if ((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr) || ast_a->tag == ast_while_stmt || ast_a->tag == ast_return_stmt) {
                 fprintf(file, "%s\n", tmp);
@@ -767,7 +767,7 @@ static void write_functions(program p, FILE *file, bool write_end_functions) {
             }
             sdsfree(tmp);
         }
-        indentation_level--;
+        (*indentation_level)--;
         fprintf(file, "}\n\n");
     }
 }
@@ -787,7 +787,7 @@ static sds generate_end_functions(program functions) {
     return result;
 }
 
-bool write_cvode_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header) {
+static bool write_cvode_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, unsigned int *indentation_level) {
 
     fprintf(file, COMMON_INCLUDES
                   "#include <cvode/cvode.h>\n"
@@ -805,10 +805,10 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     create_dynamic_array_headers(file);
     create_export_functions(file);
 
-    write_variables_or_body(globals, file);
+    write_variables_or_body(globals, file, indentation_level);
     fprintf(file, "\n");
 
-    write_functions(functions, file, false);
+    write_functions(functions, file, false, indentation_level);
 
     fprintf(file, "void set_initial_conditions(N_Vector x0, real *values) { \n\n");
     write_initial_conditions(initial, file);
@@ -823,9 +823,9 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
 
     fprintf(file, "    //Parameters\n");
 
-    indentation_level++;
-    write_variables_or_body(main_body, file);
-    indentation_level--;
+    (*indentation_level)++;
+    write_variables_or_body(main_body, file, indentation_level);
+    (*indentation_level)--;
 
     fprintf(file, "\n    return 0;  \n\n}\n\n");
 
@@ -929,7 +929,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
             export_code);
 
     sdsfree(export_code);
-    write_functions(functions, file, true);
+    write_functions(functions, file, true, indentation_level);
 
     bool error;
 
@@ -938,7 +938,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
                   "    SUNContext_Create(NULL, &sunctx);\n"
                   "    N_Vector x0 = N_VNew_Serial(NEQ, sunctx);\n"
                   "\n");
-    error = generate_initial_conditions_values(initial, file);
+    error = generate_initial_conditions_values(initial, file, indentation_level);
 
     sds end_functions = generate_end_functions(functions);
     fprintf(file, "    set_initial_conditions(x0, values);\n"
@@ -964,7 +964,7 @@ bool write_cvode_solver(FILE *file, program initial, program globals, program fu
     return error;
 }
 
-bool write_adpt_euler_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header) {
+static bool write_adpt_euler_solver(FILE *file, program initial, program globals, program functions, program main_body, sds out_header, unsigned int *indentation_level) {
 
     fprintf(file, COMMON_INCLUDES " \n\n");
 
@@ -974,10 +974,10 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
     create_dynamic_array_headers(file);
     create_export_functions(file);
 
-    write_variables_or_body(globals, file);
+    write_variables_or_body(globals, file, indentation_level);
     fprintf(file, "\n");
 
-    write_functions(functions, file, false);
+    write_functions(functions, file, false, indentation_level);
 
     fprintf(file, "void set_initial_conditions(real *x0, real *values) { \n\n");
     write_initial_conditions(initial, file);
@@ -992,9 +992,9 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     fprintf(file, "    //Parameters\n");
 
-    indentation_level++;
-    write_variables_or_body(main_body, file);
-    indentation_level--;
+    (*indentation_level)++;
+    write_variables_or_body(main_body, file, indentation_level);
+    (*indentation_level)--;
 
     sds export_code = generate_exposed_ode_values_for_loop();
 
@@ -1144,14 +1144,14 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
     sdsfree(export_code);
 
-    write_functions(functions, file, true);
+    write_functions(functions, file, true, indentation_level);
 
     fprintf(file, "\nint main(int argc, char **argv) {\n"
                   "\n"
                   "    real *x0 = (real*) malloc(sizeof(real)*NEQ);\n"
                   "\n");
 
-    bool error = generate_initial_conditions_values(initial, file);
+    bool error = generate_initial_conditions_values(initial, file, indentation_level);
 
     sds end_functions = generate_end_functions(functions);
     fprintf(file,
@@ -1181,7 +1181,7 @@ bool write_adpt_euler_solver(FILE *file, program initial, program globals, progr
 
 bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
 
-    indentation_level = 0;
+    unsigned int indentation_level = 0;
 
     solver = p_solver;
 
@@ -1217,10 +1217,10 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
 
     switch(solver) {
         case CVODE_SOLVER:
-            error = write_cvode_solver(file, initial, globals, functions, main_body, out_header);
+            error = write_cvode_solver(file, initial, globals, functions, main_body, out_header, &indentation_level);
             break;
         case EULER_ADPT_SOLVER:
-            error = write_adpt_euler_solver(file, initial, globals, functions, main_body, out_header);
+            error = write_adpt_euler_solver(file, initial, globals, functions, main_body, out_header, &indentation_level);
             break;
         default:
             fprintf(stderr, "Error: invalid solver type!\n");
