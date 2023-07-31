@@ -140,7 +140,7 @@ ast *make_call_expression(const token *t, ast *function);
 ast *make_import_stmt(const token *t);
 ast *make_string_literal(const token *t);
 
-sds ast_to_string(ast *a);
+sds ast_to_string(ast *a, unsigned int *indentation_level);
 ast *copy_ast(ast *src);
 void free_ast(ast *src);
 void free_asts(ast **asts);

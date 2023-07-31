@@ -1264,6 +1264,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
     int i;
     for(i = 0; i < n; i++) {
         ast *a = model_config->program[i];
+        unsigned int indentation_level = 0;
         if(a->tag == tag) {
             if(STR_EQUALS(a->assignment_stmt.name->identifier.value, var_name)) {
                 if(action == CMD_SET) {
@@ -1271,18 +1272,22 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                     parser *p = new_parser(l);
                     program program = parse_program(p, false, false, NULL);
 
-                    sds tmp1 = ast_to_string(a->assignment_stmt.value);
-                    sds tmp2 = ast_to_string(program[0]);
+                    sds tmp1 = ast_to_string(a->assignment_stmt.value, &indentation_level);
+                    sds tmp2 = ast_to_string(program[0], &indentation_level);
 
                     printf("Changing value of variable %s from %s to %s for model %s\n",
-                           var_name, tmp1, tmp2, parent_model_config->model_name);
+                            var_name, tmp1, tmp2, parent_model_config->model_name);
 
                     sdsfree(tmp1);
                     sdsfree(tmp2);
 
                     int old_decl_pos = a->assignment_stmt.declaration_position;
+                    bool global = a->assignment_stmt.name->identifier.global;
+
                     free_ast(a->assignment_stmt.value);
+
                     a->assignment_stmt.value = copy_ast(program[0]);
+                    a->assignment_stmt.name->identifier.global = global;
                     a->assignment_stmt.declaration_position = old_decl_pos;
 
                     free_parser(p);
@@ -1290,7 +1295,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                     free_lexer(l);
 
                 } else {
-                    sds tmp = ast_to_string(a->assignment_stmt.value);
+                    sds tmp = ast_to_string(a->assignment_stmt.value, &indentation_level);
                     printf("%s = %s for model %s\n", var_name, tmp, model_config->model_name);
                     sdsfree(tmp);
                 }
@@ -1366,10 +1371,12 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
 
     bool empty = true;
 
+    unsigned int indentaion_value = 0;
+
     for(int i = 0; i < n; i++) {
         ast *a = model_config->program[i];
         if(a->tag == tag) {
-            sds ast_string = ast_to_string(a->assignment_stmt.value);
+            sds ast_string = ast_to_string(a->assignment_stmt.value, &indentaion_value);
             char *first_paren = strchr(ast_string, '(');
             if(first_paren) {
                 ft_printf_ln(table, "%s|%.*s", a->assignment_stmt.name->identifier.value, (int) strlen(first_paren + 1) - 1, first_paren + 1);

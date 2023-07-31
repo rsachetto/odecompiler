@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-int indentation_level;
-
 //For printing
 #define NO_SPACES  ""
 #define _4SPACES   "    "
@@ -168,31 +166,31 @@ ast *make_call_expression(const token *t, ast *function) {
     return a;
 }
 
-static sds expression_stmt_to_str(ast *a) {
+static sds expression_stmt_to_str(ast *a, unsigned int *indentation_level) {
     if (a->expr_stmt != NULL) {
-        return ast_to_string(a->expr_stmt);
+        return ast_to_string(a->expr_stmt, indentation_level);
     }
     return sdsempty();
 }
 
-static sds return_stmt_to_str(ast *a) {
+static sds return_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%sreturn ", indent_spaces[indentation_level]);
+    buf = sdscatfmt(buf, "%sreturn ", indent_spaces[*indentation_level]);
 
 
     if (a->return_stmt.return_values != NULL) {
         int n = arrlen(a->return_stmt.return_values);
 
         sds tmp;
-        tmp = ast_to_string(a->return_stmt.return_values[0]);
+        tmp = ast_to_string(a->return_stmt.return_values[0], indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
 
 
         for (int i = 1; i < n; i++) {
-            tmp = ast_to_string(a->return_stmt.return_values[i]);
+            tmp = ast_to_string(a->return_stmt.return_values[i], indentation_level);
             buf = sdscatfmt(buf, ", %s", tmp);
             sdsfree(tmp);
         }
@@ -202,23 +200,27 @@ static sds return_stmt_to_str(ast *a) {
     return buf;
 }
 
-static sds assignment_stmt_to_str(ast *a) {
+static sds assignment_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
     if (a->tag == ast_ode_stmt || a->tag == ast_global_stmt || a->tag == ast_initial_stmt) {
-        buf = sdscatfmt(buf, "%s%s ", indent_spaces[indentation_level], a->token.literal);
+        buf = sdscatfmt(buf, "%s%s ", indent_spaces[*indentation_level], a->token.literal);
         buf = sdscatfmt(buf, "%s", a->assignment_stmt.name->identifier.value);
     } else {
-        buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->assignment_stmt.name->identifier.value);
+        buf = sdscatfmt(buf, "%s%s", indent_spaces[*indentation_level], a->assignment_stmt.name->identifier.value);
     }
 
     buf = sdscat(buf, " = ");
 
     if (a->assignment_stmt.value != NULL) {
-        sds tmp = ast_to_string(a->assignment_stmt.value);
+        sds tmp = ast_to_string(a->assignment_stmt.value, indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
+    }
+
+   if (a->assignment_stmt.unit != NULL) {
+        buf = sdscatfmt(buf, " $%s", a->assignment_stmt.unit);
     }
 
     return buf;
@@ -249,13 +251,13 @@ static sds string_literal_to_str(ast *a) {
     return buf;
 }
 
-static sds prefix_expr_to_str(ast *a) {
+static sds prefix_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
     buf = sdscat(buf, "(");
     buf = sdscatfmt(buf, "%s", a->prefix_expr.op);
-    sds tmp = ast_to_string(a->prefix_expr.right);
+    sds tmp = ast_to_string(a->prefix_expr.right, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     sdsfree(tmp);
     buf = sdscat(buf, ")");
@@ -263,7 +265,7 @@ static sds prefix_expr_to_str(ast *a) {
     return buf;
 }
 
-static sds infix_expr_to_str(ast *a) {
+static sds infix_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     sds tmp;
@@ -271,13 +273,13 @@ static sds infix_expr_to_str(ast *a) {
 
     buf = sdscat(buf, "(");
 
-    tmp = ast_to_string(a->infix_expr.left);
+    tmp = ast_to_string(a->infix_expr.left, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     sdsfree(tmp);
 
     buf = sdscatfmt(buf, "%s", a->infix_expr.op);
 
-    tmp = ast_to_string(a->infix_expr.right);
+    tmp = ast_to_string(a->infix_expr.right, indentation_level);
     buf = sdscatfmt(buf, "%s", tmp);
     sdsfree(tmp);
 
@@ -286,79 +288,85 @@ static sds infix_expr_to_str(ast *a) {
     return buf;
 }
 
-static sds if_expr_to_str(ast *a) {
+static sds if_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     sds tmp;
 
-    buf = sdscatfmt(buf, "%sif", indent_spaces[indentation_level]);
+    buf = sdscatfmt(buf, "%sif", indent_spaces[*indentation_level]);
 
-    tmp = ast_to_string(a->if_expr.condition);
+    tmp = ast_to_string(a->if_expr.condition, indentation_level);
     buf = sdscatfmt(buf, "%s {\n", tmp);
     sdsfree(tmp);
 
-    indentation_level++;
+    (*indentation_level)++;
 
     int n = arrlen(a->if_expr.consequence);
     for (int i = 0; i < n; i++) {
-        tmp = ast_to_string(a->if_expr.consequence[i]);
+        tmp = ast_to_string(a->if_expr.consequence[i], indentation_level);
         buf = sdscatfmt(buf, "%s\n", tmp);
         sdsfree(tmp);
     }
-    indentation_level--;
+    (*indentation_level)--;
 
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    buf = sdscatfmt(buf, "%s}", indent_spaces[*indentation_level]);
 
     n = arrlen(a->if_expr.alternative);
 
     if (n) {
 
-        indentation_level++;
+        (*indentation_level)++;
         buf = sdscat(buf, " else {\n");
         for (int i = 0; i < n; i++) {
-            tmp = ast_to_string(a->if_expr.alternative[i]);
+            tmp = ast_to_string(a->if_expr.alternative[i], indentation_level);
             buf = sdscatfmt(buf, "%s\n", tmp);
             sdsfree(tmp);
         }
-        indentation_level--;
+        (*indentation_level)--;
 
-        buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+        buf = sdscatfmt(buf, "%s}", indent_spaces[*indentation_level]);
     }
 
     return buf;
 }
 
-static sds while_stmt_to_str(ast *a) {
+static sds while_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     sds tmp;
 
     buf = sdscat(buf, "while");
 
-    tmp = ast_to_string(a->while_stmt.condition);
+    tmp = ast_to_string(a->while_stmt.condition, indentation_level);
     buf = sdscatfmt(buf, "%s ", tmp);
     sdsfree(tmp);
 
     buf = sdscat(buf, "{");
 
-    indentation_level++;
+    (*indentation_level)++;
     int n = arrlen(a->while_stmt.body);
 
     for (int i = 0; i < n; i++) {
-        tmp = ast_to_string(a->while_stmt.body[i]);
+        tmp = ast_to_string(a->while_stmt.body[i], indentation_level);
         buf = sdscatfmt(buf, "%s\n", tmp);
         sdsfree(tmp);
     }
 
-    indentation_level--;
-    buf = sdscatfmt(buf, "%s}", indent_spaces[indentation_level]);
+    (*indentation_level)--;
+    buf = sdscatfmt(buf, "%s}", indent_spaces[*indentation_level]);
     return buf;
 }
 
-static sds function_stmt_to_str(ast *a) {
+static sds function_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
-    buf = sdscatfmt(buf, "fn %s", a->function_stmt.name->identifier.value);
+
+    if(!a->function_stmt.is_end_fn) {
+        buf = sdscatfmt(buf, "fn %s", a->function_stmt.name->identifier.value);
+    } else {
+        buf = sdscatfmt(buf, "endfn %s", a->function_stmt.name->identifier.value);
+    }
+
     buf = sdscat(buf, "(");
 
     sds tmp;
@@ -366,12 +374,12 @@ static sds function_stmt_to_str(ast *a) {
     int n = arrlen(a->function_stmt.parameters);
 
     if (n) {
-        tmp = ast_to_string(a->function_stmt.parameters[0]);
+        tmp = ast_to_string(a->function_stmt.parameters[0], indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
 
         for (int i = 1; i < n; i++) {
-            tmp = ast_to_string(a->function_stmt.parameters[i]);
+            tmp = ast_to_string(a->function_stmt.parameters[i], indentation_level);
             buf = sdscatfmt(buf, ", %s", tmp);
             sdsfree(tmp);
         }
@@ -382,36 +390,36 @@ static sds function_stmt_to_str(ast *a) {
     n = arrlen(a->function_stmt.body);
     buf = sdscat(buf, "{\n");
 
-    indentation_level++;
+    (*indentation_level)++;
     for (int i = 0; i < n; i++) {
-        tmp = ast_to_string(a->function_stmt.body[i]);
+        tmp = ast_to_string(a->function_stmt.body[i], indentation_level);
         buf = sdscatfmt(buf, "%s\n", tmp);
         sdsfree(tmp);
     }
 
-    indentation_level--;
+    (*indentation_level)--;
     buf = sdscat(buf, "}\n");
 
 
     return buf;
 }
 
-static sds call_expr_to_str(ast *a) {
+static sds call_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
-    buf = sdscatfmt(buf, "%s%s", indent_spaces[indentation_level], a->call_expr.function_identifier->identifier.value);
+    buf = sdscatfmt(buf, "%s%s", indent_spaces[*indentation_level], a->call_expr.function_identifier->identifier.value);
     buf = sdscat(buf, "(");
 
     int n = arrlen(a->call_expr.arguments);
 
     if (n) {
-        sds tmp = ast_to_string(a->call_expr.arguments[0]);
+        sds tmp = ast_to_string(a->call_expr.arguments[0], indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
 
         for (int i = 1; i < n; i++) {
-            tmp = ast_to_string(a->call_expr.arguments[i]);
+            tmp = ast_to_string(a->call_expr.arguments[i], indentation_level);
             buf = sdscatfmt(buf, ", %s", tmp);
             sdsfree(tmp);
         }
@@ -422,18 +430,18 @@ static sds call_expr_to_str(ast *a) {
     return buf;
 }
 
-static sds import_stmt_to_str(ast *a) {
+static sds import_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
 
-    sds tmp = ast_to_string(a->import_stmt.filename);
+    sds tmp = ast_to_string(a->import_stmt.filename, indentation_level);
     buf = sdscatfmt(buf, "import %s", tmp);
     sdsfree(tmp);
 
     return buf;
 }
 
-static sds grouped_assignment_stmt_to_str(ast *a) {
+static sds grouped_assignment_stmt_to_str(ast *a, unsigned int *indentation_level) {
     sds buf = sdsnew("[");
 
     int n = arrlen(a->grouped_assignment_stmt.names);
@@ -448,7 +456,7 @@ static sds grouped_assignment_stmt_to_str(ast *a) {
 
     buf = sdscat(buf, " = ");
 
-    sds tmp = ast_to_string(a->grouped_assignment_stmt.call_expr);
+    sds tmp = ast_to_string(a->grouped_assignment_stmt.call_expr, indentation_level);
     buf = sdscat(buf, tmp);
     sdsfree(tmp);
 
@@ -456,22 +464,22 @@ static sds grouped_assignment_stmt_to_str(ast *a) {
     return buf;
 }
 
-sds ast_to_string(ast *a) {
+sds ast_to_string(ast *a, unsigned int *indentation_level) {
 
     if (a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt || a->tag == ast_initial_stmt || a->tag == ast_global_stmt) {
-        return assignment_stmt_to_str(a);
+        return assignment_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_grouped_assignment_stmt) {
-        return grouped_assignment_stmt_to_str(a);
+        return grouped_assignment_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_return_stmt) {
-        return return_stmt_to_str(a);
+        return return_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_expression_stmt) {
-        return expression_stmt_to_str(a);
+        return expression_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_number_literal) {
@@ -491,31 +499,31 @@ sds ast_to_string(ast *a) {
     }
 
     if (a->tag == ast_prefix_expression) {
-        return prefix_expr_to_str(a);
+        return prefix_expr_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_infix_expression) {
-        return infix_expr_to_str(a);
+        return infix_expr_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_if_expr) {
-        return if_expr_to_str(a);
+        return if_expr_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_while_stmt) {
-        return while_stmt_to_str(a);
+        return while_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_function_statement) {
-        return function_stmt_to_str(a);
+        return function_stmt_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_call_expression) {
-        return call_expr_to_str(a);
+        return call_expr_to_str(a, indentation_level);
     }
 
     if (a->tag == ast_import_stmt) {
-        return import_stmt_to_str(a);
+        return import_stmt_to_str(a, indentation_level);
     }
 
     printf("[WARN] - to_str not implemented to token %s\n", a->token.literal);
@@ -560,6 +568,12 @@ ast *copy_ast(ast *src) {
             a->assignment_stmt.name = copy_ast(src->assignment_stmt.name);
             a->assignment_stmt.value = copy_ast(src->assignment_stmt.value);
             a->assignment_stmt.declaration_position = src->assignment_stmt.declaration_position;
+            if(src->assignment_stmt.unit != NULL) {
+                a->assignment_stmt.unit = strdup(src->assignment_stmt.unit);
+            } else {
+                 a->assignment_stmt.unit = NULL;
+            }
+
             break;
         case ast_grouped_assignment_stmt: {
                                               a->grouped_assignment_stmt.names = NULL;
@@ -587,6 +601,7 @@ ast *copy_ast(ast *src) {
                                          }
 
                                          a->function_stmt.num_return_values = src->function_stmt.num_return_values;
+                                         a->function_stmt.is_end_fn = src->function_stmt.is_end_fn;
 
                                      } break;
         case ast_return_stmt: {

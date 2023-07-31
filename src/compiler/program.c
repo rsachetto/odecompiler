@@ -2,8 +2,6 @@
 #include "../stb/stb_ds.h"
 #include <stdio.h>
 
-extern int indentation_level;
-
 void print_program(program p) {
 
     sds *p_str = program_to_string(p);
@@ -20,13 +18,13 @@ void print_program(program p) {
 
 sds *program_to_string(program p) {
 
-    indentation_level = 0;
+    unsigned int indentation_level = 0;
 
     int n_stmt = arrlen(p);
     sds *return_str = NULL;
 
     for (int i = 0; i < n_stmt; i++) {
-        sds s = ast_to_string(p[i]);
+        sds s = ast_to_string(p[i], &indentation_level);
         if (s) {
             arrput(return_str, s);
         }
