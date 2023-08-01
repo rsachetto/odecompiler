@@ -394,7 +394,7 @@ ast **parse_block_statement(parser *p) {
         ast *stmt = parse_statement(p);
 
         if(stmt) {
-            arrpush(statements, stmt);
+            arrpush(statements, stmt); //NOLINT
         }
         advance_token(p);
     }
@@ -483,7 +483,7 @@ ast **parse_grouped_assignment_names(parser *p) {
     ast **identifiers = NULL;
 
     ast *ident = parse_identifier(p);
-    arrput(identifiers, ident);
+    arrput(identifiers, ident); //NOLINT
 
     declared_variable_entry_value value = {p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
 
@@ -493,7 +493,7 @@ ast **parse_grouped_assignment_names(parser *p) {
         advance_token(p);
         advance_token(p);
         ident = parse_identifier(p);
-        arrput(identifiers, ident);
+        arrput(identifiers, ident); //NOLINT
         value = (declared_variable_entry_value){p->cur_token.line_number, false, p->cur_token.line_number, ast_grouped_assignment_stmt};
         shput(p->declared_variables, ident->identifier.value, value);
     }
@@ -587,13 +587,13 @@ ast **parse_function_parameters(parser *p) {
 
     ast *ident = parse_identifier(p);
 
-    arrput(identifiers, ident);
+    arrput(identifiers, ident); //NOLINT
 
     while(peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
         ident = parse_identifier(p);
-        arrput(identifiers, ident);
+        arrput(identifiers, ident); //NOLINT
     }
 
     if(!expect_peek(p, RPAREN)) {
@@ -639,7 +639,7 @@ static void count_in_while(ast *a, program *stmts) {
 void count_return(ast *a, program *stmts) {
 
     if(a->tag == ast_return_stmt) {
-        arrput(*stmts, a);
+        arrput(*stmts, a); //NOLINT
     }
 
     if(a->tag == ast_expression_stmt) {
@@ -727,12 +727,12 @@ ast **parse_expression_list(parser *p, bool with_paren) {
         advance_token(p);
     }
 
-    arrpush(list, parse_expression(p, LOWEST));
+    arrpush(list, parse_expression(p, LOWEST)); //NOLINT
 
     while(peek_token_is(p, COMMA)) {
         advance_token(p);
         advance_token(p);
-        arrpush(list, parse_expression(p, LOWEST));
+        arrpush(list, parse_expression(p, LOWEST)); //NOLINT
     }
 
     if(with_paren) {
