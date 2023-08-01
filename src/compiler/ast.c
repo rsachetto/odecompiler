@@ -580,7 +580,7 @@ ast *copy_ast(ast *src) {
                                               int n = arrlen(src->grouped_assignment_stmt.names);
 
                                               for (int i = 0; i < n; i++) {
-                                                  arrput(a->grouped_assignment_stmt.names, copy_ast(src->grouped_assignment_stmt.names[i]));
+                                                  arrput(a->grouped_assignment_stmt.names, copy_ast(src->grouped_assignment_stmt.names[i])); //NOLINT
                                               }
 
                                               a->grouped_assignment_stmt.call_expr = src->grouped_assignment_stmt.call_expr;
@@ -591,13 +591,13 @@ ast *copy_ast(ast *src) {
                                          int n = arrlen(src->function_stmt.parameters);
                                          a->function_stmt.parameters = NULL;
                                          for (int i = 0; i < n; i++) {
-                                             arrput(a->function_stmt.parameters, copy_ast(src->function_stmt.parameters[i]));
+                                             arrput(a->function_stmt.parameters, copy_ast(src->function_stmt.parameters[i])); //NOLINT
                                          }
 
                                          n = arrlen(src->function_stmt.body);
                                          a->function_stmt.body = NULL;
                                          for (int i = 0; i < n; i++) {
-                                             arrput(a->function_stmt.body, copy_ast(src->function_stmt.body[i]));
+                                             arrput(a->function_stmt.body, copy_ast(src->function_stmt.body[i])); //NOLINT
                                          }
 
                                          a->function_stmt.num_return_values = src->function_stmt.num_return_values;
@@ -608,7 +608,7 @@ ast *copy_ast(ast *src) {
                                   int n = arrlen(src->return_stmt.return_values);
                                   a->return_stmt.return_values = NULL;
                                   for (int i = 0; i < n; i++) {
-                                      arrput(a->return_stmt.return_values, copy_ast(src->return_stmt.return_values[i]));
+                                      arrput(a->return_stmt.return_values, copy_ast(src->return_stmt.return_values[i])); //NOLINT
                                   }
 
                               } break;
@@ -621,7 +621,7 @@ ast *copy_ast(ast *src) {
                                  int n = arrlen(src->while_stmt.body);
                                  a->while_stmt.body = NULL;
                                  for (int i = 0; i < n; i++) {
-                                     arrput(a->while_stmt.body, copy_ast(src->while_stmt.body[i]));
+                                     arrput(a->while_stmt.body, copy_ast(src->while_stmt.body[i])); //NOLINT
                                  }
                              } break;
         case ast_import_stmt:
@@ -642,13 +642,13 @@ ast *copy_ast(ast *src) {
                               int n = arrlen(src->if_expr.consequence);
                               a->if_expr.consequence = NULL;
                               for (int i = 0; i < n; i++) {
-                                  arrput(a->if_expr.consequence, copy_ast(src->if_expr.consequence[i]));
+                                  arrput(a->if_expr.consequence, copy_ast(src->if_expr.consequence[i])); //NOLINT
                               }
 
                               n = arrlen(src->if_expr.alternative);
                               a->if_expr.alternative = NULL;
                               for (int i = 0; i < n; i++) {
-                                  arrput(a->if_expr.alternative, copy_ast(src->if_expr.alternative[i]));
+                                  arrput(a->if_expr.alternative, copy_ast(src->if_expr.alternative[i])); //NOLINT
                               }
 
                           } break;
@@ -658,7 +658,7 @@ ast *copy_ast(ast *src) {
                           int n = arrlen(src->call_expr.arguments);
                           a->call_expr.arguments = NULL;
                           for (int i = 0; i < n; i++) {
-                              arrput(a->call_expr.arguments, copy_ast(src->call_expr.arguments[i]));
+                              arrput(a->call_expr.arguments, copy_ast(src->call_expr.arguments[i])); //NOLINT
                           }
 
                           break;
