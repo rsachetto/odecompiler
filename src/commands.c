@@ -1,8 +1,10 @@
 #include "commands.h"
 #include "code_converter.h"
+#include "compiler/token.h"
 #include "file_utils/file_utils.h"
 #include "md5/md5.h"
 #include "model_config.h"
+#include "ode_shell.h"
 #include "stb/stb_ds.h"
 #include "to_latex.h"
 #include "gnuplot_utils.h"
@@ -174,7 +176,8 @@ static bool should_complete_model(const char *c) {
             "solveplot",
             "unload",
             "vars",
-            "plotvars"
+            "plotvars",
+            "replotvars"
     };
 
     size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
@@ -959,6 +962,10 @@ COMMAND_FUNCTION(plotvar) {
     return plot_or_replot_var_helper(shell_state, tokens, CMD_PLOT, num_args);
 }
 
+COMMAND_FUNCTION(replotvar) {
+    return plot_or_replot_var_helper(shell_state, tokens, CMD_REPLOT, num_args);
+}
+
 COMMAND_FUNCTION(plotvars) {
 
     unsigned int run_number;
@@ -1014,7 +1021,13 @@ COMMAND_FUNCTION(plotvars) {
         to_free = 2;
     }
 
-    plotvar(shell_state, new_tokens, num_args + 1);
+    if(STRING_EQUALS(tokens[0], "plotvars")) {
+        plot_or_replot_var_helper(shell_state, new_tokens, CMD_PLOT, num_args+1);
+        //plotvar(shell_state, new_tokens, num_args + 1);
+    }
+    else {
+        plot_or_replot_var_helper(shell_state, new_tokens, CMD_REPLOT, num_args+1);
+    }
 
     //The tokens variable will be freed on the parse_and_execute_command function
     //so we can free when new_tokens = tokens[x]
@@ -1024,9 +1037,10 @@ COMMAND_FUNCTION(plotvars) {
     return false;
 }
 
-COMMAND_FUNCTION(replotvar) {
-    return plot_or_replot_var_helper(shell_state, tokens, CMD_REPLOT, num_args);
+COMMAND_FUNCTION(replotvars) {
+    return plotvars(shell_state, tokens, num_args);
 }
+
 
 COMMAND_FUNCTION(list) {
 
@@ -2130,6 +2144,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
         ADD_CMD(plotvar,       1, 3, "Plots the output of a model execution (one or more variables). " PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
         ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. " PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
         ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). " PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
+        ADD_CMD(replotvars,    0, 2, "Add the output of a model execution (all variables) in to an existing plot. " PLOT_ARGS " replotvars sir or replotvars sir 1 or replotvars 1");
         ADD_CMD(closeplot,     0, 0, "Close the current plot");
     }
 

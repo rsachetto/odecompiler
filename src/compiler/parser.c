@@ -1128,7 +1128,7 @@ static void process_imports(parser *p, program original_program, char *import_pa
                 } else {
                     declared_function_entry fn_entry = shgets(parser_new->declared_functions, program_new[s]->function_stmt.name->identifier.value);
                     shputs(p->declared_functions, fn_entry);
-                    arrput(original_program, program_new[s]);
+                    arrput(original_program, program_new[s]); //NOLINT
                 }
 
             } else if(program_new[s]->tag == ast_global_stmt) {
@@ -1139,7 +1139,7 @@ static void process_imports(parser *p, program original_program, char *import_pa
                     declared_variable_entry var_entry = shgets(parser_new->global_scope, program_new[s]->function_stmt.name->identifier.value);
                     shputs(p->global_scope, var_entry);
 
-                    arrput(original_program, program_new[s]);
+                    arrput(original_program, program_new[s]); //NOLINT
                 }
             } else {
                 free_ast(program_new[s]);
