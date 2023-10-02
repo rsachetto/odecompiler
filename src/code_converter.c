@@ -78,7 +78,7 @@ static sds assignment_stmt_to_c(ast *a, unsigned int *indentation_level) {
 
             if(has_ode_symbol) {
                 int position = a->assignment_stmt.declaration_position;
-                //TODO: remove the global solve dependency for this function
+                //TODO: remove the global solver dependency for this function
                 if(solver == CVODE_SOLVER) {
                     sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
                     buf = sdscatprintf(buf, "%sNV_Ith_S(rDY, %d) = %s;", indent_spaces[*indentation_level], position - 1, tmp);
@@ -1197,16 +1197,21 @@ bool convert_to_c(program prog, FILE *file, solver_type p_solver) {
 
     for(int i = 0; i < n_stmt; i++) {
         ast *a = prog[i];
-        if(a->tag == ast_function_statement) {
-            arrput(functions, a);
-        } else if(a->tag == ast_initial_stmt) {
-            arrput(initial, a);
-        } else if(a->tag == ast_global_stmt) {
-            arrput(globals, a);
-        } else if(a->tag == ast_import_stmt) {
-            arrput(imports, a);
-        } else {
-            arrput(main_body, a);
+        switch(a->tag) {
+            case ast_function_statement:
+                arrput(functions, a);
+                break;
+            case ast_initial_stmt:
+                arrput(initial, a);
+                break;
+            case ast_global_stmt:
+                arrput(globals, a);
+                break;
+            case ast_import_stmt:
+                arrput(imports, a);
+                break;
+            default:
+                arrput(main_body, a);
         }
     }
 
