@@ -16,7 +16,7 @@ void copy_token(token *dest, const token *src) {
     }
 }
 
-token new_token(token_type type, char *ch, uint32_t len, int line, const char *file_name) {
+token new_token(token_type type, char *ch, uint32_t len, uint32_t line, const char *file_name) {
     token t;
     t.type = type;
     t.line_number = line;

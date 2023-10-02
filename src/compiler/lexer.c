@@ -132,7 +132,7 @@ static char *read_identifier(lexer *l, uint32_t *len, bool for_unit) {
         read_char(l);
     }
 
-    int position = l->position;
+    uint32_t position = l->position;
 
     while(isalpha(l->ch) || isdigit(l->ch) || l->ch == '_' || l->ch == '\'') {
         read_char(l);
@@ -144,7 +144,7 @@ static char *read_identifier(lexer *l, uint32_t *len, bool for_unit) {
 
 char *read_string(lexer *l, uint32_t *len) {
 
-    int position = l->position+1;
+    uint32_t position = l->position+1;
 
     while(true) {
         read_char(l);
@@ -159,7 +159,7 @@ char *read_string(lexer *l, uint32_t *len) {
 
 char *read_number(lexer *l, uint32_t *len) {
 
-    int position = l->position;
+    uint32_t position = l->position;
 
     while (isdigit(l->ch)) {
         read_char(l);
@@ -221,118 +221,121 @@ token next_token(lexer *l) {
         skip_whitespace(l);
     }
 
+    uint32_t current_line = l->current_line;
+    const char *file_name = l->file_name;
+
     switch (l->ch) {
         case '=':
             if(peek_char(l) == '=') {
                 read_char(l);
-                tok = new_token(EQ, "==", 2, l->current_line, l->file_name);
+                tok = new_token(EQ, "==", 2, current_line, file_name);
             }
             else {
-                tok = new_token(ASSIGN, "=", 1, l->current_line, l->file_name);
+                tok = new_token(ASSIGN, "=", 1, current_line, file_name);
             }
             break;
         case '+':
-            tok = new_token(PLUS, "+", 1, l->current_line, l->file_name);
+            tok = new_token(PLUS, "+", 1, current_line, file_name);
             break;
         case '-':
-            tok = new_token(MINUS, "-", 1, l->current_line, l->file_name);
+            tok = new_token(MINUS, "-", 1, current_line, file_name);
             break;
         case '!':
             if(peek_char(l) == '=') {
                 read_char(l);
-                tok = new_token(NOT_EQ, "!=", 2, l->current_line, l->file_name);
+                tok = new_token(NOT_EQ, "!=", 2, current_line, file_name);
             }
             else {
-                tok = new_token(BANG, "!", 1, l->current_line, l->file_name);
+                tok = new_token(BANG, "!", 1, current_line, file_name);
             }
             break;
         case '/':
-            tok = new_token(SLASH, "/", 1,  l->current_line, l->file_name);
+            tok = new_token(SLASH, "/", 1,  current_line, file_name);
             break;
         case '*':
-            tok = new_token(ASTERISK, "*", 1, l->current_line, l->file_name);
+            tok = new_token(ASTERISK, "*", 1, current_line, file_name);
             break;
         case '<':
             if(peek_char(l) == '=') {
                 read_char(l);
-                tok = new_token(LEQ, "<=", 2, l->current_line, l->file_name);
+                tok = new_token(LEQ, "<=", 2, current_line, file_name);
             }
             else {
-                tok = new_token(LT, "<", 1, l->current_line, l->file_name);
+                tok = new_token(LT, "<", 1, current_line, file_name);
             }
             break;
         case '>':
             if(peek_char(l) == '=') {
                 read_char(l);
-                tok = new_token(GEQ, ">=", 2, l->current_line, l->file_name);
+                tok = new_token(GEQ, ">=", 2, current_line, file_name);
             } else {
-                tok = new_token(GT, ">", 1, l->current_line, l->file_name);
+                tok = new_token(GT, ">", 1, current_line, file_name);
             }
             break;
         case ';':
-            tok = new_token(SEMICOLON, ";", 1, l->current_line, l->file_name);
+            tok = new_token(SEMICOLON, ";", 1, current_line, file_name);
             break;
         case '(':
-            tok = new_token(LPAREN, "(", 1, l->current_line, l->file_name);
+            tok = new_token(LPAREN, "(", 1, current_line, file_name);
             break;
         case ')':
-            tok = new_token(RPAREN, ")", 1,  l->current_line, l->file_name);
+            tok = new_token(RPAREN, ")", 1,  current_line, file_name);
             break;
         case '\"':
             tok.type = STRING;
             tok.literal = read_string(l, &tok.literal_len);
-            tok.line_number = l->current_line;
-            tok.file_name   =  l->file_name;
+            tok.line_number = current_line;
+            tok.file_name   =  file_name;
             break;
         case ',':
-            tok = new_token(COMMA, ",", 1, l->current_line, l->file_name);
+            tok = new_token(COMMA, ",", 1, current_line, file_name);
             break;
         case '{':
-            tok = new_token(LBRACE, "{", 1, l->current_line, l->file_name);
+            tok = new_token(LBRACE, "{", 1, current_line, file_name);
             break;
         case '}':
-            tok = new_token(RBRACE, "}", 1, l->current_line, l->file_name);
+            tok = new_token(RBRACE, "}", 1, current_line, file_name);
             break;
         case '[':
-            tok = new_token(LBRACKET, "[", 1, l->current_line, l->file_name);
+            tok = new_token(LBRACKET, "[", 1, current_line, file_name);
             break;
         case ']':
-            tok = new_token(RBRACKET, "]", 1, l->current_line, l->file_name);
+            tok = new_token(RBRACKET, "]", 1, current_line, file_name);
             break;
         case '$':
             tok.type = UNIT_DECL;
-            tok.line_number = l->current_line;
-            tok.file_name   = l->file_name;
+            tok.line_number = current_line;
+            tok.file_name   = file_name;
             tok.literal = read_identifier(l, &tok.literal_len, true);
             break;
         case '\0':
             tok.literal = NULL;
             tok.type = ENDOF;
-            tok.line_number = l->current_line;
-            tok.file_name   = l->file_name;
+            tok.line_number = current_line;
+            tok.file_name   = file_name;
             break;
         default:
             if(isalpha(l->ch) || l->ch == '_') {
                 tok.literal = read_identifier(l, &tok.literal_len, false);
                 tok.type = lookup_ident(&tok);
-                tok.line_number = l->current_line;
-                tok.file_name   = l->file_name;
+                tok.line_number = current_line;
+                tok.file_name   = file_name;
                 return tok;
             }
             else if(isdigit(l->ch)) {
                 tok.literal = read_number(l, &tok.literal_len);
                 tok.type = NUMBER;
-                tok.line_number = l->current_line;
-                tok.file_name   = l->file_name;
+                tok.line_number = current_line;
+                tok.file_name   = file_name;
 
                 if(tok.literal == NULL) {
-                    tok = new_token(ILLEGAL, NULL, 1, l->current_line, l->file_name);
+                    tok = new_token(ILLEGAL, NULL, 1, current_line, file_name);
                 }
 
                 return tok;
             }
             else {
-                tok = new_token(ILLEGAL, "ILLEGAL", 1, l->current_line, l->file_name);
+                tok = new_token(ILLEGAL, "ILLEGAL", 1, current_line, file_name);
             }
     }
 
