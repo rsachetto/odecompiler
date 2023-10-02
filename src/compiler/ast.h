@@ -8,7 +8,7 @@
 typedef struct assignment_statement_t {
     struct ast_t *name;
     struct ast_t *value;
-    int declaration_position;
+    uint32_t declaration_position;
     char *unit;
 } assignment_statement;
 

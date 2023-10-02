@@ -11,7 +11,7 @@
 #define ODE_GET_N_IT "ode_get_num_iterations"
 
 typedef struct declared_variable_entry_value_t {
-    int  declaration_position;
+    uint32_t  declaration_position;
     bool initialized;
     uint32_t line_number;
     ast_tag tag;
