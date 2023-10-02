@@ -55,27 +55,3 @@ long string_to_long(char *string, bool *error) {
 
     return result;
 }
-
-void strip_extra_spaces(char* str) {
-    int i, x;
-    for(i=x=0; str[i]; ++i) {
-        if(!isspace(str[i]) || (i > 0 && !isspace(str[i-1]))) {
-            str[x++] = str[i];
-        }
-    }
-    str[x] = '\0';
-}
-
-bool string_ends_with(const char *str, const char *suffix) {
-    if (!str || !suffix)
-        return false;
-
-    size_t lenstr = strlen(str);
-    size_t lensuffix = strlen(suffix);
-
-    if (lensuffix >  lenstr)
-        return false;
-
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-}
-

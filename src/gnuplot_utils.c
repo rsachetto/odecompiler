@@ -60,15 +60,6 @@ void reset_terminal(struct popen2 *handle) {
     gnuplot_cmd(handle, "set output");
 }
 
-bool have_gnuplot(struct shell_variables *shell_state) {
-    if(!shell_state->default_gnuplot_term) {
-        printf("Error - gnuplot not installed or not in path\n");
-        return false;
-    }
-
-    return true;
-}
-
 bool check_gnuplot_and_set_default_terminal(struct shell_variables *shell_state) {
 
     bool gnuplot_installed = can_run_command("gnuplot");

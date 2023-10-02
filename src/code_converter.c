@@ -77,7 +77,7 @@ static sds assignment_stmt_to_c(ast *a, unsigned int *indentation_level) {
             bool has_ode_symbol = (a->assignment_stmt.name->identifier.value[strlen(a->assignment_stmt.name->identifier.value) - 1] == '\'');
 
             if(has_ode_symbol) {
-                int position = a->assignment_stmt.declaration_position;
+                uint32_t position = a->assignment_stmt.declaration_position;
                 //TODO: remove the global solver dependency for this function
                 if(solver == CVODE_SOLVER) {
                     sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
@@ -465,7 +465,7 @@ void write_initial_conditions(program p, FILE *file) {
 
         ast *a = p[i];
 
-        int position = a->assignment_stmt.declaration_position;
+        uint32_t position = a->assignment_stmt.declaration_position;
 
         if(solver == CVODE_SOLVER) {
             if(a->assignment_stmt.unit != NULL) {
@@ -610,7 +610,7 @@ static bool generate_initial_conditions_values(program p, FILE *file, unsigned i
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
 
-        int position = a->assignment_stmt.declaration_position;
+        uint32_t position = a->assignment_stmt.declaration_position;
         sds value = ast_to_c(a->assignment_stmt.value, indentation_level);
         fprintf(file, "    values[%d] = %s; //%s\n", position - 1, value, a->assignment_stmt.name->identifier.value);
         sdsfree(value);
@@ -638,7 +638,7 @@ void write_odes_old_values(program p, FILE *file) {
 
         if(a->tag != ast_ode_stmt) continue;
 
-        int position = a->assignment_stmt.declaration_position;
+        uint32_t position = a->assignment_stmt.declaration_position;
 
         if(solver == CVODE_SOLVER) {
             fprintf(file, "    const real %.*s =  NV_Ith_S(sv, %d);\n", (int) strlen(a->assignment_stmt.name->identifier.value) - 1,
@@ -675,7 +675,7 @@ void write_variables_or_body(program p, FILE *file, unsigned int *indentation_le
     for(int i = 0; i < n_stmt; i++) {
         ast *a = p[i];
         if(a->tag == ast_ode_stmt) {
-            int position = a->assignment_stmt.declaration_position;
+            uint32_t position = a->assignment_stmt.declaration_position;
             sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
             sds name = ast_to_c(a->assignment_stmt.name, indentation_level);
             shput(ode_position, name, position);

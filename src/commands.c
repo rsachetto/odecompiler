@@ -13,7 +13,6 @@
 #include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <stdint.h>
 #include <unistd.h>
 
 #include "command_corrector.h"
