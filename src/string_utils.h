@@ -9,8 +9,8 @@
 
 typedef char **string_array;
 
-int string_cmp(const void *a, const void *b);
+int    string_cmp(const void *a, const void *b);
+long   string_to_long(char *string, bool *error);
 double string_to_double(char *string);
-long string_to_long(char *string, bool *error);
 
 #endif /* __STRING_UTILS_H */
