@@ -60,7 +60,9 @@ static inline bool expect_peek(parser *p, token_type t) {
 static bool can_be_in_init(parser *p, const ast *a) {
 
     switch(a->tag) {
-        case ast_boolean_literal://FIXME: this should not be allowed in init, maybe in function calls
+        case ast_boolean_literal:
+            return false;
+
         case ast_number_literal:
             return true;
 
@@ -82,8 +84,10 @@ static bool can_be_in_init(parser *p, const ast *a) {
         }
         case ast_expression_stmt:
             return can_be_in_init(p, a->expr_stmt);
+
         case ast_prefix_expression:
             return can_be_in_init(p, a->prefix_expr.right);
+
         case ast_infix_expression:
             return can_be_in_init(p, a->infix_expr.left) && can_be_in_init(p, a->infix_expr.right);
 
@@ -96,6 +100,7 @@ static bool can_be_in_init(parser *p, const ast *a) {
 
             return true;
         }
+
         default:
             return false;
     }
@@ -323,7 +328,7 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
         shput(p->declared_variables, tmp, value);
         stmt->assignment_stmt.declaration_position = ode_count;
-        //TODO: check if ODE is assigne twice!!
+        //TODO: check if ODE is assigned twice!!
         ode_count++;
         free(tmp);
     }
@@ -869,6 +874,7 @@ static void check_declaration(parser *p, ast *src) {
         case ast_number_literal:
         case ast_boolean_literal:
             break;
+
         case ast_identifier: {
 
             char *id_name = src->identifier.value;
@@ -942,7 +948,8 @@ static void check_declaration(parser *p, ast *src) {
         case ast_initial_stmt: {
             check_declaration(p, src->assignment_stmt.value);
             if(!can_be_in_init(p, src->assignment_stmt.value)) {
-                ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name, "ODE variables can only be initialized with function calls (with no parameters or global parameters), global variables or numerical values.\n");
+                ADD_ERROR_WITH_LINE(src->token.line_number, src->token.file_name,
+                                    "ODE variables can only be initialized with function calls with no parameters, global variables or numerical values.\n");
             }
 
             char *ode_name = src->assignment_stmt.name->identifier.value;
@@ -1143,7 +1150,6 @@ static void process_imports(parser *p, program original_program, char *import_pa
                 }
             } else {
                 free_ast(program_new[s]);
-                //TODO: add a warning to the parser
                 fprintf(stderr, "[WARN] - Importing from file %s in line %d. Currently, we only import functions or global variables. Nested imports will not be imported!\n", import_file_name, program_new[s]->token.line_number);
             }
         }

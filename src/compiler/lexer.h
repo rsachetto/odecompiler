@@ -7,10 +7,10 @@
 typedef struct lexer_t {
     const char *input;
     const char *file_name;
-    size_t input_len;
-    size_t position;
-    size_t read_position;
-    size_t current_line;
+    uint32_t input_len;
+    uint32_t position;
+    uint32_t read_position;
+    uint32_t current_line;
     char ch;
 } lexer;
 

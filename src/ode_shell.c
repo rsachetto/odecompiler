@@ -90,6 +90,30 @@ static void setup_ctrl_c_handler() {
     sigemptyset(&s.sa_mask);
     s.sa_flags = SA_RESTART;
     sigaction(SIGINT, &s, NULL);
+
+    ///////////////////////////////////////////////////////////////////
+    //all of this is to avoid printing ^C after the user press crtl+c//
+    ///////////////////////////////////////////////////////////////////
+    struct termios termios_new;
+
+    int rc = tcgetattr(0, &termios_save );
+    if (rc) {
+        perror("tcgetattr"); exit(1);
+    }
+
+    rc = atexit(reset_the_terminal);
+    if (rc) {
+        perror("atexit"); exit(1);
+    }
+
+    termios_new = termios_save;
+    termios_new.c_lflag &= ~ECHOCTL;
+    rc = tcsetattr(0, 0, &termios_new );
+
+    if (rc) {
+        perror("tcsetattr"); exit(1);
+    }
+
 }
 
 /* Our argp parser. */
@@ -155,23 +179,6 @@ int main(int argc, char **argv) {
     }
 
     bool quit = false;
-
-    ///////////////////////////////////////////////////////////////////
-    //all of this is to avoid printing ^C after the user press crtl+c//
-    ///////////////////////////////////////////////////////////////////
-    struct termios termios_new;
-
-    int rc = tcgetattr(0, &termios_save );
-    if (rc) {perror("tcgetattr"); exit(1); }
-
-    rc = atexit(reset_the_terminal);
-    if (rc) {perror("atexit"); exit(1); }
-
-    termios_new = termios_save;
-    termios_new.c_lflag &= ~ECHOCTL;
-    rc = tcsetattr(0, 0, &termios_new );
-    if (rc) {perror("tcsetattr"); exit(1);}
-    ////////////////////////////////////////////////////////////////////
 
     while ((line = readline(PROMPT)) != 0) {
         //We do not want blank lines in the history

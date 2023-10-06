@@ -14,12 +14,11 @@ typedef struct token_t {
     token_type type;
     char *literal;
     uint32_t literal_len;
-    int line_number;
+    uint32_t line_number;
     const char *file_name;
 } token;
 
-token new_token(token_type type, char *ch, uint32_t len, int line, const char *file_name);
-//token_type lookup_ident(const token *t);
+token new_token(token_type type, char *ch, uint32_t len, uint32_t line, const char *file_name);
 void copy_token(token *dest, const token *src);
 void print_token(const token *t);
 
