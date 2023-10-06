@@ -135,7 +135,7 @@ static char *autocomplete_command(const char *text, int state) {
     /* Return the next name which partially matches from the command list. */
     while(list_index < num_commands) {
 
-        char *name = commands[list_index].key;
+        const char *name = commands[list_index].key;
         list_index++;
 
         if(strncmp(name, text, len) == 0) {
@@ -181,7 +181,7 @@ static bool should_complete_model(const char *c) {
     };
 
     size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
-    for(int i = 0; i < len; i++) {
+    for(size_t i = 0; i < len; i++) {
         if(STR_EQUALS(c, autocompletable_commands[i])) {
             return true;
         }
@@ -202,7 +202,7 @@ static bool should_complete_model_and_var(const char *c) {
             "replotvar"};
 
     size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
-    for(int i = 0; i < len; i++) {
+    for(size_t i = 0; i < len; i++) {
         if(STR_EQUALS(c, autocompletable_commands[i])) {
             return true;
         }
@@ -419,7 +419,7 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         if(!model_config->plot_config.title) {
-            char *title = get_var_name(model_config, 2);
+            const char *title = get_var_name(model_config, 2);
             if(title)
                 model_config->plot_config.title = strdup(title);
             else
@@ -546,7 +546,7 @@ COMMAND_FUNCTION(solve) {
     return true;
 }
 
-static bool plot_helper(struct shell_variables *shell_state, const char *command, command_type c_type, char *model_name, unsigned int run_number, sds custom_gnuplot_cmd) {
+static bool plot_helper(struct shell_variables *shell_state, const char *command, command_type c_type, const char *model_name, unsigned int run_number, sds custom_gnuplot_cmd) {
 
     struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, command, model_name, run_number);
 
@@ -733,7 +733,7 @@ COMMAND_FUNCTION(replottofile) {
     return plot_file_helper(shell_state, tokens, CMD_REPLOT_FILE, num_args);
 }
 
-static bool setplot_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args, bool quiet) {
+static bool setplot_helper(struct shell_variables *shell_state, const sds *tokens, command_type c_type, int num_args, bool quiet) {
 
     const char *command = tokens[0];
 
@@ -928,7 +928,7 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
 
     get_model_name_and_n_run_one_to_three_args(tokens, num_args, &model_name, &run_number, &tmp);
 
-    struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, tokens[0], model_name, run_number);
+    const struct model_config *model_config = get_model_and_n_runs_for_plot_cmds(shell_state, tokens[0], model_name, run_number);
     if(!model_config) {
         sdsfreesplitres(vars_to_plot, varcount);
         return false;
@@ -1583,9 +1583,9 @@ COMMAND_FUNCTION(unload) {
     return true;
 }
 
-static bool set_reload_helper(struct shell_variables *shell_state, sds *tokens, int num_args, command_type cmd_type) {
+static bool set_reload_helper(struct shell_variables *shell_state, const sds *tokens, int num_args, command_type cmd_type) {
 
-    char *command = tokens[0];
+    const char *command = tokens[0];
     char *arg = tokens[1];
     bool is_zero;
 
@@ -1716,7 +1716,6 @@ bool run_commands_from_file(struct shell_variables *shell_state, char *file_name
             }
 
             if(quit_shell) {
-                //clean_and_exit(shell_state);
                 return false;
             }
         }
@@ -1756,7 +1755,7 @@ COMMAND_FUNCTION(odestolatex) {
     sds *odes = odes_to_latex(model_config->program);
 
     for(int i = 0; i < arrlen(odes); i++) {
-        char *first_paren = strchr(odes[i], '(');
+        const char *first_paren = strchr(odes[i], '(');
         if(first_paren) {
             printf("%.*s ", (int) (first_paren - &odes[i][0]), odes[i]);
             printf("%.*s\n", (int) strlen(first_paren + 1) - 1, first_paren + 1);
@@ -1781,7 +1780,7 @@ COMMAND_FUNCTION(listruns) {
 
     struct run_info *run_info = model_config->runs;
 
-    printf("\nModel %s was solved %d time(s).\n\n", model_config->model_name, n_runs);
+    printf("\nModel %s was solved %u time(s).\n\n", model_config->model_name, n_runs);
 
     CREATE_TABLE(table);
 
@@ -1890,7 +1889,7 @@ COMMAND_FUNCTION(closeplot) {
 
 COMMAND_FUNCTION(converttoc) {
 
-    char *file_name = tokens[num_args];
+    const char *file_name = tokens[num_args];
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
 
