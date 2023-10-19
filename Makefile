@@ -1,4 +1,5 @@
 .PHONY: build/libfort.a
+.PHONY: build/libcompiler.a
 
 MKDIR_P = mkdir -p
 
@@ -25,32 +26,11 @@ debug_set:
 	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -Wall -Wno-switch -Wno-misleading-indentation)
 	$(eval OPT_TYPE=debug)
 
-bin/ode_shell: src/ode_shell.c build/code_converter.o build/parser.o build/lexer.o build/ast.o build/token.o build/program.o build/file_utils.o build/sds.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/enum_to_string.o build/md5.o build/gnuplot_utils.o build/libfort.a
+bin/ode_shell: src/ode_shell.c build/code_converter.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/md5.o build/gnuplot_utils.o build/libfort.a build/libcompiler.a
 	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
 
-bin/odec: src/ode_compiler.c build/code_converter.o build/enum_to_string.o build/parser.o build/lexer.o build/program.o build/ast.o build/token.o build/file_utils.o build/sds.o build/string_utils.o
+bin/odec: src/ode_compiler.c build/code_converter.o build/string_utils.o build/libcompiler.a
 	gcc ${OPT_FLAGS} $^ -o bin/odec
-
-build/token.o: src/compiler/token.c src/compiler/token.h src/compiler/token_enum.h
-	gcc ${OPT_FLAGS} -c  src/compiler/token.c -o  build/token.o
-
-build/lexer.o: src/compiler/lexer.c src/compiler/lexer.h
-	gcc ${OPT_FLAGS} -c  src/compiler/lexer.c -o  build/lexer.o
-
-build/sds.o: src/string/sds.c src/string/sds.h
-	gcc ${OPT_FLAGS} -c src/string/sds.c -o  build/sds.o
-
-build/file_utils.o: src/file_utils/file_utils.c src/file_utils/file_utils.h
-	gcc ${OPT_FLAGS} -c src/file_utils/file_utils.c -o  build/file_utils.o
-
-build/ast.o: src/compiler/ast.c src/compiler/ast.h
-	gcc ${OPT_FLAGS} -c  src/compiler/ast.c -o  build/ast.o
-
-build/parser.o: src/compiler/parser.c  src/compiler/parser.h
-	gcc ${OPT_FLAGS} -c  src/compiler/parser.c -o  build/parser.o
-
-build/program.o: src/compiler/program.c  src/compiler/program.h
-	gcc ${OPT_FLAGS} -c  src/compiler/program.c -o  build/program.o
 
 build/code_converter.o: src/code_converter.c src/code_converter.h
 	gcc ${OPT_FLAGS} -c  src/code_converter.c -o build/code_converter.o
@@ -70,9 +50,6 @@ build/inotify_helpers.o: src/inotify_helpers.c src/inotify_helpers.h
 build/to_latex.o: src/to_latex.c src/to_latex.h
 	gcc ${OPT_FLAGS} -c  src/to_latex.c -o build/to_latex.o
 
-build/enum_to_string.o: src/compiler/enum_to_string.c src/compiler/enum_to_string.h src/compiler/token_enum.h
-	gcc ${OPT_FLAGS} -c src/compiler/enum_to_string.c -o build/enum_to_string.o
-
 build/pipe_utils.o: src/pipe_utils.c src/pipe_utils.h
 	gcc ${OPT_FLAGS} -c src/pipe_utils.c -o build/pipe_utils.o
 
@@ -89,7 +66,11 @@ build/libfort.a:
 	cd src/libfort/src/ && ${MAKE} ${OPT_TYPE}
 	mv src/libfort/src/libfort.a build
 
+build/libcompiler.a:
+	cd src/compiler/ && ${MAKE} ${OPT_TYPE}
+	mv src/compiler/libcompiler.a build
+
 clean:
 	cd src/libfort/src/ && ${MAKE} clean
-	rm bin/* build/*.o
-
+	cd src/compiler && ${MAKE} clean
+	${RM} bin/* build/*.o

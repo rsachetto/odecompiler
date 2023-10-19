@@ -138,7 +138,7 @@ void free_model_config(struct model_config *model_config) {
 
     if(model_config == NULL) return;
 
-    for(int r = 0; r < model_config->num_runs; r++) {
+    for(unsigned int r = 0; r < model_config->num_runs; r++) {
 
         free(model_config->runs[r].filename);
         free(model_config->runs[r].vars_max_value);

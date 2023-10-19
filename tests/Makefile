@@ -1,2 +1,16 @@
-all:
-	gcc -g ../src/string/sds.c ../src/file_utils/file_utils.c ../src/compiler/lexer.c ../src/compiler/parser.c ../src/compiler/token.c ../src/compiler/ast.c ../src/compiler/program.c ../src/compiler/enum_to_string.c  ../src/code_converter.c test.c -o test -lcriterion
+.PHONY: build/libcompiler.a
+
+MKDIR_P = mkdir -p
+
+all: build_dir build/libcompiler.a
+	gcc -g ../src/code_converter.c test.c ../build/libcompiler.a -o test -lcriterion
+
+build_dir:
+	@${MKDIR_P} ../build
+
+build/libcompiler.a:
+	cd ../src/compiler/ && ${MAKE} ${OPT_TYPE}
+	mv ../src/compiler/libcompiler.a ../build
+
+clean:
+	${RM} test

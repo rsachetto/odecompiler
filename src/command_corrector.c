@@ -6,6 +6,9 @@
 
 #include "command_corrector.h"
 
+static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789";
+#define ALPHABET_SIZE 36
+
 static ENTRY dict = {};
 
 static char *strtolower(char *word) {
@@ -51,8 +54,8 @@ static void array_cleanup(char **array, int rows) {
     free(array);
 }
 
-static int deletion(char *word, char **array) {
-    int i = 0;
+static int deletion(const char *word, char **array) {
+    size_t i = 0;
     size_t word_len = strlen(word);
 
     for (; i < word_len; i++) {
@@ -61,11 +64,11 @@ static int deletion(char *word, char **array) {
         append(array[i], &pos, word, 0, i);
         append(array[i], &pos, word, i+1, (int)word_len-(i+1));
     }
-    return i;
+    return (int) i;
 }
 
-static int transposition(char *word, char **array, int start_idx) {
-    int i = 0;
+static int transposition(const char *word, char **array, int start_idx) {
+    size_t i = 0;
     size_t word_len = strlen(word);
 
     for (; i < word_len-1; i++) {
@@ -76,15 +79,15 @@ static int transposition(char *word, char **array, int start_idx) {
         append(array[i+start_idx], &pos, word, i,   1);
         append(array[i+start_idx], &pos, word, i+2, (int)word_len-(i+2));
     }
-    return i;
+    return (int) i;
 }
 
-static int alteration(char *word, char **array, int start_idx) {
+static int alteration(const char *word, char **array, int start_idx) {
     int k = 0;
     size_t word_len = strlen(word);
     char c[2] = {};
 
-    for (int i = 0; i < word_len; ++i) {
+    for (size_t i = 0; i < word_len; ++i) {
         for (int j = 0; j < ALPHABET_SIZE; ++j, ++k) {
             int pos = 0;
             c[0] = alphabet[j];
@@ -97,12 +100,12 @@ static int alteration(char *word, char **array, int start_idx) {
     return k;
 }
 
-static int insertion(char *word, char **array, int start_idx) {
+static int insertion(const char *word, char **array, int start_idx) {
     int k = 0;
     size_t word_len = strlen(word);
     char c[2] = {};
 
-    for (int i = 0; i <= word_len; ++i) {
+    for (size_t i = 0; i <= word_len; ++i) {
         for (int j = 0; j < ALPHABET_SIZE; ++j, ++k) {
             int pos = 0;
             c[0] = alphabet[j];
@@ -115,7 +118,7 @@ static int insertion(char *word, char **array, int start_idx) {
     return k;
 }
 
-static size_t edits1_rows(char *word) {
+static size_t edits1_rows(const char *word) {
     size_t size = strlen(word);
 
     return (size)                + // deletion
@@ -124,7 +127,7 @@ static size_t edits1_rows(char *word) {
         (size + 1) * ALPHABET_SIZE;    // insertion
 }
 
-static char **edits1(char *word) {
+static char **edits1(const char *word) {
     int next_idx;
     char **array = malloc(edits1_rows(word) * sizeof(char *));
     if (!array) return NULL;
@@ -137,7 +140,7 @@ static char **edits1(char *word) {
     return array;
 }
 
-static int array_exist(char **array, int rows, char *word) {
+static int array_exist(char **array, int rows, const char *word) {
     for (int i = 0; i < rows; ++i) {
         if (!strcmp(array[i], word)) return 1;
     }
@@ -159,7 +162,7 @@ static char **known_edits2(char **array, int rows, int *e2_rows) {
         e1      = edits1(array[i]);
         e1_rows = edits1_rows(array[i]);
 
-        for (int j = 0; j < e1_rows; j++) {
+        for (size_t j = 0; j < e1_rows; j++) {
 
             if (find(e1[j]) && !array_exist(res, res_size, e1[j])) {
 
@@ -217,7 +220,7 @@ void initialize_corrector(char **commands, int num_commands) {
 
     char *w = NULL;
     for(int i = 0; i < num_commands; i++) {
-        char *word = commands[i];
+        const char *word = commands[i];
         w = strtolower(strdup(word));
 
         if (!update(w)) {
