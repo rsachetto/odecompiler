@@ -7,7 +7,7 @@
 #include "file_utils/file_utils.h"
 #include <argp.h>
 
-const char *argp_program_version = "odecompiler 0.2";
+const char *argp_program_version = "odecompiler 0.3";
 const char *argp_program_bug_address = "<rsachetto@gmail.com>";
 
 /* Program documentation. */
@@ -18,19 +18,19 @@ static char args_doc[] = "";
 
 /* The options we understand. */
 static struct argp_option options[] = {
-  {"input",        'i', "FILE", 0, "Input .ode FILE" },
-  {"output",       'o', "FILE", 0, "Output FILE" },
-  {"import_path",  'I', "PATH", 0, "PATH to search for imported files" },
-  {"solver_impl",  't', "IMPL", 0, "Solver implementation. Available options: cvode, euler. Default: euler"},
-  { 0 }
+    {"input",        'i', "FILE", 0, "Input .ode FILE", 0},
+    {"output",       'o', "FILE", 0, "Output FILE", 0},
+    {"import_path",  'I', "PATH", 0, "PATH to search for imported files", 0},
+    {"solver_impl",  't', "IMPL", 0, "Solver implementation. Available options: cvode, euler. Default: euler", 0},
+    { 0 }
 };
 
 /* Used by main to communicate with parse_opt. */
 struct arguments {
-  char *input_file;
-  char *output_file;
-  char *solver_impl;
-  char *import_path;
+    char *input_file;
+    char *output_file;
+    char *solver_impl;
+    char *import_path;
 };
 
 /* Parse a single option. */
@@ -65,7 +65,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 }
 
 /* Our argp parser. */
-static struct argp argp = { options, parse_opt, args_doc, doc };
+static struct argp argp = { options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 int main(int argc, char **argv) {
 

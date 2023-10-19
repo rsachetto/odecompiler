@@ -35,8 +35,8 @@ static char args_doc[] = "";
 
 /* The options we understand. */
 static struct argp_option options[] = {
-    {"work_dir", 'w', "DIR", 0, "DIR where the shell will start." },
-    {"enable_sixel", 's', 0, 0, "Enable sixel gnuplot terminal when available" },
+    {"work_dir", 'w', "DIR", 0, "DIR where the shell will use as working directory.", 0},
+    {"enable_sixel", 's', 0, 0, "Enable sixel gnuplot terminal when available", 0},
     { 0 }
 };
 
@@ -117,7 +117,7 @@ static void setup_ctrl_c_handler() {
 }
 
 /* Our argp parser. */
-static struct argp argp = { options, parse_opt, args_doc, doc };
+static struct argp argp = { options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
 int main(int argc, char **argv) {
 
