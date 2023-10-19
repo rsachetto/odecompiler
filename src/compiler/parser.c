@@ -140,7 +140,6 @@ static enum operator_precedence get_precedence(token t) {
     }
 }
 
-
 static enum operator_precedence peek_precedence(parser *p) {
     return get_precedence(p->peek_token);
 }
