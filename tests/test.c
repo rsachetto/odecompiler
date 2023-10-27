@@ -82,6 +82,7 @@ Test(compiler, ToRORd) {
     FILE *outfile = fopen(out_file, "w");
 
     convert_to_c(program, outfile, EULER_ADPT_SOLVER);
+
     free_lexer(l);
     free_parser(p);
     free_program(program);
@@ -90,7 +91,11 @@ Test(compiler, ToRORd) {
     char *expected = read_entire_file_with_mmap("ToRORd.c", &size_expected);
     char *converted = read_entire_file_with_mmap(out_file, &size_converted);
 
-    cr_expect_eq(size_expected, size_converted);
+    cr_assert_eq(size_expected, size_converted);
+
+    for(int i = 0; i < size_converted; i++) {
+        cr_assert_eq(expected[i], converted[i]);
+    }
 
     munmap(expected, size_expected);
     munmap(converted, size_converted);
@@ -160,7 +165,6 @@ Test(parser, literal_expression) {
 }
 
 Test(parser, prefix_expressions) {
-
 
     struct {
         char *input;
