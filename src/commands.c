@@ -495,7 +495,7 @@ COMMAND_FUNCTION(solve) {
 
     double simulation_steps = 0;
 
-    char *simulation_steps_str = tokens[num_args];
+    const char *simulation_steps_str = tokens[num_args];
 
     simulation_steps = string_to_double(simulation_steps_str);
 
@@ -740,7 +740,7 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
 
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
 
-    char *cmd_param = tokens[num_args];
+    const char *cmd_param = tokens[num_args];
 
     if(c_type == CMD_SET_PLOT_X || c_type == CMD_SET_PLOT_Y) {
 
@@ -1294,7 +1294,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                     sdsfree(tmp1);
                     sdsfree(tmp2);
 
-                    int old_decl_pos = a->assignment_stmt.declaration_position;
+                    uint32_t old_decl_pos = a->assignment_stmt.declaration_position;
                     bool global = a->assignment_stmt.name->identifier.global;
 
                     free_ast(a->assignment_stmt.value);

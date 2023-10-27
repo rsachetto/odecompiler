@@ -34,6 +34,7 @@
 #define __SDS_H
 
 #define SDS_MAX_PREALLOC (1024*1024)
+extern const char *SDS_NOINIT;
 
 #include <sys/types.h>
 #include <stdarg.h>
@@ -236,12 +237,12 @@ sds sdscatprintf(sds s, const char *fmt, ...);
 
 sds sdscatfmt(sds s, char const *fmt, ...);
 sds sdstrim(sds s, const char *cset);
-void sdsrange(sds s, int start, int end);
+void sdsrange(sds s, ssize_t start, ssize_t end);
 void sdsupdatelen(sds s);
 void sdsclear(sds s);
 int sdscmp(const sds s1, const sds s2);
 sds *sdssplit(const char *s, const char *sep, int *count);
-sds *sdssplitlen(const char *s, int len, const char *sep, int seplen, int *count);
+sds *sdssplitlen(const char *s, ssize_t len, const char *sep, int seplen, int *count);
 void sdsfreesplitres(sds *tokens, int count);
 void sdstolower(sds s);
 void sdstoupper(sds s);
@@ -254,7 +255,7 @@ sds sdsjoinsds(sds *argv, int argc, const char *sep, size_t seplen);
 
 /* Low level functions exposed to the user API */
 sds sdsMakeRoomFor(sds s, size_t addlen);
-void sdsIncrLen(sds s, int incr);
+void sdsIncrLen(sds s, ssize_t incr);
 sds sdsRemoveFreeSpace(sds s);
 size_t sdsAllocSize(sds s);
 void *sdsAllocPtr(sds s);

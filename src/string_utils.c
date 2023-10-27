@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <math.h>
 #include <string.h>
-#include <ctype.h>
 
 int string_cmp(const void *a, const void *b) {
     const char **ia = (const char **)a;
@@ -11,7 +10,7 @@ int string_cmp(const void *a, const void *b) {
     return strcmp(*ia, *ib);
 }
 
-double string_to_double(char *string) {
+double string_to_double(const char *string) {
 
     if(string == NULL) return NAN;
 
@@ -32,7 +31,7 @@ double string_to_double(char *string) {
 
 }
 
-long string_to_long(char *string, bool *error) {
+long string_to_long(const char *string, bool *error) {
 
     if(string == NULL) {
         *error = true;
