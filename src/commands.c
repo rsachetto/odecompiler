@@ -1215,6 +1215,8 @@ COMMAND_FUNCTION(getplotconfig) {
     char *yname = get_var_name(model_config, model_config->plot_config.yindex);
 
     ft_printf_ln(table, "Plot configuration for model %s|", model_config->model_name);
+    
+    ft_printf_ln(table, "Gnuplot terminal|%s", shell_state->default_gnuplot_term);
 
     ft_printf_ln(table, "Var on X|%s (%d)", xname, model_config->plot_config.xindex);
     ft_printf_ln(table, "Var on Y|%s (%d)", yname, model_config->plot_config.yindex);
