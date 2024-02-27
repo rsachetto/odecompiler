@@ -71,7 +71,7 @@ bool check_gnuplot_and_set_default_terminal(struct shell_variables *shell_state)
         return false;
     }
 
-    bool sixel_available = shell_state->enable_sixel && check_sixel_support();
+    bool sixel_available = (shell_state->enable_sixel && check_sixel_support()) || shell_state->force_sixel;
 
     if(!sixel_available) {
         const int BUF_MAX = 1024;

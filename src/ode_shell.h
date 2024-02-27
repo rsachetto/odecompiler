@@ -34,6 +34,7 @@ struct shell_variables {
     char *last_dir;
     bool never_reload;
     bool enable_sixel;
+    bool force_sixel;
 };
 
 #define PROMPT "ode_shell> "
