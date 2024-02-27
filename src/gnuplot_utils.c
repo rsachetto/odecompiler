@@ -111,6 +111,10 @@ bool check_gnuplot_and_set_default_terminal(struct shell_variables *shell_state)
         shell_state->default_gnuplot_term = strdup("sixel");
     }
 
-    printf("Using %s as gnuplot terminal.\n", shell_state->default_gnuplot_term);
+    if(!shell_state->force_sixel) {
+        printf("Using %s as gnuplot terminal.\n", shell_state->default_gnuplot_term);
+    } else {
+        printf("Using sixel as gnuplot terminal (forced, it may not work).\n");
+    }
     return true;
 }
