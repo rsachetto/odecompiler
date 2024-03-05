@@ -37,6 +37,7 @@ static char args_doc[] = "";
 static struct argp_option options[] = {
     {"work_dir", 'w', "DIR", 0, "DIR where the shell will use as working directory.", 0},
     {"enable_sixel", 's', 0, 0, "Enable sixel gnuplot terminal when available", 0},
+    {"force_sixel",  'f', 0, 0, "Force sixel gnuplot terminal (may not work)", 0},
     { 0 }
 };
 
@@ -45,6 +46,7 @@ struct arguments {
     char *command_file;
     char *work_dir;
     bool enable_sixel;
+    bool force_sixel;
 };
 
 /* Parse a single option. */
@@ -58,6 +60,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 's':
             arguments->enable_sixel = true;
+            break;
+        case 'f':
+            arguments->force_sixel = true;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num >= 1) {
@@ -128,6 +133,7 @@ int main(int argc, char **argv) {
     struct shell_variables shell_state = {0};
 
     shell_state.enable_sixel = arguments.enable_sixel;
+    shell_state.force_sixel = arguments.force_sixel;
 
     shell_state.current_dir = get_current_directory();
     shell_state.never_reload = false;

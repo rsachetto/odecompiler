@@ -492,11 +492,11 @@ static void load_min_max_data(const char *filename, struct model_config *model_c
 
 COMMAND_FUNCTION(solve) {
 
-    double simulation_steps    = 0;
+    double simulation_steps          = 0;
 
-    char *simulation_steps_str = tokens[num_args];
+    const char *simulation_steps_str = tokens[num_args];
 
-    simulation_steps           = string_to_double(simulation_steps_str);
+    simulation_steps                 = string_to_double(simulation_steps_str);
 
     if(isnan(simulation_steps) || simulation_steps == 0) {
         printf("Error parsing command %s. Invalid number: %s\n", tokens[0], simulation_steps_str);
@@ -741,7 +741,7 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
 
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
 
-    char *cmd_param = tokens[num_args];
+    const char *cmd_param = tokens[num_args];
 
     if(c_type == CMD_SET_PLOT_X || c_type == CMD_SET_PLOT_Y) {
 
@@ -1241,6 +1241,8 @@ COMMAND_FUNCTION(getplotconfig) {
     char *yname = get_var_name(model_config, model_config->plot_config.yindex);
 
     ft_printf_ln(table, "Plot configuration for model %s|", model_config->model_name);
+
+    ft_printf_ln(table, "Gnuplot terminal|%s", shell_state->default_gnuplot_term);
 
     ft_printf_ln(table, "Var on X|%s (%d)", xname, model_config->plot_config.xindex);
     ft_printf_ln(table, "Var on Y|%s (%d)", yname, model_config->plot_config.yindex);
