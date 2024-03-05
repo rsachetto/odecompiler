@@ -417,11 +417,11 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         if(!model_config->plot_config.title) {
-            //    const char *title = get_var_name(model_config, 2);
-            //    if(title)
-            //        model_config->plot_config.title = strdup(title);
-            //    else
-            model_config->plot_config.title = strdup("notitle");
+            const char *title = get_var_name(model_config, 2);
+            if(title)
+                model_config->plot_config.title = strdup(title);
+            else
+                model_config->plot_config.title = strdup("notitle");
         }
     }
 
@@ -583,7 +583,12 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
     }
 
     gnuplot_cmd(shell_state->gnuplot_handle, "set xlabel \"%s\"", model_config->plot_config.xlabel);
-    gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->plot_config.ylabel);
+
+    if(c_type == CMD_REPLOT) {
+        gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"Variables\"");
+    } else if(c_type == CMD_PLOT) {
+        gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"%s\"", model_config->plot_config.ylabel);
+    }
 
     sds output_file = get_model_output_file(model_config, run_number);
 
@@ -591,8 +596,9 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
 
         gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"Variables\"");
         gnuplot_cmd(shell_state->gnuplot_handle, custom_gnuplot_cmd);
+
     } else {
-        gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d %s \"%s\" w lines lw 2",
+        gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title %s\"%s\" w lines lw 2",
                     command, output_file, model_config->plot_config.xindex,
                     model_config->plot_config.yindex, model_config->plot_config.title);
     }
@@ -714,7 +720,7 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
 
     sds output_file = get_model_output_file(model_config, run_number);
 
-    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d %s \"%s\" w lines lw 2",
+    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title %s \"%s\" w lines lw 2",
                 command, output_file, model_config->plot_config.xindex,
                 model_config->plot_config.yindex, model_config->plot_config.title);
 
@@ -811,9 +817,7 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
         }
     } else if(c_type == CMD_SET_PLOT_TITLE) {
         free(model_config->plot_config.title);
-        char t[1024];
-        sprintf(t, "title %s", cmd_param);
-        model_config->plot_config.title = strdup(t);
+        model_config->plot_config.title = strdup(cmd_param);
     }
 
     return true;
