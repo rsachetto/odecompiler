@@ -1,0 +1,12 @@
+sigma = 10
+b = 2.666666667
+r = 28
+
+initial x = -8
+initial y = 8
+initial z = 27
+
+ode x' = -sigma*x + sigma*y
+ode y' = -y - x*z
+ode z' = -b*z + x*y - b*r
+

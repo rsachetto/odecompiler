@@ -2,12 +2,12 @@
 #include "code_converter.h"
 #include "compiler/token.h"
 #include "file_utils/file_utils.h"
+#include "gnuplot_utils.h"
 #include "md5/md5.h"
 #include "model_config.h"
 #include "ode_shell.h"
 #include "stb/stb_ds.h"
 #include "to_latex.h"
-#include "gnuplot_utils.h"
 
 #include <linux/limits.h>
 #include <math.h>
@@ -19,9 +19,9 @@
 #include "libfort/src/fort.h"
 #include "string_utils.h"
 
-static command *commands = NULL;
+static command *commands            = NULL;
 static string_array commands_sorted = NULL;
-static size_t num_commands = 0;
+static size_t num_commands          = 0;
 static struct shell_variables *global_state;
 
 #define CREATE_TABLE(table)                           \
@@ -38,7 +38,7 @@ static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args,
     *run_number = 0;
 
     if(num_args == 1) {
-        bool error = false;
+        bool error  = false;
         *run_number = (unsigned int) string_to_long(tokens[1], &error);
 
         if(error) {
@@ -46,7 +46,7 @@ static bool get_model_name_and_n_run_zero_to_two_args(sds *tokens, int num_args,
         }
     } else if(num_args == 2) {
         *model_name = tokens[1];
-        bool error = false;
+        bool error  = false;
         *run_number = (unsigned int) string_to_long(tokens[2], &error);
         if(error) {
             printf("Error parsing command %s. Invalid number: %s\n", tokens[0], tokens[2]);
@@ -64,16 +64,16 @@ static bool get_model_name_and_n_run_one_to_three_args(sds *tokens, int num_args
     if(num_args == 1) {
         *arg = tokens[1];
     } else if(num_args == 2) {
-        bool error = false;
+        bool error  = false;
         *run_number = (unsigned int) string_to_long(tokens[2], &error);
         if(error) {
             *model_name = tokens[1];
-            *arg = tokens[2];
+            *arg        = tokens[2];
         } else {
             *arg = tokens[1];
         }
     } else if(num_args == 3) {
-        bool error = false;
+        bool error  = false;
         *model_name = tokens[1];
         *run_number = (unsigned int) string_to_long(tokens[3], &error);
         if(error) {
@@ -128,7 +128,7 @@ static char *autocomplete_command(const char *text, int state) {
        variable to 0. */
     if(state == 0) {
         list_index = 0;
-        len = strlen(text);
+        len        = strlen(text);
     }
 
     /* Return the next name which partially matches from the command list. */
@@ -176,8 +176,7 @@ static bool should_complete_model(const char *c) {
             "unload",
             "vars",
             "plotvars",
-            "replotvars"
-    };
+            "replotvars"};
 
     size_t len = sizeof(autocompletable_commands) / sizeof(autocompletable_commands[0]);
     for(size_t i = 0; i < len; i++) {
@@ -222,23 +221,23 @@ static bool should_complete_model_and_var(const char *c) {
         }                                                       \
     } while(0)
 
-#define FIND_VARS(model_name)                                                        \
-    do {                                                                             \
-        struct model_config *model_config = NULL;                                    \
-        int index__ = shgeti(global_state->loaded_models, (model_name));             \
-        if(index__ != -1) model_config = global_state->loaded_models[index__].value; \
-        size_t num_vars_ = 0;                                                        \
-        if(model_config) {                                                           \
-            num_vars_ = shlen(model_config->var_indexes);                            \
-        }                                                                            \
-        while(list_index < num_vars_) {                                              \
-            name = model_config->var_indexes[list_index].key;                        \
-            list_index++;                                                            \
-            if(strncmp(name, text, len) == 0) {                                      \
-                sdsfreesplitres(splitted_buffer, count);                             \
-                return (strdup(name));                                               \
-            }                                                                        \
-        }                                                                            \
+#define FIND_VARS(model_name)                                                                  \
+    do {                                                                                       \
+        struct model_config *model_config = NULL;                                              \
+        int index__                       = shgeti(global_state->loaded_models, (model_name)); \
+        if(index__ != -1) model_config = global_state->loaded_models[index__].value;           \
+        size_t num_vars_ = 0;                                                                  \
+        if(model_config) {                                                                     \
+            num_vars_ = shlen(model_config->var_indexes);                                      \
+        }                                                                                      \
+        while(list_index < num_vars_) {                                                        \
+            name = model_config->var_indexes[list_index].key;                                  \
+            list_index++;                                                                      \
+            if(strncmp(name, text, len) == 0) {                                                \
+                sdsfreesplitres(splitted_buffer, count);                                       \
+                return (strdup(name));                                                         \
+            }                                                                                  \
+        }                                                                                      \
     } while(0)
 
 static char *autocomplete_command_params(const char *text, int state) {
@@ -250,17 +249,17 @@ static char *autocomplete_command_params(const char *text, int state) {
 
     if(state == 0) {
         list_index = 0;
-        len = strlen(text);
+        len        = strlen(text);
     }
 
     int count;
-    sds *splitted_buffer = sdssplit(rl_line_buffer, " ", &count);
+    sds *splitted_buffer     = sdssplit(rl_line_buffer, " ", &count);
 
     size_t num_loaded_models = shlen(global_state->loaded_models);
 
-    int index = shgeti(commands, splitted_buffer[0]);
+    int index                = shgeti(commands, splitted_buffer[0]);
 
-    command c = {0};
+    command c                = {0};
 
     if(index != -1) {
         c = commands[index];
@@ -350,14 +349,14 @@ static struct model_config *get_model_and_n_runs_for_plot_cmds(struct shell_vari
 
 static bool load_model(struct shell_variables *shell_state, const char *model_file, struct model_config *model_config) {
 
-    bool error = false;
+    bool error     = false;
     bool new_model = (model_config == NULL);
 
     if(new_model) {
 
         const char *ext = get_filename_ext(model_file);
 
-        sds new_file = sdsnew(model_file);
+        sds new_file    = sdsnew(model_file);
 
         if(ext == NULL) {
             //we try to add .ode and find the file again
@@ -372,11 +371,11 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         model_config->should_reload = true;
-        model_config->auto_reload = false;
+        model_config->auto_reload   = false;
 
-        model_config->model_name = get_filename_without_ext(model_file);
+        model_config->model_name    = get_filename_without_ext(model_file);
 
-        int model_index = shgeti(shell_state->loaded_models, model_config->model_name);
+        int model_index             = shgeti(shell_state->loaded_models, model_config->model_name);
 
         if(model_index != -1) {
             printf("Model %s is alread loaded!\n", model_config->model_name);
@@ -393,7 +392,7 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
             full_model_file_path = sdsempty();
         }
 
-        full_model_file_path = sdscatfmt(full_model_file_path, "%s", new_file);
+        full_model_file_path     = sdscatfmt(full_model_file_path, "%s", new_file);
         model_config->model_file = strdup(full_model_file_path);
 
         sdsfree(full_model_file_path);
@@ -414,21 +413,21 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         }
 
         if(!model_config->plot_config.ylabel) {
-            model_config->plot_config.ylabel = strdup("Variable");
+            model_config->plot_config.ylabel = strdup(get_var_name(model_config, 2));
         }
 
         if(!model_config->plot_config.title) {
-            const char *title = get_var_name(model_config, 2);
-            if(title)
-                model_config->plot_config.title = strdup(title);
-            else
-                model_config->plot_config.title = strdup("None");
+            //    const char *title = get_var_name(model_config, 2);
+            //    if(title)
+            //        model_config->plot_config.title = strdup(title);
+            //    else
+            model_config->plot_config.title = strdup("notitle");
         }
     }
 
     model_config->is_derived = !new_model;
 
-    error = compile_model(model_config);
+    error                    = compile_model(model_config);
 
     if(!error) {
         shput(shell_state->loaded_models, model_config->model_name, model_config);
@@ -468,19 +467,19 @@ static void load_min_max_data(const char *filename, struct model_config *model_c
         return;
     }
 
-    char *line = NULL;
+    char *line                                                    = NULL;
 
-    int n = shlen(model_config->var_indexes) - 1;
+    int n                                                         = shlen(model_config->var_indexes) - 1;
 
     model_config->runs[model_config->num_runs - 1].vars_max_value = (double *) malloc(sizeof(double) * n);
     model_config->runs[model_config->num_runs - 1].vars_min_value = (double *) malloc(sizeof(double) * n);
 
-    int count = 0;
+    int count                                                     = 0;
     while((getline(&line, &len, fp)) != -1) {
         if(line) {
             char *end;
-            double min = strtod(line, &end);
-            double max = strtod(end + 1, NULL);
+            double min                                                           = strtod(line, &end);
+            double max                                                           = strtod(end + 1, NULL);
             model_config->runs[model_config->num_runs - 1].vars_max_value[count] = max;
             model_config->runs[model_config->num_runs - 1].vars_min_value[count] = min;
             count++;
@@ -493,11 +492,11 @@ static void load_min_max_data(const char *filename, struct model_config *model_c
 
 COMMAND_FUNCTION(solve) {
 
-    double simulation_steps = 0;
+    double simulation_steps    = 0;
 
     char *simulation_steps_str = tokens[num_args];
 
-    simulation_steps = string_to_double(simulation_steps_str);
+    simulation_steps           = string_to_double(simulation_steps_str);
 
     if(isnan(simulation_steps) || simulation_steps == 0) {
         printf("Error parsing command %s. Invalid number: %s\n", tokens[0], simulation_steps_str);
@@ -511,26 +510,26 @@ COMMAND_FUNCTION(solve) {
     model_config->num_runs++;
 
     struct run_info params = {0};
-    params.time = simulation_steps;
-    params.vars_max_value = NULL;
-    params.vars_min_value = NULL;
+    params.time            = simulation_steps;
+    params.vars_max_value  = NULL;
+    params.vars_min_value  = NULL;
 
     arrput(model_config->runs, params);
 
-    sds output_file = get_model_output_file(model_config, model_config->num_runs);
+    sds output_file   = get_model_output_file(model_config, model_config->num_runs);
 
     sds model_command = sdscat(sdsempty(), model_config->model_command);
 
-    model_command = sdscatprintf(model_command, " %lf %s", simulation_steps, output_file);
+    model_command     = sdscatprintf(model_command, " %lf %s", simulation_steps, output_file);
 
-    FILE *fp = popen(model_command, "r");
+    FILE *fp          = popen(model_command, "r");
     check_and_print_execution_output(fp);
     bool error = WEXITSTATUS(pclose(fp)) != 0;
 
     if(!error) {
         printf("Model %s solved for %lf steps.\n", model_config->model_name, simulation_steps);
         sds min_max_filename = sdsempty();
-        min_max_filename = sdscatfmt(min_max_filename, "%s_min_max", output_file);
+        min_max_filename     = sdscatfmt(min_max_filename, "%s_min_max", output_file);
 
         load_min_max_data(min_max_filename, model_config);
         sdsfree(min_max_filename);
@@ -589,9 +588,11 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
     sds output_file = get_model_output_file(model_config, run_number);
 
     if((c_type == CMD_CUSTOM_PLOT || c_type == CMD_CUSTOM_REPLOT) && custom_gnuplot_cmd != NULL && sdslen(custom_gnuplot_cmd) > 0) {
+
+        gnuplot_cmd(shell_state->gnuplot_handle, "set ylabel \"Variables\"");
         gnuplot_cmd(shell_state->gnuplot_handle, custom_gnuplot_cmd);
     } else {
-        gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2",
+        gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d %s \"%s\" w lines lw 2",
                     command, output_file, model_config->plot_config.xindex,
                     model_config->plot_config.yindex, model_config->plot_config.title);
     }
@@ -610,7 +611,7 @@ static bool plot_helper(struct shell_variables *shell_state, const char *command
 
 COMMAND_FUNCTION(plot) {
 
-    char *model_name = NULL;
+    char *model_name        = NULL;
     unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
@@ -621,7 +622,7 @@ COMMAND_FUNCTION(plot) {
 
 COMMAND_FUNCTION(replot) {
 
-    char *model_name = NULL;
+    char *model_name        = NULL;
     unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
@@ -632,7 +633,7 @@ COMMAND_FUNCTION(replot) {
 
 COMMAND_FUNCTION(plottoterm) {
 
-    char *model_name = NULL;
+    char *model_name        = NULL;
     unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
@@ -643,7 +644,7 @@ COMMAND_FUNCTION(plottoterm) {
 }
 
 COMMAND_FUNCTION(replottoterm) {
-    char *model_name = NULL;
+    char *model_name        = NULL;
     unsigned int run_number = 0;
 
     if(!get_model_name_and_n_run_zero_to_two_args(tokens, num_args, &model_name, &run_number)) {
@@ -713,7 +714,7 @@ static bool plot_file_helper(struct shell_variables *shell_state, sds *tokens, c
 
     sds output_file = get_model_output_file(model_config, run_number);
 
-    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d title \"%s\" w lines lw 2",
+    gnuplot_cmd(shell_state->gnuplot_handle, "%s '%s' u %d:%d %s \"%s\" w lines lw 2",
                 command, output_file, model_config->plot_config.xindex,
                 model_config->plot_config.yindex, model_config->plot_config.title);
 
@@ -734,7 +735,7 @@ COMMAND_FUNCTION(replottofile) {
 
 static bool setplot_helper(struct shell_variables *shell_state, const sds *tokens, command_type c_type, int num_args, bool quiet) {
 
-    const char *command = tokens[0];
+    const char *command               = tokens[0];
 
     struct model_config *model_config = NULL;
 
@@ -745,7 +746,7 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
     if(c_type == CMD_SET_PLOT_X || c_type == CMD_SET_PLOT_Y) {
 
         bool index_as_str;
-        int index = (int) string_to_long(cmd_param, &index_as_str);
+        int index      = (int) string_to_long(cmd_param, &index_as_str);
         char *var_name = NULL;
 
         if(index_as_str) {
@@ -768,26 +769,32 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
         CREATE_TABLE(table);
         if(c_type == CMD_SET_PLOT_X) {
             model_config->plot_config.xindex = index;
-            if (!quiet) {
+            if(!quiet) {
+
+                free(model_config->plot_config.xlabel);
+
                 if(index_as_str) {
+                    model_config->plot_config.xlabel = strdup(cmd_param);
                     ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", cmd_param);
                 } else {
+                    model_config->plot_config.xlabel = strdup(var_name);
                     ft_printf_ln(table, "\'%s\' variable will be plotted along the X axis", var_name);
                 }
             }
         } else {
 
             model_config->plot_config.yindex = index;
-            free(model_config->plot_config.title);
+
+            free(model_config->plot_config.ylabel);
 
             if(index_as_str) {
-                model_config->plot_config.title = strdup(cmd_param);
+                model_config->plot_config.ylabel = strdup(cmd_param);
             } else {
-                model_config->plot_config.title = strdup(var_name);
+                model_config->plot_config.ylabel = strdup(var_name);
             }
 
             if(!quiet) {
-                ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", model_config->plot_config.title);
+                ft_printf_ln(table, "\'%s\' variable will be plotted along the Y axis", model_config->plot_config.ylabel);
             }
         }
 
@@ -804,7 +811,9 @@ static bool setplot_helper(struct shell_variables *shell_state, const sds *token
         }
     } else if(c_type == CMD_SET_PLOT_TITLE) {
         free(model_config->plot_config.title);
-        model_config->plot_config.title = strdup(cmd_param);
+        char t[1024];
+        sprintf(t, "title %s", cmd_param);
+        model_config->plot_config.title = strdup(t);
     }
 
     return true;
@@ -851,6 +860,7 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
     if(num_args == 1) {
         ret &= setplot_helper(shell_state, tokens, CMD_SET_PLOT_Y, 1, true);
     } else if(num_args == 2) {
+
         bool error;
         string_to_long(tokens[2], &error);
 
@@ -869,7 +879,7 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
 
     sds output_file = get_model_output_file(model_config, run_number);
 
-    char *first = "plot";
+    char *first     = "plot";
 
     if(c_type == CMD_REPLOT) {
         first = "replot";
@@ -877,11 +887,11 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
 
     if(sdslen(*plot_command) > 0) first = ", ";
 
-    char *title = get_var_name(model_config, model_config->plot_config.yindex);
+    char *title   = get_var_name(model_config, model_config->plot_config.yindex);
 
     *plot_command = sdscatfmt(*plot_command, "%s '%s' u %i:%i title '%s' w lines lw 2",
-                             first, output_file, model_config->plot_config.xindex,
-                             model_config->plot_config.yindex, title);
+                              first, output_file, model_config->plot_config.xindex,
+                              model_config->plot_config.yindex, title);
 
     sdsfree(output_file);
 
@@ -890,27 +900,27 @@ static bool get_plotvar_command(sds *plot_command, struct shell_variables *shell
 
 static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *tokens, command_type c_type, int num_args) {
 
-    int varcount = 0;
+    int varcount      = 0;
     sds *vars_to_plot = NULL;
     int split_index;
 
     if(num_args == 1) {
         vars_to_plot = sdssplit(tokens[1], " ", &varcount);
-        split_index = 1;
+        split_index  = 1;
     } else if(num_args == 2) {
         bool dont_have_run_number;
         string_to_long(tokens[2], &dont_have_run_number);
 
         if(dont_have_run_number) {
             vars_to_plot = sdssplit(tokens[2], " ", &varcount);
-            split_index = 2;
+            split_index  = 2;
         } else {
             vars_to_plot = sdssplit(tokens[1], " ", &varcount);
-            split_index = 1;
+            split_index  = 1;
         }
     } else if(num_args == 3) {
         vars_to_plot = sdssplit(tokens[2], " ", &varcount);
-        split_index = 2;
+        split_index  = 2;
     }
 
     bool ret = true;
@@ -937,14 +947,13 @@ static bool plot_or_replot_var_helper(struct shell_variables *shell_state, sds *
 
     for(int i = 0; i < varcount; i++) {
         new_tokens[split_index] = vars_to_plot[i];
-        bool success = get_plotvar_command(&gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
+        bool success            = get_plotvar_command(&gnuplot_cmd, shell_state, new_tokens, c_type, num_args);
 
         if(!success) {
             sdsfree(gnuplot_cmd);
             sdsfreesplitres(vars_to_plot, varcount);
             return false;
         }
-
     }
 
     command_type ct = CMD_CUSTOM_PLOT;
@@ -976,13 +985,21 @@ COMMAND_FUNCTION(plotvars) {
 
     if(!model_config) return false;
 
-    int len = shlen(model_config->var_indexes);
+    int old_xindex   = model_config->plot_config.xindex;
+    int old_yindex   = model_config->plot_config.yindex;
 
-    sds all_vars = sdscatfmt(sdsempty(), "%s", model_config->var_indexes[1].key);
+    char *old_xlabel = strdup(model_config->plot_config.xlabel);
+    char *old_ylabel = strdup(model_config->plot_config.ylabel);
+    char *old_title  = strdup(model_config->plot_config.title);
+
+
+    int len          = shlen(model_config->var_indexes);
+
+    sds all_vars     = sdscatfmt(sdsempty(), "%s", model_config->var_indexes[1].key);
 
     if(len - 2 > 10) {
-        printf("\nModel %s has %d ODE's. Do you want to plot all of them? [y]: ", model_config->model_name, len-2);
-            char answer = (char) getchar();
+        printf("\nModel %s has %d ODE's. Do you want to plot all of them? [y]: ", model_config->model_name, len - 2);
+        char answer = (char) getchar();
 
         if(answer != 'Y' && answer != 'y' && answer != '\r') {
             return false;
@@ -995,11 +1012,11 @@ COMMAND_FUNCTION(plotvars) {
 
     sds new_tokens[4] = {sdsnew("plotvar"), NULL, NULL, NULL};
 
-    uint8_t to_free = 1;
+    uint8_t to_free   = 1;
 
     if(num_args == 0) {
         new_tokens[1] = all_vars;
-        to_free = 1;
+        to_free       = 1;
     } else if(num_args == 1) {
         bool model_name_only;
         string_to_long(tokens[1], &model_name_only);
@@ -1007,31 +1024,40 @@ COMMAND_FUNCTION(plotvars) {
         if(model_name_only) {
             new_tokens[1] = tokens[1];
             new_tokens[2] = all_vars;
-            to_free = 2;
+            to_free       = 2;
         } else {
             new_tokens[1] = all_vars;
             new_tokens[2] = tokens[1];
-            to_free = 1;
+            to_free       = 1;
         }
     } else {
         new_tokens[1] = tokens[1];
         new_tokens[2] = all_vars;
         new_tokens[3] = tokens[2];
-        to_free = 2;
+        to_free       = 2;
     }
 
     if(STRING_EQUALS(tokens[0], "plotvars")) {
-        plot_or_replot_var_helper(shell_state, new_tokens, CMD_PLOT, num_args+1);
-        //plotvar(shell_state, new_tokens, num_args + 1);
-    }
-    else {
-        plot_or_replot_var_helper(shell_state, new_tokens, CMD_REPLOT, num_args+1);
+        plot_or_replot_var_helper(shell_state, new_tokens, CMD_PLOT, num_args + 1);
+    } else {
+        plot_or_replot_var_helper(shell_state, new_tokens, CMD_REPLOT, num_args + 1);
     }
 
     //The tokens variable will be freed on the parse_and_execute_command function
     //so we can free when new_tokens = tokens[x]
     sdsfree(new_tokens[0]);
     sdsfree(new_tokens[to_free]);
+
+
+    //RESET to last configured plot
+    model_config->plot_config.xindex = old_xindex;
+    model_config->plot_config.yindex = old_yindex;
+
+
+    model_config->plot_config.xlabel = old_xlabel;
+    model_config->plot_config.ylabel = old_ylabel;
+    model_config->plot_config.title  = old_title;
+
 
     return false;
 }
@@ -1109,7 +1135,7 @@ COMMAND_FUNCTION(cd) {
     (void) num_args;
 
     const char *path = tokens[1];
-    int ret = -1;
+    int ret          = -1;
 
     if(strlen(path) == 1 && path[0] == '-') {
         if(shell_state->last_dir) {
@@ -1125,7 +1151,7 @@ COMMAND_FUNCTION(cd) {
     } else {
 
         free(shell_state->last_dir);
-        shell_state->last_dir = shell_state->current_dir;
+        shell_state->last_dir    = shell_state->current_dir;
 
         shell_state->current_dir = get_current_directory();
         print_current_dir();
@@ -1174,7 +1200,7 @@ COMMAND_FUNCTION(help) {
 
     } else {
         command command = {0};
-        int index = shgeti(commands, tokens[1]);
+        int index       = shgeti(commands, tokens[1]);
 
         if(index != -1) {
             command = commands[index];
@@ -1239,7 +1265,7 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
     struct model_config *parent_model_config = NULL;
 
     if(action == CMD_SET) {
-        var_name = sdsnew(tokens[num_args - 1]);
+        var_name  = sdsnew(tokens[num_args - 1]);
         new_value = tokens[num_args];
 
         if(num_args == 2) {
@@ -1276,32 +1302,32 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
 
     int i;
     for(i = 0; i < n; i++) {
-        ast *a = model_config->program[i];
+        ast *a                         = model_config->program[i];
         unsigned int indentation_level = 0;
         if(a->tag == tag) {
             if(STR_EQUALS(a->assignment_stmt.name->identifier.value, var_name)) {
                 if(action == CMD_SET) {
-                    lexer *l = new_lexer(new_value, model_config->model_name);
-                    parser *p = new_parser(l);
+                    lexer *l        = new_lexer(new_value, model_config->model_name);
+                    parser *p       = new_parser(l);
                     program program = parse_program(p, false, false, NULL);
 
-                    sds tmp1 = ast_to_string(a->assignment_stmt.value, &indentation_level);
-                    sds tmp2 = ast_to_string(program[0], &indentation_level);
+                    sds tmp1        = ast_to_string(a->assignment_stmt.value, &indentation_level);
+                    sds tmp2        = ast_to_string(program[0], &indentation_level);
 
                     printf("Changing value of variable %s from %s to %s for model %s\n",
-                            var_name, tmp1, tmp2, parent_model_config->model_name);
+                           var_name, tmp1, tmp2, parent_model_config->model_name);
 
                     sdsfree(tmp1);
                     sdsfree(tmp2);
 
                     int old_decl_pos = a->assignment_stmt.declaration_position;
-                    bool global = a->assignment_stmt.name->identifier.global;
+                    bool global      = a->assignment_stmt.name->identifier.global;
 
                     free_ast(a->assignment_stmt.value);
 
-                    a->assignment_stmt.value = copy_ast(program[0]);
+                    a->assignment_stmt.value                   = copy_ast(program[0]);
                     a->assignment_stmt.name->identifier.global = global;
-                    a->assignment_stmt.declaration_position = old_decl_pos;
+                    a->assignment_stmt.declaration_position    = old_decl_pos;
 
                     free_parser(p);
                     free_program(program);
@@ -1382,14 +1408,14 @@ static bool get_values_helper(struct shell_variables *shell_state, sds *tokens, 
     ft_printf_ln(table, "%s", model_config->model_name);
     ft_printf_ln(table, "Variable|Value");
 
-    bool empty = true;
+    bool empty                    = true;
 
     unsigned int indentaion_value = 0;
 
     for(int i = 0; i < n; i++) {
         ast *a = model_config->program[i];
         if(a->tag == tag) {
-            sds ast_string = ast_to_string(a->assignment_stmt.value, &indentaion_value);
+            sds ast_string    = ast_to_string(a->assignment_stmt.value, &indentaion_value);
             char *first_paren = strchr(ast_string, '(');
             if(first_paren) {
                 ft_printf_ln(table, "%s|%.*s", a->assignment_stmt.name->identifier.value, (int) strlen(first_paren + 1) - 1, first_paren + 1);
@@ -1433,7 +1459,7 @@ COMMAND_FUNCTION(saveplot) {
 
     (void) num_args;
 
-    const char *command = tokens[0];
+    const char *command   = tokens[0];
 
     const char *file_name = tokens[1];
 
@@ -1475,7 +1501,7 @@ COMMAND_FUNCTION(setcurrentmodel) {
 
 COMMAND_FUNCTION(solveplot) {
 
-    bool success = solve(shell_state, tokens, num_args);
+    bool success     = solve(shell_state, tokens, num_args);
     char *model_name = NULL;
 
     if(!success) return false;
@@ -1540,22 +1566,20 @@ COMMAND_FUNCTION(unloadall) {
     } else {
 
         for(int i = 0; i < len; i++) {
-            char *name = shell_state->loaded_models[i].key;
+            char *name                        = shell_state->loaded_models[i].key;
             struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens[0], name);
-            struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
+            struct model_config **entries     = hmget(shell_state->notify_entries, model_config->notify_code);
             arrfree(entries);
 
             (void) hmdel(shell_state->notify_entries, model_config->notify_code);
             (void) shdel(shell_state->loaded_models, name);
 
             free_model_config(model_config);
-
         }
 
         shell_state->current_model = NULL;
     }
     return true;
-
 }
 
 COMMAND_FUNCTION(unload) {
@@ -1564,7 +1588,7 @@ COMMAND_FUNCTION(unload) {
 
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    bool is_current = (model_config == shell_state->current_model);
+    bool is_current               = (model_config == shell_state->current_model);
 
     struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
     arrfree(entries);
@@ -1585,7 +1609,7 @@ COMMAND_FUNCTION(unload) {
 static bool set_reload_helper(struct shell_variables *shell_state, const sds *tokens, int num_args, command_type cmd_type) {
 
     const char *command = tokens[0];
-    char *arg = tokens[1];
+    char *arg           = tokens[1];
     bool is_zero;
 
     if(STR_EQUALS(arg, "0")) {
@@ -1637,10 +1661,10 @@ COMMAND_FUNCTION(setshouldreload) {
 
 COMMAND_FUNCTION(savemodeloutput) {
 
-    const char *command = tokens[0];
+    const char *command     = tokens[0];
 
-    char *model_name = NULL;
-    char *file_name  = NULL;
+    char *model_name        = NULL;
+    char *file_name         = NULL;
 
     unsigned int run_number = 0;
 
@@ -1661,7 +1685,7 @@ COMMAND_FUNCTION(savemodeloutput) {
     }
 
     model_config->runs[run_number - 1].filename = strdup(file_name);
-    model_config->runs[run_number - 1].saved = true;
+    model_config->runs[run_number - 1].saved    = true;
 
     sdsfree(output_file);
     return true;
@@ -1694,7 +1718,7 @@ bool run_commands_from_file(struct shell_variables *shell_state, char *file_name
                 add_history(command);
                 printf("%s%s\n", PROMPT, command);
 
-                int cmd_count = 0;
+                int cmd_count     = 0;
                 sds *all_commands = sdssplit(command, ";", &cmd_count);
 
                 for(int i = 0; i < cmd_count; i++) {
@@ -1775,7 +1799,7 @@ COMMAND_FUNCTION(listruns) {
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    unsigned int n_runs = model_config->num_runs;
+    unsigned int n_runs       = model_config->num_runs;
 
     struct run_info *run_info = model_config->runs;
 
@@ -1888,12 +1912,12 @@ COMMAND_FUNCTION(closeplot) {
 
 COMMAND_FUNCTION(converttoc) {
 
-    const char *file_name = tokens[num_args];
+    const char *file_name             = tokens[num_args];
     struct model_config *model_config = NULL;
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 1);
 
     FILE *outfile = fopen(file_name, "w");
-    bool error = convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
+    bool error    = convert_to_c(model_config->program, outfile, EULER_ADPT_SOLVER);
     fclose(outfile);
 
     if(!error) {
@@ -1907,9 +1931,9 @@ COMMAND_FUNCTION(converttoc) {
 void clean_and_exit(struct shell_variables *shell_state) {
 
     sds history_path = sdsnew(get_home_dir());
-    history_path = sdscatfmt(history_path, "/%s", HISTORY_FILE);
+    history_path     = sdscatfmt(history_path, "/%s", HISTORY_FILE);
 
-    int n_models = shlen(shell_state->loaded_models);
+    int n_models     = shlen(shell_state->loaded_models);
 
     for(int i = 0; i < n_models; i++) {
         struct model_config *config = shell_state->loaded_models[i].value;
@@ -1953,7 +1977,7 @@ bool parse_and_execute_command(sds line, struct shell_variables *shell_state) {
         goto dealloc_vars;
     }
 
-    num_args = token_count - 1;
+    num_args  = token_count - 1;
 
     int index = shgeti(commands, tokens[0]);
 
@@ -2005,7 +2029,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
     pthread_mutex_lock(&shell_state->lock);
 
     struct model_config **model_configs = hmget(shell_state->notify_entries, event->wd);
-    struct model_config *model_config = NULL;
+    struct model_config *model_config   = NULL;
 
     for(int i = 0; i < arrlen(model_configs); i++) {
 
@@ -2028,7 +2052,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
     size_t file_size;
     char *source = read_entire_file_with_mmap(model_config->model_file, &file_size);
     uint8_t hash[16];
-    md5Stringn(source, (uint8_t*)&hash, file_size);
+    md5Stringn(source, (uint8_t *) &hash, file_size);
     munmap(source, file_size);
 
     if(memcmp(hash, model_config->hash, sizeof(model_config->hash)) == 0) {
@@ -2049,7 +2073,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
             printf("\nReloading model %s", model_config->model_name);
             fflush(stdout);
             program tmp = model_config->program;
-            bool error = generate_model_program(model_config);
+            bool error  = generate_model_program(model_config);
 
             if(!error) {
                 error = compile_model(model_config);
@@ -2075,7 +2099,7 @@ static void add_cmd(command_fn *function, char *cmd, int accept_min, int accept_
 
     command c;
 
-    c.key = cmd;
+    c.key       = cmd;
 
     c.accept[0] = accept_min;
     c.accept[1] = accept_max;
@@ -2105,7 +2129,7 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 #define DEFAULT_MSG_GETRUN "the command is executed using the last loaded model and the last execution.\nThe execution number can be passed to the command to list the details of an specific run.\nE.g.,"
 #define GETRUN_ARGS "\nIf no arguments are provided, " DEFAULT_MSG_GETRUN
 
-    global_state = state;
+    global_state                     = state;
 
     rl_attempted_completion_function = command_completion;
 
@@ -2113,68 +2137,67 @@ void initialize_commands(struct shell_variables *state, bool plot_enabled) {
 
     arrsetcap(commands_sorted, 64);
 
-    ADD_CMD(cd,        1, 1, "Changes the current directory.\n E.g., cd examples");
-    ADD_CMD(quit,      0, 0, "Quits the shell (CTRL+d also quits).");
-    ADD_CMD(help,      0, 1, "Prints all available commands or the help for a specific command.\nE.g., help run");
-    ADD_CMD(list,      0, 0, "Lists all loaded models");
-    ADD_CMD(loadcmds,  1, 1, "Loads a list of command from a file and execute them.\nE.g., loadcmds file");
-    ADD_CMD(load,      1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
-    ADD_CMD(listruns,  0, 1, "List all runs of a model." NO_ARGS " listruns sir");
-    ADD_CMD(unload,    1, 1, "Unloads previously loaded model." NO_ARGS " unload sir");
+    ADD_CMD(cd, 1, 1, "Changes the current directory.\n E.g., cd examples");
+    ADD_CMD(quit, 0, 0, "Quits the shell (CTRL+d also quits).");
+    ADD_CMD(help, 0, 1, "Prints all available commands or the help for a specific command.\nE.g., help run");
+    ADD_CMD(list, 0, 0, "Lists all loaded models");
+    ADD_CMD(loadcmds, 1, 1, "Loads a list of command from a file and execute them.\nE.g., loadcmds file");
+    ADD_CMD(load, 1, 1, "Loads a model from a ode file.\nE.g., load sir.ode");
+    ADD_CMD(listruns, 0, 1, "List all runs of a model." NO_ARGS " listruns sir");
+    ADD_CMD(unload, 1, 1, "Unloads previously loaded model." NO_ARGS " unload sir");
     ADD_CMD(unloadall, 0, 0, "Unloads all previously loaded models.");
-    ADD_CMD(ls,        0, 1, "Lists the content of a given directory.");
+    ADD_CMD(ls, 0, 1, "Lists the content of a given directory.");
 
     if(plot_enabled) {
-        ADD_CMD(plot,          0, 2, "Plots the output of a model execution (one variable). " PLOT_ARGS " plot sir or plot sir 1 or plot 1");
-        ADD_CMD(replot,        0, 2, "Adds the output of a model execution (one variable) in to an existing plot. " PLOT_ARGS " replot sir");
-        ADD_CMD(plottofile,    1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). " PLOTFILE_ARGS "E.g., plottofile sir output.pdf 2");
-        ADD_CMD(replottofile,  1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). " PLOTFILE_ARGS "replottofile sir 2");
-        ADD_CMD(plottoterm,    0, 2, "Plots the output of a model execution (one variable) using the terminal (text). " PLOT_ARGS ". E.g., plottoterm sir");
-        ADD_CMD(replottoterm,  0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). " PLOT_ARGS " replototerm sir 2");
-        ADD_CMD(setplotx,      1, 2, "Sets the variable to be plotted along the x axis. " ONE_ARG " setplotx sir t or setplotx t");
-        ADD_CMD(setploty,      1, 2, "Sets the variable to be plotted along the y axis. " ONE_ARG " setploty sir R or setploty R");
+        ADD_CMD(plot, 0, 2, "Plots the output of a model execution (one variable). " PLOT_ARGS " plot sir or plot sir 1 or plot 1");
+        ADD_CMD(replot, 0, 2, "Adds the output of a model execution (one variable) in to an existing plot. " PLOT_ARGS " replot sir");
+        ADD_CMD(plottofile, 1, 3, "Plots the output of a model execution (one variable) in the specified file (pdf or png). " PLOTFILE_ARGS "E.g., plottofile sir output.pdf 2");
+        ADD_CMD(replottofile, 1, 3, "Adds the output of a model execution (one variable) in to an existing plot in the specified file (pdf or png). " PLOTFILE_ARGS "replottofile sir 2");
+        ADD_CMD(plottoterm, 0, 2, "Plots the output of a model execution (one variable) using the terminal (text). " PLOT_ARGS ". E.g., plottoterm sir");
+        ADD_CMD(replottoterm, 0, 2, "Adds the output of a model execution (one variable) in to an existing plot using the terminal (text). " PLOT_ARGS " replototerm sir 2");
+        ADD_CMD(setplotx, 1, 2, "Sets the variable to be plotted along the x axis. " ONE_ARG " setplotx sir t or setplotx t");
+        ADD_CMD(setploty, 1, 2, "Sets the variable to be plotted along the y axis. " ONE_ARG " setploty sir R or setploty R");
         ADD_CMD(setplotxlabel, 1, 2, "Sets x axis label. " ONE_ARG " setplotxlabel sir Pop or setplotxlabel Pop");
         ADD_CMD(setplotylabel, 1, 2, "Sets y axis label. " ONE_ARG " setplotylabel sir days or setplotylabel days");
         ADD_CMD(setplotlegend, 1, 2, "Sets the current plot title. " ONE_ARG " setplottitle sir title1 or setplottitle title1");
-        ADD_CMD(solveplot,     1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. " ONE_ARG " solveplot sir 100");
-        ADD_CMD(saveplot,      1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
+        ADD_CMD(solveplot, 1, 2, "Solves the ODE(s) of a loaded model for x steps and plot it. " ONE_ARG " solveplot sir 100");
+        ADD_CMD(saveplot, 1, 1, "Saves the current plot to a pdf file.\nE.g., saveplot plot.pdf");
         ADD_CMD(getplotconfig, 0, 1, "Prints the current plot configuration of a model. " NO_ARGS " getplotconfig sir");
-        ADD_CMD(plotvar,       1, 3, "Plots the output of a model execution (one or more variables). " PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
-        ADD_CMD(replotvar,     1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. " PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
-        ADD_CMD(plotvars,      0, 2, "Plots the output of a model execution (all variables). " PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
-        ADD_CMD(replotvars,    0, 2, "Add the output of a model execution (all variables) in to an existing plot. " PLOT_ARGS " replotvars sir or replotvars sir 1 or replotvars 1");
-        ADD_CMD(closeplot,     0, 0, "Close the current plot");
+        ADD_CMD(plotvar, 1, 3, "Plots the output of a model execution (one or more variables). " PLOT_ARGS " plotvar sir \"S I R\" 1 or plotvar sir \"S I R\" or plotvar \"S I R\" 1");
+        ADD_CMD(replotvar, 1, 3, "Adds the output of a model execution (one or more variable) in to an existing plot. " PLOT_ARGS " replotvar sir \"S I R\" 1 or replotvar sir \"S I R\" or replotvar \"S I R\" 1");
+        ADD_CMD(plotvars, 0, 2, "Plots the output of a model execution (all variables). " PLOT_ARGS " plotvars sir or plotvars sir 1 or plotvars 1");
+        ADD_CMD(replotvars, 0, 2, "Add the output of a model execution (all variables) in to an existing plot. " PLOT_ARGS " replotvars sir or replotvars sir 1 or replotvars 1");
+        ADD_CMD(closeplot, 0, 0, "Close the current plot");
     }
 
-    ADD_CMD(pwd,              0, 0, "Shows the current directory");
-    ADD_CMD(solve,            1, 2, "Solves the ODE(s) of a loaded model for x steps. " ONE_ARG " run sir 100");
-    ADD_CMD(vars,             0, 1, "List all variables available for plotting in a loaded model. " NO_ARGS " vars sir");
-    ADD_CMD(setinitialvalue,  2, 3, "Changes the initial value of a model's ODE variable and reloads the model. " TWO_ARGS "E.g setinitialvalue sir I 10");
-    ADD_CMD(getinitialvalue,  1, 2, "Prints the initial value of a model's ODE variable. " ONE_ARG " getinitialvalue sir R");
+    ADD_CMD(pwd, 0, 0, "Shows the current directory");
+    ADD_CMD(solve, 1, 2, "Solves the ODE(s) of a loaded model for x steps. " ONE_ARG " run sir 100");
+    ADD_CMD(vars, 0, 1, "List all variables available for plotting in a loaded model. " NO_ARGS " vars sir");
+    ADD_CMD(setinitialvalue, 2, 3, "Changes the initial value of a model's ODE variable and reloads the model. " TWO_ARGS "E.g setinitialvalue sir I 10");
+    ADD_CMD(getinitialvalue, 1, 2, "Prints the initial value of a model's ODE variable. " ONE_ARG " getinitialvalue sir R");
     ADD_CMD(getinitialvalues, 0, 1, "Prints the initial values of all model's ODE variables. " NO_ARGS " getinitialvalues sir");
-    ADD_CMD(setparamvalue,    2, 3, "Changes the value of a model's parameter and reloads the model. " TWO_ARGS " setparamvalue sir gamma 10");
-    ADD_CMD(getparamvalue,    1, 2, "Prints the value of a model's parameter. " ONE_ARG "E.g., getparamvalue sir gamma");
-    ADD_CMD(getparamvalues,   0, 1, "Prints the values of all model's parameters. " NO_ARGS " getparamvalues sir");
-    ADD_CMD(setglobalvalue,   2, 3, "Changes the value of a model's global variable and reloads the model. " TWO_ARGS " setglobalalue sir n 2000");
-    ADD_CMD(getglobalvalue,   1, 2, "Prints the value of a model's global variable. " ONE_ARG " getglobalalue sir n");
-    ADD_CMD(getglobalvalues,  0, 1, "Prints the values of all model's global variables. " NO_ARGS " getglobalalues sir");
-    ADD_CMD(setodevalue,      2, 3, "Changes the value of a model's ODE and reloads the model. " TWO_ARGS " seodevalue sir S gama*beta");
-    ADD_CMD(getodevalue,      1, 2, "Prints the value of a model's ODE. " ONE_ARG " getodevalue sir S");
-    ADD_CMD(getodevalues,     0, 1, "Prints the values of all model's ODEs. " NO_ARGS " getodevalues sir");
-    ADD_CMD(setcurrentmodel,  1, 1, "Set the current model to be used as default parameters in several commands.\nE.g., setcurrentmodel sir");
-    ADD_CMD(printmodel,       0, 1, "Print a model on the screen. " NO_ARGS " printmodel sir");
-    ADD_CMD(editmodel,        0, 1, "Open the file containing the model ode code. " NO_ARGS " editmodel sir");
-    ADD_CMD(odestolatex,      0, 1, "Print the latex code for the model ODEs. " NO_ARGS " odestolatex sir");
-    ADD_CMD(setautolreload,   1, 2, "Enable/disable auto reload value of a model. " ONE_ARG " setautolreload sir 1 or setautolreload sir 0");
-    ADD_CMD(setshouldreload,  1, 2, "Enable/disable reloading when changed for a model. " ONE_ARG " setshouldreload sir 1 or setshouldreload sir 0");
-    ADD_CMD(setglobalreload,  1, 1, "Enable/disable reloading for all models.\nE.g., setglobalreload 1 or setglobalreload 0");
-    ADD_CMD(savemodeloutput,  1, 3, "Saves the model output to a file. " PLOTFILE_ARGS " savemodeloutput sir output_sir.txt or savemodeloutput sir output_sir.txt 1");
-    ADD_CMD(resetruns,        0, 1, "Resets the runs information of a model. " NO_ARGS " resetruns sir");
-    ADD_CMD(getruninfo,       0, 2, "Prints the information about an specific run. " GETRUN_ARGS " getruninfo sir or getruninfo sir 1 or getruninfo 1");
-    ADD_CMD(converttoc,       1, 2, "Convert the current model to a C program.\nE.g., converttoc model_name.c or converttoc sir model_name.c");
+    ADD_CMD(setparamvalue, 2, 3, "Changes the value of a model's parameter and reloads the model. " TWO_ARGS " setparamvalue sir gamma 10");
+    ADD_CMD(getparamvalue, 1, 2, "Prints the value of a model's parameter. " ONE_ARG "E.g., getparamvalue sir gamma");
+    ADD_CMD(getparamvalues, 0, 1, "Prints the values of all model's parameters. " NO_ARGS " getparamvalues sir");
+    ADD_CMD(setglobalvalue, 2, 3, "Changes the value of a model's global variable and reloads the model. " TWO_ARGS " setglobalalue sir n 2000");
+    ADD_CMD(getglobalvalue, 1, 2, "Prints the value of a model's global variable. " ONE_ARG " getglobalalue sir n");
+    ADD_CMD(getglobalvalues, 0, 1, "Prints the values of all model's global variables. " NO_ARGS " getglobalalues sir");
+    ADD_CMD(setodevalue, 2, 3, "Changes the value of a model's ODE and reloads the model. " TWO_ARGS " seodevalue sir S gama*beta");
+    ADD_CMD(getodevalue, 1, 2, "Prints the value of a model's ODE. " ONE_ARG " getodevalue sir S");
+    ADD_CMD(getodevalues, 0, 1, "Prints the values of all model's ODEs. " NO_ARGS " getodevalues sir");
+    ADD_CMD(setcurrentmodel, 1, 1, "Set the current model to be used as default parameters in several commands.\nE.g., setcurrentmodel sir");
+    ADD_CMD(printmodel, 0, 1, "Print a model on the screen. " NO_ARGS " printmodel sir");
+    ADD_CMD(editmodel, 0, 1, "Open the file containing the model ode code. " NO_ARGS " editmodel sir");
+    ADD_CMD(odestolatex, 0, 1, "Print the latex code for the model ODEs. " NO_ARGS " odestolatex sir");
+    ADD_CMD(setautolreload, 1, 2, "Enable/disable auto reload value of a model. " ONE_ARG " setautolreload sir 1 or setautolreload sir 0");
+    ADD_CMD(setshouldreload, 1, 2, "Enable/disable reloading when changed for a model. " ONE_ARG " setshouldreload sir 1 or setshouldreload sir 0");
+    ADD_CMD(setglobalreload, 1, 1, "Enable/disable reloading for all models.\nE.g., setglobalreload 1 or setglobalreload 0");
+    ADD_CMD(savemodeloutput, 1, 3, "Saves the model output to a file. " PLOTFILE_ARGS " savemodeloutput sir output_sir.txt or savemodeloutput sir output_sir.txt 1");
+    ADD_CMD(resetruns, 0, 1, "Resets the runs information of a model. " NO_ARGS " resetruns sir");
+    ADD_CMD(getruninfo, 0, 2, "Prints the information about an specific run. " GETRUN_ARGS " getruninfo sir or getruninfo sir 1 or getruninfo 1");
+    ADD_CMD(converttoc, 1, 2, "Convert the current model to a C program.\nE.g., converttoc model_name.c or converttoc sir model_name.c");
 
     qsort(commands_sorted, arrlen(commands_sorted), sizeof(char *), string_cmp);
 
     initialize_corrector(commands_sorted, arrlen(commands_sorted));
-
 }
