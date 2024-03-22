@@ -118,6 +118,7 @@ void read_char(lexer *l) {
     }
 
     l->position = l->read_position++;
+    if(l->ch == '\n') l->current_line++;
 }
 
 char peek_char(lexer *l) {
@@ -200,7 +201,6 @@ char *read_number(lexer *l, uint32_t *len) {
 
 void skip_whitespace(lexer *l) {
     while (isspace(l->ch)) {
-        if(l->ch == '\n') l->current_line++;
         read_char(l);
     }
 }
@@ -210,7 +210,6 @@ void skip_comment(lexer *l) {
         while (l->ch != '\n') {
             read_char(l);
         }
-        l->current_line++;
         read_char(l);
     }
 }
@@ -324,6 +323,7 @@ token next_token(lexer *l) {
                 tok.type = lookup_ident(&tok);
                 tok.line_number = current_line;
                 tok.file_name   = file_name;
+
                 return tok;
             }
             else if(isdigit(l->ch)) {
@@ -344,6 +344,6 @@ token next_token(lexer *l) {
     }
 
     read_char(l);
-
+    
     return tok;
 }

@@ -23,6 +23,23 @@
     ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
     return NULL
 
+#define RETURN_ERROR_EXPRESSION(...)                                                     \
+    if(p->cur_token.line_number == 1) {                                                  \
+        ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__);     \
+    } else {                                                                             \
+        ADD_ERROR_WITH_LINE(p->cur_token.line_number - 1, p->l->file_name, __VA_ARGS__); \
+    }                                                                                    \
+    return NULL
+
+#define RETURN_VALUE_AND_ERROR_EXPRESSION(value, ...)                                    \
+    if(p->cur_token.line_number == 1) {                                                  \
+        ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__);     \
+    } else {                                                                             \
+        ADD_ERROR_WITH_LINE(p->cur_token.line_number - 1, p->l->file_name, __VA_ARGS__); \
+    }                                                                                    \
+return value
+
+
 static int global_count = 1;
 static int local_var_count = 1;
 static int ode_count = 1;
@@ -58,6 +75,8 @@ static inline bool expect_peek(parser *p, token_type t) {
 }
 
 static bool can_be_in_init(parser *p, const ast *a) {
+
+    if(a == NULL) return true; //if the expression is null, we already have an error
 
     switch(a->tag) {
         case ast_boolean_literal:
@@ -778,7 +797,31 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     } else if(TOKEN_TYPE_EQUALS(p->cur_token, IF)) {
         left_expr = parse_if_expression(p);
     } else {
-        RETURN_ERROR("error parsing expression\n");
+        RETURN_ERROR_EXPRESSION("error parsing expression\n");
+    }
+
+
+    if((cur_token_is(p, IDENT) || cur_token_is(p, NUMBER)) && (p->cur_token.line_number == p->peek_token.line_number)) {
+        bool is_valid = TOKEN_TYPE_EQUALS(p->peek_token, PLUS) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, MINUS) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, SLASH) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LT) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GT) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, LEQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, GEQ) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, AND) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, OR)  ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, SEMICOLON);
+
+        if(!is_valid) {
+            if(cur_token_is(p, IDENT)) {
+                RETURN_VALUE_AND_ERROR_EXPRESSION(left_expr, "error parsing expression, expected operator after an identifier!\n");
+            } else {
+                RETURN_VALUE_AND_ERROR_EXPRESSION(left_expr, "error parsing expression, expected operator after an numerical value!\n");
+            }
+        }
+
     }
 
     //infix expression
