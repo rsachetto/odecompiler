@@ -84,8 +84,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 
 
 static sigjmp_buf env;
+#define CTRL_C_CONTEXT 42
 static void ctrl_c_handler(__attribute__((unused)) int sig) {
-    siglongjmp(env, 42);
+    siglongjmp(env, CTRL_C_CONTEXT);
 }
 
 static void setup_ctrl_c_handler() {
@@ -180,13 +181,14 @@ int main(int argc, char **argv) {
     char *line;
 
     //if CTRL+C is pressed, we print a new line
-    if (sigsetjmp(env, 1) == 42) {
+    if (sigsetjmp(env, 1) == CTRL_C_CONTEXT) {
         printf("\n");
     }
 
     bool quit = false;
 
     while ((line = readline(PROMPT)) != 0) {
+    
         //We do not want blank lines in the history
         if (!line[0] || line[0] == '\n') {
             free(line);
@@ -213,7 +215,6 @@ int main(int argc, char **argv) {
         sdsfreesplitres(commands, cmd_count);
         free(line);
         if (quit) break;
-
     }
 
     sdsfree(history_path);

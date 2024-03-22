@@ -78,6 +78,10 @@ static token_type lookup_ident(const token *t) {
             return INITIAL;
         }
     }
+    
+    if(literal[literal_len - 1] == '\'') {
+        return ODE_IDENT;
+    }
 
     return IDENT;
 }

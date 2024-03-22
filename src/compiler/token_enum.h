@@ -1,12 +1,12 @@
 #include "enum_to_string.h"
 
 BEGIN_ENUM(token_type) {
-    DECL_ENUM_ELEMENT(ILLEGAL)//"ILLEGAL"
-    DECL_ENUM_ELEMENT_STR(ENDOF, "end of file")  //"EOF"
+    DECL_ENUM_ELEMENT(ILLEGAL)
+    DECL_ENUM_ELEMENT_STR(ENDOF, "end of file")
 
-    DECL_ENUM_ELEMENT(IDENT) //"IDENT" // add) foobar) x) y) ...
-    DECL_ENUM_ELEMENT(NUMBER)//"NUMBER"
-    DECL_ENUM_ELEMENT(STRING)//"STRING"
+    DECL_ENUM_ELEMENT(IDENT)
+    DECL_ENUM_ELEMENT(NUMBER)
+    DECL_ENUM_ELEMENT(STRING)
 
     DECL_ENUM_ELEMENT_STR(ASSIGN,    "=")
     DECL_ENUM_ELEMENT_STR(PLUS,      "+")
@@ -48,6 +48,8 @@ BEGIN_ENUM(token_type) {
     DECL_ENUM_ELEMENT_STR(IMPORT,           "import")
     DECL_ENUM_ELEMENT_STR(EXPR,               "expr")
     DECL_ENUM_ELEMENT_STR(ASSIGNMENT,  "assignement")
+    
+    DECL_ENUM_ELEMENT(ODE_IDENT)
 }
 
 END_ENUM(token_type)

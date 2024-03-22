@@ -23,7 +23,7 @@ release_set:
 	$(eval OPT_TYPE=release)
 
 debug_set:
-	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -Wall -Wno-switch -Wno-misleading-indentation)
+	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -fsanitize=enum -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -Wno-switch -Wno-misleading-indentation)
 	$(eval OPT_TYPE=debug)
 
 bin/ode_shell: src/ode_shell.c build/code_converter.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/md5.o build/gnuplot_utils.o build/libfort.a build/libcompiler.a

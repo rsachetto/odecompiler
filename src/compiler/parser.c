@@ -279,7 +279,11 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
     ast *stmt = make_assignment_stmt(&p->cur_token, tag);
 
     if(!skip_ident) {
-        if(!expect_peek(p, IDENT)) {
+        if(tag == ast_ode_stmt) {
+            if(!expect_peek(p, ODE_IDENT)) {
+                RETURN_ERROR("ode identifier expected before assignment\n");
+            }
+        } else if(!expect_peek(p, IDENT)) {
             RETURN_ERROR("identifier expected before assignment\n");
         }
     }
@@ -824,6 +828,10 @@ ast *parse_statement(parser *p) {
 
     if(cur_token_is(p, IDENT) && peek_token_is(p, ASSIGN)) {
         return parse_assignment_statement(p, ast_assignment_stmt, true);
+    }
+
+    if(cur_token_is(p, ODE_IDENT) && peek_token_is(p, ASSIGN)) {
+        return parse_assignment_statement(p, ast_ode_stmt, true);
     }
 
     if(cur_token_is(p, ODE)) {

@@ -140,6 +140,7 @@ ast *make_if_expression(const token *t) {
 }
 
 ast *make_function_statement(const token *t) {
+
     ast *a = make_base_ast(t, ast_function_statement);
 
     if(a != NULL) {
