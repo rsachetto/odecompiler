@@ -23,21 +23,13 @@
     ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
     return NULL
 
-#define RETURN_ERROR_EXPRESSION(...)                                                     \
-    if(p->cur_token.line_number == 1) {                                                  \
-        ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__);     \
-    } else {                                                                             \
-        ADD_ERROR_WITH_LINE(p->cur_token.line_number - 1, p->l->file_name, __VA_ARGS__); \
-    }                                                                                    \
+#define RETURN_ERROR_EXPRESSION(...)                                             \
+    ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
     return NULL
 
-#define RETURN_VALUE_AND_ERROR_EXPRESSION(value, ...)                                    \
-    if(p->cur_token.line_number == 1) {                                                  \
-        ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__);     \
-    } else {                                                                             \
-        ADD_ERROR_WITH_LINE(p->cur_token.line_number - 1, p->l->file_name, __VA_ARGS__); \
-    }                                                                                    \
-return value
+#define RETURN_VALUE_AND_ERROR_EXPRESSION(value, ...)                            \
+    ADD_ERROR_WITH_LINE(p->cur_token.line_number, p->l->file_name, __VA_ARGS__); \
+    return value
 
 
 static int global_count = 1;
@@ -800,21 +792,30 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
         RETURN_ERROR_EXPRESSION("error parsing expression\n");
     }
 
+    bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS)     ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, MINUS)    ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, SLASH)    ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, EQ)       ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ)   ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, LT)       ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, GT)       ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, LEQ)      ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, GEQ)      ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, AND)      ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, OR)       ||
+                    TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
 
     if((cur_token_is(p, IDENT) || cur_token_is(p, NUMBER)) && (p->cur_token.line_number == p->peek_token.line_number)) {
-        bool is_valid = TOKEN_TYPE_EQUALS(p->peek_token, PLUS) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, MINUS) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, SLASH) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, LT) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, GT) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, LEQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, GEQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, AND) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, OR)  ||
+
+        bool is_valid = TOKEN_TYPE_EQUALS(p->peek_token, COMMA)     ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, RPAREN)    ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, UNIT_DECL) ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, RBRACE)    ||
+                        TOKEN_TYPE_EQUALS(p->peek_token, ENDOF)     ||
                         TOKEN_TYPE_EQUALS(p->peek_token, SEMICOLON);
 
-        if(!is_valid) {
+        if(!(is_infix || is_valid )) {
             if(cur_token_is(p, IDENT)) {
                 RETURN_VALUE_AND_ERROR_EXPRESSION(left_expr, "error parsing expression, expected operator after an identifier!\n");
             } else {
@@ -827,20 +828,6 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     //infix expression
     while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
 
-        bool is_infix = TOKEN_TYPE_EQUALS(p->peek_token, PLUS) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, MINUS) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, SLASH) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, ASTERISK) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, EQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, NOT_EQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, LT) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, GT) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, LEQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, GEQ) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, AND) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, OR) ||
-                        TOKEN_TYPE_EQUALS(p->peek_token, LPAREN);
-
         if(!is_infix) {
             return left_expr;
         }
@@ -850,6 +837,9 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
         if(TOKEN_TYPE_EQUALS(p->cur_token, LPAREN)) {
             left_expr = parse_call_expression(p, left_expr);
         } else {
+            if(p->cur_token.line_number != p->peek_token.line_number) {
+                RETURN_VALUE_AND_ERROR_EXPRESSION(left_expr, "error parsing infix expression\n");
+            }
             left_expr = parse_infix_expression(p, left_expr);
         }
     }

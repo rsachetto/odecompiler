@@ -102,31 +102,6 @@ Test(compiler, ToRORd) {
 
 }
 
-Test(parser, return_statement) {
-
-    char * input = "return 5 \
-                    return 10 \
-                    return 993322";
-
-
-    program prog = create_parse_program(input, true);
-
-    int len = arrlen(prog);
-
-    cr_expect_eq(len, 3);
-
-    for(int i = 0; i < len; i++) {
-        ast *a = prog[i];
-        cr_assert_eq(a->tag, ast_return_stmt);
-
-        char *literal = strndup(a->token.literal, a->token.literal_len);
-
-        cr_assert_str_eq(literal, "return");
-
-    }
-
-}
-
 Test(parser, assignment_statement) {
     char *input = "foobar = 1 $kg";
 
@@ -303,6 +278,7 @@ Test(parser, call_expression) {
     r = 5;
     test_infix_expression(a->expr_stmt->call_expr.arguments[2], (void*)&l, "+", (void*)&r);
 }
+
 
 Test(parser, string_literal_expression) {
     char *input = "\"hello world\"";

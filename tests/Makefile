@@ -3,7 +3,14 @@
 MKDIR_P = mkdir -p
 
 all: build_dir libcompiler.a
-	gcc -g ../src/code_converter.c test.c ../build/libcompiler.a -o test -lcriterion
+	gcc ${OPT_FLAGS} ../src/code_converter.c test.c ../build/libcompiler.a -o test -lcriterion
+
+debug: debug_set all
+
+debug_set:
+	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -fsanitize=enum -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -Wno-switch -Wno-misleading-indentation)
+	$(eval OPT_TYPE=debug)
+
 
 build_dir:
 	@${MKDIR_P} ../build
