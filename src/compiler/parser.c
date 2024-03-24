@@ -1062,7 +1062,10 @@ static void check_declaration(parser *p, ast *src) {
 
         break;
         case ast_return_stmt:
-            //TODO
+            int nr = arrlen(src->return_stmt.return_values);
+            for(int i = 0; i < nr; i++) {
+                check_declaration(p, src->return_stmt.return_values[i]);
+            }
             break;
         case ast_expression_stmt:
             check_declaration(p, src->expr_stmt);
