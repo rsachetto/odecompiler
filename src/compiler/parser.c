@@ -330,6 +330,13 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         }
     } else if(tag == ast_global_stmt) {
         declared_variable_entry_value value = {global_count, false, p->cur_token.line_number, tag};
+
+        bool alread_declared = shgeti(p->global_scope, stmt->assignment_stmt.name->identifier.value) != -1;
+
+        if(alread_declared) {
+            RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "global variable %s already declared.\n", stmt->assignment_stmt.name->identifier.value);
+        }
+
         shput(p->global_scope, stmt->assignment_stmt.name->identifier.value, value);
         stmt->assignment_stmt.declaration_position = global_count;
         global_count++;
@@ -338,15 +345,20 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int) strlen(stmt->assignment_stmt.name->identifier.value) - 1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
+        
+        bool alread_declared = shgeti(p->declared_variables, tmp) != -1;
+        
+        if(alread_declared) {
+            RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "EDO %s already declared.\n", stmt->assignment_stmt.name->identifier.value);
+        }
+
         shput(p->declared_variables, tmp, value);
         stmt->assignment_stmt.declaration_position = ode_count;
-        //TODO: check if ODE is assigned twice!!
         ode_count++;
         free(tmp);
     }
 
     if(p->cur_token.line_number != p->peek_token.line_number) {
-        //RETURN_ERROR("error parsing assignment statement\n");
         RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "error parsing assignment statement\n");
     }
 
