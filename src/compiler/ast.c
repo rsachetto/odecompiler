@@ -18,7 +18,7 @@
 char *indent_spaces[] = {NO_SPACES, _4SPACES, _8SPACES, _12SPACES, _16SPACES, _20SPACES, _24SPACES, _28SPACES};
 
 static ast *make_base_ast(const token *t, ast_tag tag) {
-    ast *a = (ast *) malloc(sizeof(ast));
+    ast *a = (ast *) calloc(1, sizeof(ast));
 
     if (a == NULL) {
         fprintf(stderr, "%s - Error allocating memory for the new ast node\n,", __FUNCTION__);
@@ -37,27 +37,16 @@ ast *make_import_stmt(const token *t) {
 
 ast *make_assignment_stmt(const token *t, ast_tag tag) {
     ast *a = make_base_ast(t, tag);
-    a->assignment_stmt.unit = NULL;
     return a;
 }
 
 ast *make_grouped_assignment_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_grouped_assignment_stmt);
-
-    if (a != NULL) {
-        a->grouped_assignment_stmt.names = NULL;
-        a->grouped_assignment_stmt.call_expr = NULL;
-    }
     return a;
 }
 
 ast *make_while_stmt(const token *t) {
     ast *a = make_base_ast(t, ast_while_stmt);
-
-    if (a != NULL) {
-        a->while_stmt.body = NULL;
-    }
-
     return a;
 }
 
@@ -68,7 +57,6 @@ ast *make_identifier(const token *t) {
         a->identifier.value = strndup(t->literal, t->literal_len);
         a->identifier.global = false;
     }
-
 
     return a;
 }
@@ -129,13 +117,6 @@ ast *make_infix_expression(const token *t, ast *left) {
 
 ast *make_if_expression(const token *t) {
     ast *a = make_base_ast(t, ast_if_expr);
-
-    if(a != NULL) {
-        a->if_expr.alternative = NULL;
-        a->if_expr.consequence = NULL;
-        a->if_expr.elif_alternative = NULL;
-    }
-
     return a;
 }
 
@@ -161,7 +142,6 @@ ast *make_call_expression(const token *t, ast *function) {
 
     if(a != NULL) {
         a->call_expr.function_identifier = function;
-        a->call_expr.arguments = NULL;
     }
 
     return a;

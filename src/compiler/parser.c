@@ -264,8 +264,6 @@ bool check_parser_errors(parser *p, bool exit_on_error) {
         return false;
     }
 
-    fprintf(stderr, "parser has %d errors\n", err_len);
-
     for(int i = 0; i < err_len; i++) {
         fprintf(stderr, "%s", p->errors[i]);
     }
@@ -286,7 +284,7 @@ ast *parse_boolean_literal(parser *p) {
 }
 
 ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
-
+       
     ast *stmt = make_assignment_stmt(&p->cur_token, tag);
 
     if(!skip_ident) {
@@ -347,6 +345,11 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         free(tmp);
     }
 
+    if(p->cur_token.line_number != p->peek_token.line_number) {
+        //RETURN_ERROR("error parsing assignment statement\n");
+        RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "error parsing assignment statement\n");
+    }
+
     advance_token(p);
 
     stmt->assignment_stmt.value = parse_expression(p, LOWEST);
@@ -356,7 +359,7 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
     }
 
-    if(peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
         advance_token(p);
     }
 
@@ -379,7 +382,7 @@ ast *parse_return_statement(parser *p) {
 
     stmt->return_stmt.return_values = parse_expression_list(p, false);
 
-    if(peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
         advance_token(p);
     }
 
@@ -396,7 +399,7 @@ ast *parse_import_statement(parser *p) {
 
     stmt->import_stmt.filename = make_string_literal(&p->cur_token);
 
-    if(peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
         advance_token(p);
     }
 
@@ -546,7 +549,7 @@ ast *parse_grouped_assignment(parser *p) {
         RETURN_ERROR("grouped expressions are only supported with function calls\n");
     }
 
-    if(peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
         advance_token(p);
     }
 
@@ -822,11 +825,10 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
                 RETURN_VALUE_AND_ERROR_EXPRESSION(left_expr, "error parsing expression, expected operator after an numerical value!\n");
             }
         }
-
     }
 
     //infix expression
-    while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
+    while(!peek_token_is(p, SEMICOLON) && !peek_token_is(p, ENDOL) && precedence < peek_precedence(p)) {
 
         if(!is_infix) {
             return left_expr;
@@ -851,7 +853,7 @@ ast *parse_expression_statement(parser *p) {
 
     ast *stmt = make_expression_stmt(&p->cur_token);
     stmt->expr_stmt = parse_expression(p, LOWEST);
-    if(peek_token_is(p, SEMICOLON)) {
+    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
         advance_token(p);
     }
     return stmt;
@@ -964,7 +966,7 @@ static void check_declaration(parser *p, ast *src) {
         case ast_ode_stmt:
         case ast_global_stmt: {
             check_declaration(p, src->assignment_stmt.value);
-            if(src->assignment_stmt.value->tag == ast_call_expression) {
+            if(src->assignment_stmt.value != NULL && src->assignment_stmt.value->tag == ast_call_expression) {
                 char *f_name = src->assignment_stmt.value->call_expr.function_identifier->identifier.value;
 
                 declared_function_entry dv = shgets(p->declared_functions, f_name);

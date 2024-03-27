@@ -387,7 +387,7 @@ static sds global_variable_to_c(ast *a, unsigned int *indentation_level) {
 
     sds buf = sdsempty();
     sds tmp = ast_to_c(a->assignment_stmt.value, indentation_level);
-    buf     = sdscatfmt(buf, "real %s = %s;", a->assignment_stmt.name->identifier.value, tmp);
+    buf     = sdscatfmt(buf, "const real %s = %s;", a->assignment_stmt.name->identifier.value, tmp);
 
     if(a->assignment_stmt.unit != NULL) {
         buf = sdscatfmt(buf, " //%s", a->assignment_stmt.unit);

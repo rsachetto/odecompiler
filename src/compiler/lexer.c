@@ -117,8 +117,14 @@ void read_char(lexer *l) {
         l->ch = l->input[l->read_position];
     }
 
+    if(!isascii(l->ch)) {
+        fprintf(stderr, "Lexer error on line %d of file %s: Invalid character found in input.\n", l->current_line, l->file_name);
+        exit(1);
+    }
+
     l->position = l->read_position++;
     if(l->ch == '\n') l->current_line++;
+
 }
 
 char peek_char(lexer *l) {
@@ -220,14 +226,24 @@ token next_token(lexer *l) {
     skip_whitespace(l);
 
     while (l->ch == '#') {
-        skip_comment(l);
-        skip_whitespace(l);
+        while(l->ch != '\n') {
+
+            if(l->ch == '\0') {
+                fprintf(stderr, "Lexer error on line %d of file %s: Unexpected end of file while reading comment.\n", l->current_line, l->file_name);
+                exit(1);
+            }
+            
+            read_char(l);
+        }
     }
 
     uint32_t current_line = l->current_line;
     const char *file_name = l->file_name;
 
     switch (l->ch) {
+        case '\n':
+            tok = new_token(ENDOL, "\n", 1, current_line, file_name);
+            break;
         case '=':
             if(peek_char(l) == '=') {
                 read_char(l);
