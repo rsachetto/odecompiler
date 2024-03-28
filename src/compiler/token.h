@@ -5,6 +5,7 @@
 #define STRING_EQUALS(s1, s2) (strcmp(s1, s2) == 0)
 #define STRING_EQUALS_N(s1, s2, n) (strncmp(s1, s2, n) == 0)
 #define TOKEN_TYPE_EQUALS(t1, t2) ((t1).type == t2)
+#define TOKEN_TYPE_NOT_EQUALS(t1, t2) ((t1).type != t2)
 
 #include "token_enum.h"
 #include <stdbool.h>

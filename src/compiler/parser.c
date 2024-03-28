@@ -334,7 +334,7 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         bool alread_declared = shgeti(p->global_scope, stmt->assignment_stmt.name->identifier.value) != -1;
 
         if(alread_declared) {
-            RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "global variable %s already declared.\n", stmt->assignment_stmt.name->identifier.value);
+            RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "global variable %s has already been declared.\n", stmt->assignment_stmt.name->identifier.value);
         }
 
         shput(p->global_scope, stmt->assignment_stmt.name->identifier.value, value);
@@ -345,13 +345,6 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int) strlen(stmt->assignment_stmt.name->identifier.value) - 1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
-        
-        bool alread_declared = shgeti(p->declared_variables, tmp) != -1;
-        
-        if(alread_declared) {
-            RETURN_VALUE_AND_ERROR_EXPRESSION(stmt, "EDO %s already declared.\n", stmt->assignment_stmt.name->identifier.value);
-        }
-
         shput(p->declared_variables, tmp, value);
         stmt->assignment_stmt.declaration_position = ode_count;
         ode_count++;
@@ -371,7 +364,7 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         stmt->assignment_stmt.unit = strndup(p->cur_token.literal, p->cur_token.literal_len);
     }
 
-    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
 
@@ -394,7 +387,7 @@ ast *parse_return_statement(parser *p) {
 
     stmt->return_stmt.return_values = parse_expression_list(p, false);
 
-    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
 
@@ -411,7 +404,7 @@ ast *parse_import_statement(parser *p) {
 
     stmt->import_stmt.filename = make_string_literal(&p->cur_token);
 
-    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
 
@@ -561,7 +554,7 @@ ast *parse_grouped_assignment(parser *p) {
         RETURN_ERROR("grouped expressions are only supported with function calls\n");
     }
 
-    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
 
@@ -840,7 +833,7 @@ ast *parse_expression(parser *p, enum operator_precedence precedence) {
     }
 
     //infix expression
-    while(!peek_token_is(p, SEMICOLON) && !peek_token_is(p, ENDOL) && precedence < peek_precedence(p)) {
+    while(!peek_token_is(p, SEMICOLON) && precedence < peek_precedence(p)) {
 
         if(!is_infix) {
             return left_expr;
@@ -865,7 +858,7 @@ ast *parse_expression_statement(parser *p) {
 
     ast *stmt = make_expression_stmt(&p->cur_token);
     stmt->expr_stmt = parse_expression(p, LOWEST);
-    if(peek_token_is(p, SEMICOLON) || peek_token_is(p, ENDOL)) {
+    if(peek_token_is(p, SEMICOLON)) {
         advance_token(p);
     }
     return stmt;
@@ -1227,7 +1220,7 @@ static program parse_program_helper(parser *p, bool proc_imports, bool check_err
 
     program program = NULL;
 
-    while(!TOKEN_TYPE_EQUALS(p->cur_token, ENDOF)) {
+    while(TOKEN_TYPE_NOT_EQUALS(p->cur_token, ENDOF)) {
         ast *stmt = parse_statement(p);
         if(stmt != NULL) {
             arrput(program, stmt);

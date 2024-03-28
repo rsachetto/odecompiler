@@ -206,17 +206,21 @@ char *read_number(lexer *l, uint32_t *len) {
 }
 
 void skip_whitespace(lexer *l) {
-    while (isspace(l->ch)) {
+    while(isspace(l->ch)) {
         read_char(l);
     }
 }
 
 void skip_comment(lexer *l) {
     while (l->ch == '#') {
-        while (l->ch != '\n') {
+        while(l->ch != '\n') {
+            if(l->ch == '\0') {
+                fprintf(stderr, "Lexer error on line %u of file %s: Unexpected end of file while reading comment.\n", l->current_line, l->file_name);
+                exit(1);
+            }
             read_char(l);
         }
-        read_char(l);
+        skip_whitespace(l);
     }
 }
 
@@ -224,26 +228,12 @@ token next_token(lexer *l) {
     token tok = {0};
 
     skip_whitespace(l);
-
-    while (l->ch == '#') {
-        while(l->ch != '\n') {
-
-            if(l->ch == '\0') {
-                fprintf(stderr, "Lexer error on line %d of file %s: Unexpected end of file while reading comment.\n", l->current_line, l->file_name);
-                exit(1);
-            }
-            
-            read_char(l);
-        }
-    }
+    skip_comment(l);
 
     uint32_t current_line = l->current_line;
     const char *file_name = l->file_name;
 
     switch (l->ch) {
-        case '\n':
-            tok = new_token(ENDOL, "\n", 1, current_line, file_name);
-            break;
         case '=':
             if(peek_char(l) == '=') {
                 read_char(l);
