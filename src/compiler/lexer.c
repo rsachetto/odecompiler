@@ -118,7 +118,7 @@ void read_char(lexer *l) {
     }
 
     if(!isascii(l->ch)) {
-        fprintf(stderr, "Lexer error on line %d of file %s: Invalid character found in input.\n", l->current_line, l->file_name);
+        fprintf(stderr, "Lexer error on line %d, byte %d of file %s: Invalid character found in input.\n", l->current_line, l->read_position, l->file_name);
         exit(1);
     }
 
