@@ -283,6 +283,7 @@ static sds if_expr_to_str(ast *a, unsigned int *indentation_level) {
     (*indentation_level)++;
 
     int n = arrlen(a->if_expr.consequence);
+
     for (int i = 0; i < n; i++) {
         tmp = ast_to_string(a->if_expr.consequence[i], indentation_level);
         buf = sdscatfmt(buf, "%s\n", tmp);
@@ -294,7 +295,7 @@ static sds if_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     n = arrlen(a->if_expr.alternative);
 
-    if (n) {
+    if (n > 0) {
 
         (*indentation_level)++;
         buf = sdscat(buf, " else {\n");
@@ -354,7 +355,7 @@ static sds function_stmt_to_str(ast *a, unsigned int *indentation_level) {
 
     int n = arrlen(a->function_stmt.parameters);
 
-    if (n) {
+    if (n > 0) {
         tmp = ast_to_string(a->function_stmt.parameters[0], indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
@@ -394,7 +395,7 @@ static sds call_expr_to_str(ast *a, unsigned int *indentation_level) {
 
     int n = arrlen(a->call_expr.arguments);
 
-    if (n) {
+    if (n > 0) {
         sds tmp = ast_to_string(a->call_expr.arguments[0], indentation_level);
         buf = sdscat(buf, tmp);
         sdsfree(tmp);
