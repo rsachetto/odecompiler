@@ -1150,7 +1150,7 @@ static void check_ode_initializations(parser *p, program program) {
             declared_variable_entry dv = shgets(p->declared_variables, ode_name);
 
             if(!dv.value.initialized) {
-                fprintf(stderr, "Warning - No initial condition provided for %s'!\n", ode_name);
+                fprintf(stderr, "Warning - No initial condition provided for %s' (declared on line %d)!\n", ode_name, dv.value.line_number);
             }
             free(ode_name);
         }
