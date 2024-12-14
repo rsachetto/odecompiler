@@ -152,10 +152,9 @@ int main(int argc, char **argv) {
     } else {
         print_current_dir();
     }
-
+#ifdef __linux__
     //Setting up inotify
     shell_state.fd_notify = inotify_init();
-
     pthread_t inotify_thread;
 
     if (pthread_mutex_init(&shell_state.lock, NULL) != 0) {
@@ -164,7 +163,8 @@ int main(int argc, char **argv) {
     }
 
     pthread_create(&inotify_thread, NULL, check_for_model_file_changes, (void *) &shell_state);
-
+#endif
+    
     if (arguments.command_file) {
         bool continue_ = run_commands_from_file(&shell_state, arguments.command_file);
         if(!continue_)

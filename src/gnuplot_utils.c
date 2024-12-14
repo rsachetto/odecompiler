@@ -36,7 +36,8 @@ static bool check_sixel_support() {
     fclose(tmp_file);
 
     FILE *pipe = popen("bash /tmp/has_sixel_support_XXXX.sh", "r");
-    return WEXITSTATUS(pclose(pipe));
+    int st = pclose(pipe);
+    return WEXITSTATUS(st);
 
 }
 

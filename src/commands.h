@@ -61,7 +61,10 @@ typedef enum cmd_type_t {
 void initialize_commands(struct shell_variables* state, bool plot_enabled);
 bool parse_and_execute_command(sds line, struct shell_variables *shell_state);
 void clean_and_exit(struct shell_variables *shell_state);
+
+#ifdef __linux__
 void maybe_reload_from_file_change(struct shell_variables *shell_state, struct inotify_event *event);
+#endif
 bool run_commands_from_file(struct shell_variables *shell_state, char *file_name);
 
 #endif /* __COMMMANDS_H */

@@ -1,5 +1,7 @@
 #ifndef __INOTIFY_HELPERS_H
-#define __INOTIFY_HELPERS_H 
+#define __INOTIFY_HELPERS_H
+
+#ifdef __linux__
 
 #include "ode_shell.h"
 #include <sys/inotify.h>
@@ -13,3 +15,5 @@ void add_file_watch(struct shell_variables *shell_state, char *path);
 _Noreturn void *check_for_model_file_changes(void *args);
 
 #endif /* __INOTIFY_HELPERS_H */
+
+#endif

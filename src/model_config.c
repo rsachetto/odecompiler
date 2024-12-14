@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef __linux__
 #include <linux/limits.h>
+#endif
 
 #include "stb/stb_ds.h"
 #include "file_utils/file_utils.h"

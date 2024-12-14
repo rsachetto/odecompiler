@@ -9,7 +9,10 @@
 #include "stb/stb_ds.h"
 #include "to_latex.h"
 
+#ifdef __linux__
 #include <linux/limits.h>
+#endif
+
 #include <math.h>
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -435,7 +438,9 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
 
         if(new_model) {
             char *tmp = get_dir_from_path(model_config->model_file);
+#ifdef __linux__
             add_file_watch(shell_state, tmp);
+#endif
             free(tmp);
         }
     } else {
@@ -524,7 +529,9 @@ COMMAND_FUNCTION(solve) {
 
     FILE *fp          = popen(model_command, "r");
     check_and_print_execution_output(fp);
-    bool error = WEXITSTATUS(pclose(fp)) != 0;
+
+    int st = pclose(fp);
+    bool error = WEXITSTATUS(st) != 0;
 
     if(!error) {
         printf("Model %s solved for %lf steps.\n", model_config->model_name, simulation_steps);
@@ -2030,6 +2037,7 @@ dealloc_vars:
     return false;
 }
 
+#ifdef __linux__
 void maybe_reload_from_file_change(struct shell_variables *shell_state, struct inotify_event *event) {
 
     if(shell_state->never_reload) return;
@@ -2102,6 +2110,7 @@ void maybe_reload_from_file_change(struct shell_variables *shell_state, struct i
 
     pthread_mutex_unlock(&shell_state->lock);
 }
+#endif
 
 static void add_cmd(command_fn *function, char *cmd, int accept_min, int accept_max, char *help) {
 

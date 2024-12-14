@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "stb/stb_ds.h"
 #include <pthread.h>
 #include <unistd.h>
@@ -46,3 +48,4 @@ _Noreturn void *check_for_model_file_changes(void *args) {
         }
     }
 }
+#endif
