@@ -344,9 +344,19 @@ ast *parse_assignment_statement(parser *p, ast_tag tag, bool skip_ident) {
         char *tmp = strndup(stmt->assignment_stmt.name->identifier.value, (int) strlen(stmt->assignment_stmt.name->identifier.value) - 1);
         //The key in this hash is the order of appearance of the ODE. This is important to define the order of the initial conditions
         declared_variable_entry_value value = {ode_count, false, p->cur_token.line_number, tag};
-        shput(p->declared_variables, tmp, value);
-        stmt->assignment_stmt.declaration_position = ode_count;
-        ode_count++;
+
+        declared_variable_entry *existing_entry = stbds_shgetp_null(p->declared_variables, tmp);
+        if(existing_entry != NULL) {
+            printf("[WARN] - ODE %s redeclared on line %d! Ignore if it was intentionally redeclared!\n",
+                    stmt->assignment_stmt.name->identifier.value,
+                    p->cur_token.line_number);
+            stmt->assignment_stmt.declaration_position = existing_entry->value.declaration_position;
+        } else {
+            shput(p->declared_variables, tmp, value);
+            stmt->assignment_stmt.declaration_position = ode_count;
+            ode_count++;
+        }
+
         free(tmp);
     }
 

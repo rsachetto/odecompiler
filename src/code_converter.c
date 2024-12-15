@@ -52,11 +52,10 @@ static sds return_stmt_to_c(ast *a, unsigned int *indentation_level) {
 }
 
 static sds assignment_stmt_to_c(ast *a, unsigned int *indentation_level) {
-
     sds buf = sdsempty();
     char *var_type;
 
-    if(a->tag == ast_assignment_stmt) {
+    if(a->tag == ast_assignment_stmt || a->tag == ast_ode_stmt) {
         if(a->assignment_stmt.value->tag == ast_boolean_literal || a->assignment_stmt.value->tag == ast_if_expr) {
             var_type = "bool";
         } else if(a->assignment_stmt.value->tag == ast_string_literal) {
