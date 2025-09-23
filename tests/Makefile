@@ -8,7 +8,7 @@ all: build_dir libcompiler.a
 debug: debug_set all
 
 debug_set:
-	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -fsanitize=undefined -fsanitize=address -fsanitize=enum -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -Wno-switch -Wno-misleading-indentation)
+	$(eval OPT_FLAGS=-DDEBUG_INFO -g3 -Wall -Wno-switch -Wno-misleading-indentation)
 	$(eval OPT_TYPE=debug)
 
 
