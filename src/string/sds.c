@@ -817,7 +817,7 @@ int sdscmp(const sds s1, const sds s2) {
 }
 
 sds *sdssplit(const char *s, const char *sep, int *count) {
-    sdssplitlen(s, strlen(s), sep, strlen(sep), count);
+    return sdssplitlen(s, strlen(s), sep, strlen(sep), count);
 }
 
 /* Split 's' with separator in 'sep'. An array

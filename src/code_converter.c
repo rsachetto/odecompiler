@@ -687,7 +687,10 @@ void write_variables_or_body(program p, FILE *file, solver_config *solver_config
             sdsfree(tmp);
         } else {
             sds buf = ast_to_c(a, solver_config);
-            fprintf(file, "%s;\n", buf);
+            if (a->tag == ast_expression_stmt && a->expr_stmt != NULL && a->expr_stmt->tag == ast_call_expression)
+                fprintf(file, "%s;\n", buf);
+            else
+                fprintf(file, "%s\n", buf);
             sdsfree(buf);
         }
     }
@@ -758,11 +761,11 @@ static void write_functions(program p, FILE *file, bool write_end_functions, sol
             ast *ast_a = a->function_stmt.body[j];
             sds tmp    = ast_to_c(ast_a, solver_config);
 
-            //if((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr) || ast_a->tag == ast_while_stmt || ast_a->tag == ast_return_stmt) {
+            if((ast_a->tag == ast_expression_stmt && ast_a->expr_stmt->tag == ast_if_expr) || ast_a->tag == ast_while_stmt || ast_a->tag == ast_return_stmt) {
+                fprintf(file, "%s\n", tmp);
+            } else {
                 fprintf(file, "%s;\n", tmp);
-            //} else {
-            //    fprintf(file, "%s;\n", tmp);
-           //}
+           }
             sdsfree(tmp);
         }
         (*indentation_level)--;
