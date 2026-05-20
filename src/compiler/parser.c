@@ -974,6 +974,11 @@ static void check_declaration(parser *p, ast *src) {
                 }
             }
 
+            bool var_is_global = shgeti(p->global_scope, id_name) != -1;
+            if(var_is_global) {
+                src->assignment_stmt.name->identifier.global = true;
+            }
+
             check_declaration(p, src->assignment_stmt.value);
         } break;
         case ast_ode_stmt:
@@ -990,13 +995,9 @@ static void check_declaration(parser *p, ast *src) {
                                         num_return_values);
                 }
             }
-            if(src->tag == ast_assignment_stmt) {
-
-                bool var_is_global = shgeti(p->global_scope, src->assignment_stmt.name->identifier.value) != -1;
-                if(var_is_global) {
-                    printf("%s is global\n", src->assignment_stmt.name->identifier.value);
-                    src->assignment_stmt.name->identifier.global = true;
-                }
+            bool var_is_global = shgeti(p->global_scope, src->assignment_stmt.name->identifier.value) != -1;
+            if(var_is_global) {
+                src->assignment_stmt.name->identifier.global = true;
             }
         } break;
 
