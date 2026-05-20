@@ -1326,6 +1326,16 @@ static bool set_or_get_value_helper(struct shell_variables *shell_state, sds *to
                     parser *p       = new_parser(l);
                     program program = parse_program(p, false, false, NULL);
 
+                    if(program == NULL || arrlen(program) == 0) {
+                        printf("Error parsing new value: %s\n", new_value);
+                        free_parser(p);
+                        if(program) free_program(program);
+                        free_lexer(l);
+                        free_model_config(model_config);
+                        sdsfree(var_name);
+                        return false;
+                    }
+
                     sds tmp1        = ast_to_string(a->assignment_stmt.value, &indentation_level);
                     sds tmp2        = ast_to_string(program[0], &indentation_level);
 
@@ -1580,9 +1590,9 @@ COMMAND_FUNCTION(unloadall) {
 
     } else {
 
-        for(int i = 0; i < len; i++) {
-            char *name                        = shell_state->loaded_models[i].key;
-            struct model_config *model_config = load_model_config_or_print_error(shell_state, tokens[0], name);
+        while(shlen(shell_state->loaded_models) > 0) {
+            char *name                        = shell_state->loaded_models[0].key;
+            struct model_config *model_config = shell_state->loaded_models[0].value;
             struct model_config **entries     = hmget(shell_state->notify_entries, model_config->notify_code);
             arrfree(entries);
 
@@ -1613,9 +1623,12 @@ COMMAND_FUNCTION(unload) {
 
     free_model_config(model_config);
 
-    if(shell_state->loaded_models != 0 && is_current) {
-        //TODO: do we want to know the last loaded model??
-        shell_state->current_model = shell_state->loaded_models[0].value;
+    if(is_current) {
+        if(shlen(shell_state->loaded_models) > 0) {
+            shell_state->current_model = shell_state->loaded_models[0].value;
+        } else {
+            shell_state->current_model = NULL;
+        }
     }
 
     return true;
