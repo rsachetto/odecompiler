@@ -3,6 +3,17 @@
 
 MKDIR_P = mkdir -p
 
+UNAME_S := $(shell uname -s)
+
+CFLAGS = 
+LDFLAGS = 
+
+# 3. Condicional específico para o macOS
+ifeq ($(UNAME_S), Darwin)
+    CFLAGS += -I/opt/homebrew/opt/argp-standalone/include
+    LDFLAGS += -L/opt/homebrew/opt/argp-standalone/lib -largp
+endif
+
 all: release
 
 common: directories bin/odec bin/ode_shell
@@ -27,10 +38,10 @@ debug_set:
 	$(eval OPT_TYPE=debug)
 
 bin/ode_shell: src/ode_shell.c build/code_converter.o build/pipe_utils.o build/commands.o build/command_corrector.o build/string_utils.o build/model_config.o build/inotify_helpers.o build/to_latex.o build/md5.o build/gnuplot_utils.o build/libfort.a build/libcompiler.a
-	gcc ${OPT_FLAGS} $^ -o bin/ode_shell -lreadline -lpthread
+	gcc ${OPT_FLAGS} ${CFLAGS} $^ -o bin/ode_shell -lreadline -lpthread ${LDFLAGS}
 
 bin/odec: src/ode_compiler.c build/code_converter.o build/string_utils.o build/libcompiler.a
-	gcc ${OPT_FLAGS} $^ -o bin/odec
+	gcc ${OPT_FLAGS} ${CFLAGS} $^ -o bin/odec ${LDFLAGS}
 
 build/code_converter.o: src/code_converter.c src/code_converter.h
 	gcc ${OPT_FLAGS} -c  src/code_converter.c -o build/code_converter.o
