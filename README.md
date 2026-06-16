@@ -28,6 +28,12 @@ ode R' = gamma*I
 
 ## To download and compile
 
+If you are using MacOs you will need to install argp:
+
+```sh
+brew install argp-standalone
+```
+
 ```sh
 git clone https://github.com/rsachetto/odecompiler
 cd odecompiler

@@ -11,7 +11,7 @@ debug_set:
 
 common: libfort.a
 
-objects := $(patsubst %.c,%.o,$(wildcard *.c))
+objects := fort.o
 
 libfort.a: $(objects)
 	ar rcs libfort.a $(objects)
