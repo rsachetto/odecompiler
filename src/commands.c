@@ -1559,12 +1559,21 @@ COMMAND_FUNCTION(editmodel) {
 
     GET_MODEL_ONE_ARG_OR_RETURN_FALSE(model_config, 0);
 
-    if(!can_run_command("xdg-open")) {
-        printf("Error - xdg-open is not in your path or is not installed\n");
+    char *run_command = NULL;
+	
+#ifdef __linux__
+    run_command = strdup("xdg-open");
+#elif defined (__APPLE__)
+    run_command = strdup("open");
+#endif
+
+
+    if(!can_run_command(run_command) || run_command == NULL) {
+        printf("Error - %s is not in your path or is not installed\n", run_command);
         return false;
     }
 
-    sds cmd = sdscatfmt(sdsempty(), "xdg-open %s.ode & 2> /dev/null", model_config->model_name);
+    sds cmd = sdscatfmt(sdsempty(), "%s %s.ode & 2> /dev/null", run_command, model_config->model_name);
 
     FILE *f = popen(cmd, "r");
     pclose(f);
