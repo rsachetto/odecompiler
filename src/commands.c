@@ -437,11 +437,13 @@ static bool load_model(struct shell_variables *shell_state, const char *model_fi
         shell_state->current_model = model_config;
 
         if(new_model) {
+#if defined(__linux__)
             char *tmp = get_dir_from_path(model_config->model_file);
-#ifdef __linux__
             add_file_watch(shell_state, tmp);
-#endif
             free(tmp);
+#elif defined(__APPLE__)
+            add_file_watch(shell_state, model_config->model_file);
+#endif
         }
     } else {
         free_model_config(model_config);
@@ -1604,7 +1606,9 @@ COMMAND_FUNCTION(unloadall) {
             struct model_config *model_config = shell_state->loaded_models[0].value;
             struct model_config **entries     = hmget(shell_state->notify_entries, model_config->notify_code);
             arrfree(entries);
-
+#if defined(__APPLE__)
+            close(model_config->notify_code);
+#endif
             (void) hmdel(shell_state->notify_entries, model_config->notify_code);
             (void) shdel(shell_state->loaded_models, name);
 
@@ -1626,7 +1630,9 @@ COMMAND_FUNCTION(unload) {
 
     struct model_config **entries = hmget(shell_state->notify_entries, model_config->notify_code);
     arrfree(entries);
-
+#if defined(__APPLE__)
+    close(model_config->notify_code);
+#endif
     (void) hmdel(shell_state->notify_entries, model_config->notify_code);
     (void) shdel(shell_state->loaded_models, tokens[1]);
 
@@ -1991,6 +1997,9 @@ void clean_and_exit(struct shell_variables *shell_state) {
     n = hmlen(shell_state->notify_entries);
 
     for(int i = 0; i < n; i++) {
+#if defined(__APPLE__)
+        close(shell_state->notify_entries[i].key);
+#endif
         arrfree(shell_state->notify_entries[i].value);
     }
 
